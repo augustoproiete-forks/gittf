@@ -24,6 +24,11 @@
 
 package com.microsoft.gittf.core.tasks;
 
+import com.microsoft.tfs.core.clients.build.IBuildRequest;
+import com.microsoft.tfs.core.clients.build.IBuildServer;
+import com.microsoft.tfs.core.clients.build.flags.BuildReason;
+import com.microsoft.tfs.core.clients.versioncontrol.exceptions.ActionDeniedBySubscriberException;
+import com.microsoft.tfs.core.clients.versioncontrol.exceptions.TeamFoundationServerExceptionProperties;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 
@@ -125,6 +130,58 @@ public class CheckinPendingChangesTask
                 }
             }
             progressMonitor.endTask();
+        }
+        catch (ActionDeniedBySubscriberException e)
+        {
+            // we can use any affected gated config
+            // from MSDN:
+            // http://msdn.microsoft.com/en-us/library/microsoft.teamfoundation.versioncontrol.client.checkinparameters.queuebuildforgatedcheckin.aspx
+
+            /*
+                If one or more of the items being checked in affects a gated build definition,
+                the check-in will be rejected because it must go through the gated check-in system.
+                The server will create a shelveset of the changes submitted for check-in
+                and throw a GatedCheckinException to the client containing the names
+                of the affected build definitions,
+                the name of the created shelveset,
+                and a check-in ticket string (a cookie).
+
+                The client must call IBuildServer.QueueBuild with an IBuildRequest
+                containing the shelveset name, the checkin ticket string,
+                and a reason of BuildReason.CheckInShelveset.
+                The build can be queued against any of the affected definitions
+             */
+            IBuildServer buildServer = workspace.getClient().getConnection().getBuildServer();
+            if (buildServer == null)
+            {
+                // no active build server, display message and exit
+                // let user build shelveset manually
+                return new TaskStatus(TaskStatus.ERROR, e);
+            }
+            TeamFoundationServerExceptionProperties properties = e.getProperties();
+            Object[] buildDefUris = properties.getObjectArrayProperty("AffectedBuildDefinitionUris");
+            String checkInTicket = properties.getStringProperty("CheckInTicket");
+            String shelvesetName = properties.getStringProperty("ShelvesetName");
+            // delegate error if any of these missing
+            if (buildDefUris == null || buildDefUris.length == 0 || checkInTicket == null || shelvesetName == null)
+            {
+                return new TaskStatus(TaskStatus.ERROR, e);
+            }
+
+            IBuildRequest buildRequest = buildServer.createBuildRequest(buildDefUris[0].toString());
+            buildRequest.setGatedCheckInTicket(checkInTicket);
+            buildRequest.setShelvesetName(shelvesetName);
+            buildRequest.setReason(BuildReason.CHECK_IN_SHELVESET);
+            try
+            {
+                buildServer.queueBuild(buildRequest);
+                return new TaskStatus(TaskStatus.ERROR, Messages.formatString("CheckinPendingChangesTask.GatedBuildQueuedFormat", //$NON-NLS-1$
+                        shelvesetName));
+            }
+            catch (Exception ex)
+            {
+                return new TaskStatus(TaskStatus.ERROR, ex);
+            }
         }
         catch (Exception e)
         {

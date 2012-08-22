@@ -68,6 +68,7 @@ public class CloneTask
     private boolean bare;
     private VersionSpec versionSpec = LatestVersionSpec.INSTANCE;
     private int depth = 1;
+    private boolean tag = true;
 
     private static final Log log = LogFactory.getLog(CloneTask.class);
 
@@ -122,9 +123,14 @@ public class CloneTask
         return depth;
     }
 
-    public Repository getRepository()
+    public boolean getTag()
     {
-        return repository;
+        return tag;
+    }
+
+    public void setTag(boolean tag)
+    {
+        this.tag = tag;
     }
 
     @Override
@@ -177,6 +183,7 @@ public class CloneTask
 
         final ConfigureRepositoryTask configureTask = new ConfigureRepositoryTask(repository, serverURI, tfsPath);
         configureTask.setDeep(depth > GitTFConstants.GIT_TF_SHALLOW_DEPTH);
+        configureTask.setTag(tag);
 
         TaskStatus configureStatus = new TaskExecutor(new NullTaskProgressMonitor()).execute(configureTask);
 
@@ -225,6 +232,7 @@ public class CloneTask
 
             progressMonitor.setDetail(Messages.getString("CloneTask.Finalizing")); //$NON-NLS-1$
 
+            /* Update master head reference */
             RefUpdate ref = repository.updateRef(Constants.R_HEADS + Constants.MASTER);
             ref.setNewObjectId(lastCommitID);
             ref.update();

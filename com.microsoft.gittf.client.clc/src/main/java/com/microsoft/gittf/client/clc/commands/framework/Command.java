@@ -212,6 +212,11 @@ public abstract class Command
             || getArguments().contains("shallow"); //$NON-NLS-1$
     }
 
+    public boolean getTagFromArguments()
+    {
+        return !getArguments().contains("no-tag"); //$NON-NLS-1$
+    }
+
     protected Repository getRepository()
         throws Exception
     {

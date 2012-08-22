@@ -45,6 +45,7 @@ public class ConfigureRepositoryTask
     private final String tfsPath;
 
     private boolean deep;
+    private boolean tag = true;
 
     public ConfigureRepositoryTask(final Repository repository, final URI projectCollectionURI, final String tfsPath)
     {
@@ -69,6 +70,16 @@ public class ConfigureRepositoryTask
         return deep;
     }
 
+    public boolean getTag()
+    {
+        return tag;
+    }
+
+    public void setTag(boolean tag)
+    {
+        this.tag = tag;
+    }
+
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {
@@ -88,6 +99,7 @@ public class ConfigureRepositoryTask
             null,
             null,
             deep,
+            tag,
             GitTFConstants.GIT_TF_CURRENT_FORMAT_VERSION).saveTo(repository);
 
         progressMonitor.endTask();

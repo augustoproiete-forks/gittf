@@ -29,7 +29,6 @@ import java.net.URI;
 import org.eclipse.jgit.lib.Repository;
 
 import com.microsoft.gittf.client.clc.ExitCode;
-import com.microsoft.gittf.client.clc.Main;
 import com.microsoft.gittf.client.clc.Messages;
 import com.microsoft.gittf.client.clc.arguments.Argument;
 import com.microsoft.gittf.client.clc.arguments.ChoiceArgument;
@@ -81,6 +80,15 @@ public class ConfigureCommand
                 Messages.getString("Command.Argument.Shallow.HelpText")) //$NON-NLS-1$
         ),
 
+        new ChoiceArgument(Messages.getString("Command.Argument.TagChoice.HelpText"), //$NON-NLS-1$
+            /* Users can specify one of --tag or --no-tag (Default: tag). */
+            new SwitchArgument("tag", //$NON-NLS-1$
+                Messages.getString("Command.Argument.Tag.HelpText")), //$NON-NLS-1$
+
+            new SwitchArgument("no-tag", //$NON-NLS-1$
+                Messages.getString("Command.Argument.NoTag.HelpText")) //$NON-NLS-1$
+        ),
+
         new FreeArgument("projectcollection", //$NON-NLS-1$
             Messages.getString("Command.Argument.ProjectCollection.HelpText")), //$NON-NLS-1$
 
@@ -123,7 +131,7 @@ public class ConfigureCommand
             if (currentConfiguration == null)
             {
                 // Not configured
-                Main.printError(Messages.getString("ConfigureCommand.GitRepoNotConfigured")); //$NON-NLS-1$
+                throw new Exception(Messages.getString("ConfigureCommand.GitRepoNotConfigured")); //$NON-NLS-1$
             }
             else
             {
@@ -137,6 +145,7 @@ public class ConfigureCommand
         URI serverURI = null;
         String tfsPath = null;
         boolean deep = false;
+        boolean tag = true;
 
         if (currentConfiguration == null || getArguments().contains("force")) //$NON-NLS-1$
         {
@@ -150,20 +159,15 @@ public class ConfigureCommand
             // Validate arguments
             if (collection == null || collection.length() == 0 || tfsPath == null || tfsPath.length() == 0)
             {
-                Main.printError(Messages.getString("ConfigureCommand.CollectionAndServerPathRequired")); //$NON-NLS-1$
-                Main.printError(getUsage(), false);
-
-                return ExitCode.FAILURE;
+                throw new Exception(Messages.getString("ConfigureCommand.CollectionAndServerPathRequired")); //$NON-NLS-1$
             }
 
             serverURI = URIUtil.getServerURI(collection);
 
             if (serverURI == null)
             {
-                Main.printError(Messages.formatString("ConfigureCommand.InvalidCollectionFormat", //$NON-NLS-1$
+                throw new Exception(Messages.formatString("ConfigureCommand.InvalidCollectionFormat", //$NON-NLS-1$
                     collection));
-
-                return ExitCode.FAILURE;
             }
 
             tfsPath = ServerPath.canonicalize(tfsPath);
@@ -173,11 +177,12 @@ public class ConfigureCommand
             serverURI = currentConfiguration.getServerURI();
             tfsPath = currentConfiguration.getServerPath();
 
-            if (!getArguments().contains("deep") && !getArguments().contains("shallow")) //$NON-NLS-1$ //$NON-NLS-2$
+            if (!getArguments().contains("deep") //$NON-NLS-1$
+                && !getArguments().contains("shallow") //$NON-NLS-1$
+                && !getArguments().contains("tag") //$NON-NLS-1$
+                && !getArguments().contains("no-tag")) //$NON-NLS-1$ 
             {
-                Main.printError(Messages.getString("ConfigureCommand.InvalidOptionsSpecified")); //$NON-NLS-1$
-
-                return ExitCode.FAILURE;
+                throw new Exception(Messages.getString("ConfigureCommand.InvalidOptionsSpecified")); //$NON-NLS-1$
             }
         }
 
@@ -194,8 +199,22 @@ public class ConfigureCommand
             deep = currentConfiguration.getDeep();
         }
 
+        if (getArguments().contains("tag")) //$NON-NLS-1$
+        {
+            tag = true;
+        }
+        else if (getArguments().contains("no-tag")) //$NON-NLS-1$
+        {
+            tag = false;
+        }
+        else if (currentConfiguration != null)
+        {
+            tag = currentConfiguration.getTag();
+        }
+
         ConfigureRepositoryTask configureTask = new ConfigureRepositoryTask(repository, serverURI, tfsPath);
         configureTask.setDeep(deep);
+        configureTask.setTag(tag);
 
         TaskStatus configureStatus = new CommandTaskExecutor(getProgressMonitor()).execute(configureTask);
 

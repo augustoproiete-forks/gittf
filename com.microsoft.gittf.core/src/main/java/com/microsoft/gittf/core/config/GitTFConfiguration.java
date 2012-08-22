@@ -57,6 +57,7 @@ public class GitTFConfiguration
     private final String username;
     private final String password;
     private final boolean deep;
+    private final boolean tag;
     private final int fileFormatVersion;
 
     /**
@@ -83,6 +84,7 @@ public class GitTFConfiguration
         final String username,
         final String password,
         final boolean deep,
+        final boolean tag,
         final int fileFormatVersion)
     {
         Check.notNull(serverURI, "serverURI"); //$NON-NLS-1$
@@ -93,6 +95,7 @@ public class GitTFConfiguration
         this.username = username;
         this.password = password;
         this.deep = deep;
+        this.tag = tag;
         this.fileFormatVersion = fileFormatVersion;
     }
 
@@ -156,6 +159,11 @@ public class GitTFConfiguration
         return deep;
     }
 
+    public boolean getTag()
+    {
+        return tag;
+    }
+
     public int getFileFormatVersion()
     {
         return fileFormatVersion;
@@ -197,6 +205,12 @@ public class GitTFConfiguration
             ConfigurationConstants.FILE_FORMAT_VERSION,
             GitTFConstants.GIT_TF_CURRENT_FORMAT_VERSION);
 
+        repository.getConfig().setBoolean(
+            ConfigurationConstants.CONFIGURATION_SECTION,
+            ConfigurationConstants.GENERAL_SUBSECTION,
+            ConfigurationConstants.TAG,
+            tag);
+
         try
         {
             repository.getConfig().save();
@@ -217,7 +231,8 @@ public class GitTFConfiguration
 
         result.append(Messages.formatString("GitTFConfiguration.ToString.ServerURIFormat", this.serverURI) + NEW_LINE); //$NON-NLS-1$
         result.append(Messages.formatString("GitTFConfiguration.ToString.TfsPathFormat", this.tfsPath) + NEW_LINE); //$NON-NLS-1$
-        result.append(Messages.formatString("GitTFConfiguration.ToString.DepthFormat", getDepthString())); //$NON-NLS-1$
+        result.append(Messages.formatString("GitTFConfiguration.ToString.DepthFormat", getDepthString()) + NEW_LINE); //$NON-NLS-1$
+        result.append(Messages.formatString("GitTFConfiguration.ToString.TagFormat", this.tag)); //$NON-NLS-1$
 
         return result.toString();
     }
@@ -278,6 +293,13 @@ public class GitTFConfiguration
                 ConfigurationConstants.DEPTH,
                 GitTFConstants.GIT_TF_SHALLOW_DEPTH);
 
+        final boolean tag =
+            repository.getConfig().getBoolean(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.GENERAL_SUBSECTION,
+                ConfigurationConstants.TAG,
+                true);
+
         final int fileFormatVersion =
             repository.getConfig().getInt(
                 ConfigurationConstants.CONFIGURATION_SECTION,
@@ -315,6 +337,7 @@ public class GitTFConfiguration
             username,
             password,
             depth > GitTFConstants.GIT_TF_SHALLOW_DEPTH,
+            tag,
             fileFormatVersion);
     }
 

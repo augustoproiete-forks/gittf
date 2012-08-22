@@ -32,6 +32,7 @@ public class ConfigurationConstants
 
     public static final String GENERAL_SUBSECTION = null;
     public static final String DEPTH = "depth"; //$NON-NLS-1$
+    public static final String TAG = "tag"; //$NON-NLS-1$
     public static final String FILE_FORMAT_VERSION = "file-format-version"; //$NON-NLS-1$
 
     public static final String SERVER_SUBSECTION = "server"; //$NON-NLS-1$

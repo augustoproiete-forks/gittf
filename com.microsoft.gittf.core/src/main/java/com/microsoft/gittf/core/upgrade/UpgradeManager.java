@@ -89,6 +89,7 @@ public class UpgradeManager
                 currentConfiguration.getUsername(),
                 currentConfiguration.getPassword(),
                 currentConfiguration.getDeep(),
+                true,
                 1);
 
         newConfiguration.saveTo(repository);

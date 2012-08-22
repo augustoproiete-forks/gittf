@@ -25,11 +25,22 @@
 package com.microsoft.gittf.core.util;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.TagCommand;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevObject;
+import org.eclipse.jgit.revwalk.RevWalk;
+
+import com.microsoft.gittf.core.GitTFConstants;
+import com.microsoft.gittf.core.Messages;
+import com.microsoft.gittf.core.config.GitTFConfiguration;
 
 public final class CommitUtil
 {
@@ -64,4 +75,57 @@ public final class CommitUtil
 
         return objectID.getName().substring(0, ABBREVIATED_LENGTH);
     }
+
+    public static boolean tagCommit(final Repository repository, ObjectId commitID, int changesetID)
+    {
+        final RevWalk walker = new RevWalk(repository);
+        try
+        {
+            GitTFConfiguration configuration = GitTFConfiguration.loadFrom(repository);
+
+            if (!configuration.getTag())
+            {
+                return false;
+            }
+
+            String tagName = Messages.formatString("CreateCommitTask.TagNameFormat", //$NON-NLS-1$
+                Integer.toString(changesetID));
+
+            RevObject objectToTag = walker.lookupCommit(commitID);
+
+            TagCommand tagCommand = new Git(repository).tag();
+            tagCommand.setName(tagName);
+            tagCommand.setObjectId(objectToTag);
+            tagCommand.setForceUpdate(true);
+            tagCommand.setTagger(new PersonIdent(GitTFConstants.GIT_TF_NAME, MessageFormat.format("{0} - {1}", //$NON-NLS-1$
+                configuration.getServerURI().toString(),
+                configuration.getServerPath())));
+
+            Ref tagRef = tagCommand.call();
+
+            if (tagRef == null || tagRef == ObjectId.zeroId())
+            {
+                log.warn("Failed to tag commit."); //$NON-NLS-1$
+            }
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            // this is not a critical failure so we can still continue with the
+            // operation even if tagging failed.
+
+            log.error(e);
+
+            return false;
+        }
+        finally
+        {
+            if (walker != null)
+            {
+                walker.release();
+            }
+        }
+    }
+
 }

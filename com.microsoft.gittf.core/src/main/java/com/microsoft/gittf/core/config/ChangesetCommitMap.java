@@ -41,6 +41,7 @@ import org.eclipse.jgit.util.FS;
 
 import com.microsoft.gittf.core.GitTFConstants;
 import com.microsoft.gittf.core.util.Check;
+import com.microsoft.gittf.core.util.CommitUtil;
 
 public class ChangesetCommitMap
 {
@@ -89,6 +90,8 @@ public class ChangesetCommitMap
         }
 
         configFile.save();
+
+        CommitUtil.tagCommit(repository, commitID, changesetID);
     }
 
     public int getChangesetID(ObjectId commitID)

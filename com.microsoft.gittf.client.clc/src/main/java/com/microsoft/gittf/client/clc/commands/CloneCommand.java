@@ -101,6 +101,15 @@ public class CloneCommand
                 Messages.getString("CloneCommand.Argument.Shallow.HelpText")) //$NON-NLS-1$
         ),
 
+        new ChoiceArgument(Messages.getString("Command.Argument.TagChoice.HelpText"), //$NON-NLS-1$
+            /* Users can specify one of --tag or --no-tag (Default: tag). */
+            new SwitchArgument("tag", //$NON-NLS-1$
+                Messages.getString("Command.Argument.Tag.HelpText")), //$NON-NLS-1$
+
+            new SwitchArgument("no-tag", //$NON-NLS-1$
+                Messages.getString("Command.Argument.NoTag.HelpText")) //$NON-NLS-1$
+        ),
+
         new FreeArgument("projectcollection", //$NON-NLS-1$
             Messages.getString("Command.Argument.ProjectCollection.HelpText"), //$NON-NLS-1$
             ArgumentOptions.REQUIRED),
@@ -151,6 +160,8 @@ public class CloneCommand
         boolean bare = getArguments().contains("bare"); //$NON-NLS-1$
         int depth = getDepthFromArguments();
 
+        boolean tag = getTagFromArguments();
+
         final URI serverURI = URIUtil.getServerURI(collection);
         tfsPath = ServerPath.canonicalize(tfsPath);
 
@@ -192,6 +203,7 @@ public class CloneCommand
             cloneTask.setBare(bare);
             cloneTask.setDepth(depth);
             cloneTask.setVersionSpec(versionSpec);
+            cloneTask.setTag(tag);
 
             final TaskStatus cloneStatus = new CommandTaskExecutor(getProgressMonitor()).execute(cloneTask);
 

@@ -444,7 +444,6 @@ public class CheckinHeadCommitTask
             }
 
             Check.notNull(lastToCommit, "lastToCommit"); //$NON-NLS-1$
-            Check.notNull(lastFromCommit, "lastFromCommit"); //$NON-NLS-1$
 
             prunedCommits.add(new CommitDelta(lastFromCommit, lastToCommit));
 

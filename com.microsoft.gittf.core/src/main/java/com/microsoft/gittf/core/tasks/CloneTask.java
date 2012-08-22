@@ -253,7 +253,7 @@ public class CloneTask
             else
             {
                 progressMonitor.displayMessage(Messages.formatString("CloneTask.ClonedMultipleFormat", //$NON-NLS-1$
-                    numberOfChangesetToDownload,
+                    changesets.length,
                     Integer.toString(finalChangesetID),
                     CommitUtil.abbreviate(repository, lastCommitID)));
             }

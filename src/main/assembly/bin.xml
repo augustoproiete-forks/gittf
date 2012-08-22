@@ -91,7 +91,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             <includes>
                 <include>**</include>
             </includes>
-			<fileMode>0644</fileMode>
+			      <fileMode>0644</fileMode>
+        </fileSet>
+        <fileSet>
+            <directory>com.microsoft.gittf.client.clc/license</directory>
+            <outputDirectory></outputDirectory>
+            <includes>
+              <include>**</include>
+            </includes>
+            <fileMode>0644</fileMode>
         </fileSet>
     </fileSets>
 </assembly>

@@ -25,6 +25,7 @@
 package com.microsoft.gittf.core.tasks;
 
 import com.microsoft.gittf.core.Messages;
+import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.tasks.framework.Task;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
@@ -33,16 +34,15 @@ import com.microsoft.tfs.core.clients.versioncontrol.GetOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.PendChangesOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.LockLevel;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
-import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.ItemSpec;
 
 public class LockTask
     extends Task
 {
-    private final Workspace workspace;
+    private final WorkspaceService workspace;
     private final String serverPath;
 
-    public LockTask(final Workspace workspace, final String serverPath)
+    public LockTask(final WorkspaceService workspace, final String serverPath)
     {
         Check.notNull(workspace, "workspace"); //$NON-NLS-1$
         Check.notNullOrEmpty(serverPath, "serverPath"); //$NON-NLS-1$

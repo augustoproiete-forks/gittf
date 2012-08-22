@@ -71,6 +71,12 @@ public class CheckinCommand
                 Messages.getString("Command.Argument.Verbose.HelpText")) //$NON-NLS-1$
         ),
 
+        new ValueArgument("message", //$NON-NLS-1$
+            'm',
+            Messages.getString("CheckinCommand.Argument.Message.ValueDescription"), //$NON-NLS-1$
+            Messages.getString("CheckinCommand.Argument.Message.HelpText"), //$NON-NLS-1$
+            ArgumentOptions.VALUE_REQUIRED),
+
         new ChoiceArgument(Messages.getString("CheckinCommand.Argument.DepthChoice.HelpText"), //$NON-NLS-1$
             /* Users can specify one of --deep, --depth or --shallow. */
             new SwitchArgument("deep", //$NON-NLS-1$
@@ -105,6 +111,8 @@ public class CheckinCommand
             ArgumentOptions.VALUE_REQUIRED.combine(ArgumentOptions.MULTIPLE)),
 
         new SwitchArgument("no-lock", Messages.getString("CheckinCommand.Argument.NoLock.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+
+        new SwitchArgument("preview", 'p', Messages.getString("CheckinCommand.Argument.Preview.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
 
         new SwitchArgument("bypass", //$NON-NLS-1$
             Messages.getString("CheckinCommand.Argument.Bypass.HelpText")), //$NON-NLS-1$
@@ -145,9 +153,17 @@ public class CheckinCommand
         }
 
         final boolean noLock = getArguments().contains("no-lock"); //$NON-NLS-1$
+        final boolean preview = getArguments().contains("preview"); //$NON-NLS-1$
         final boolean overrideGatedCheckin = getArguments().contains("bypass"); //$NON-NLS-1$
+        final boolean autoSquashMultipleParents = getArguments().contains("autosquash"); //$NON-NLS-1$
 
-        boolean autoSquashMultipleParents = getArguments().contains("autosquash"); //$NON-NLS-1$
+        String message = getArguments().contains("message") ? //$NON-NLS-1$
+            ((ValueArgument) getArguments().getArgument("message")).getValue() : null; //$NON-NLS-1$
+
+        if (deep && message != null)
+        {
+            Main.printWarning(Messages.getString("CheckinCommand.MessageWillBeIgnoreBecauseDeepSpecified")); //$NON-NLS-1$
+        }
 
         final CheckinHeadCommitTask checkinTask =
             new CheckinHeadCommitTask(
@@ -158,9 +174,11 @@ public class CheckinCommand
         checkinTask.setWorkItemCheckinInfo(getWorkItemCheckinInfo());
         checkinTask.setDeep(deep);
         checkinTask.setLock(!noLock);
+        checkinTask.setPreview(preview);
         checkinTask.setOverrideGatedCheckin(overrideGatedCheckin);
         checkinTask.setSquashCommitIDs(getSquashCommitIDs());
         checkinTask.setAutoSquash(autoSquashMultipleParents);
+        checkinTask.setComment(message);
 
         /*
          * Hook up a custom task executor that does not print gated errors to

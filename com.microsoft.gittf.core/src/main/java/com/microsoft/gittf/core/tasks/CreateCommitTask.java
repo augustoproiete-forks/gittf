@@ -569,9 +569,10 @@ public class CreateCommitTask
 
             if (commitId != null)
             {
+                final RevWalk walker = new RevWalk(repository);
+
                 try
                 {
-                    final RevWalk walker = new RevWalk(repository);
                     final RevCommit revCommit = walker.parseCommit(commitId);
                     commitRevTree = revCommit.getTree();
                     objectReader = repository.newObjectReader();
@@ -584,6 +585,13 @@ public class CreateCommitTask
                     objectReader = null;
 
                     return;
+                }
+                finally
+                {
+                    if (walker != null)
+                    {
+                        walker.release();
+                    }
                 }
 
                 Item[] items =

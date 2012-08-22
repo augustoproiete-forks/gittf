@@ -54,6 +54,7 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.config.GitTFConfiguration;
+import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.tasks.framework.Task;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressDisplay;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
@@ -69,7 +70,6 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.LockLevel;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
-import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.ItemSpec;
 
 public class PendDifferenceTask
@@ -82,7 +82,7 @@ public class PendDifferenceTask
     private final Repository repository;
     private final RevCommit commitFrom;
     private final RevCommit commitTo;
-    private final Workspace workspace;
+    private final WorkspaceService workspace;
     private final String serverPathRoot;
     private final File localWorkingFolder;
 
@@ -90,11 +90,13 @@ public class PendDifferenceTask
 
     private PendingChange[] pendingChanges;
 
+    private boolean validated = false;
+
     public PendDifferenceTask(
         final Repository repository,
         final RevCommit commitFrom,
         final RevCommit commitTo,
-        final Workspace workspace,
+        final WorkspaceService workspace,
         final String serverPathRoot,
         final File localWorkingFolder)
     {
@@ -173,7 +175,7 @@ public class PendDifferenceTask
 
         try
         {
-            validateTree(commitTo);
+            validate();
 
             analysis = analyzeDifferences(fromTree, toTree, analyzeMonitor);
         }
@@ -209,6 +211,17 @@ public class PendDifferenceTask
         progressMonitor.endTask();
 
         return TaskStatus.OK_STATUS;
+    }
+
+    public void validate()
+        throws Exception
+    {
+        if (!validated)
+        {
+            validateTree(commitTo);
+        }
+
+        validated = true;
     }
 
     private void validateTree(RevCommit commit)
@@ -510,7 +523,7 @@ public class PendDifferenceTask
 
         try
         {
-            errorListener = new WorkspaceOperationErrorListener(workspace);
+            errorListener = workspace.getErrorListener();
 
             progressMonitor.setDetail(Messages.getString("PendDifferencesTask.PendingDeletes")); //$NON-NLS-1$
             pendDeletes(analysis, errorListener);
@@ -542,7 +555,7 @@ public class PendDifferenceTask
                 false);
             progressMonitor.worked(1);
 
-            return pendingSet.getPendingChanges();
+            return pendingSet != null ? pendingSet.getPendingChanges() : null;
         }
         finally
         {
@@ -623,7 +636,8 @@ public class PendDifferenceTask
                 null,
                 GetOptions.NO_DISK_UPDATE,
                 PendChangesOptions.NONE,
-                null);
+                null,
+                true);
 
         errorListener.validate();
 
@@ -719,7 +733,8 @@ public class PendDifferenceTask
                 null,
                 GetOptions.NO_DISK_UPDATE,
                 PendChangesOptions.NONE,
-                null);
+                null,
+                false);
         }
 
         errorListener.validate();

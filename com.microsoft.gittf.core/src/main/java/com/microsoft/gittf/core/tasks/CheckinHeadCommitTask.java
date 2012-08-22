@@ -40,6 +40,7 @@ import com.microsoft.gittf.core.GitTFConstants;
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.config.ChangesetCommitMap;
 import com.microsoft.gittf.core.config.GitTFConfiguration;
+import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.tasks.framework.NullTaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskExecutor;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressDisplay;
@@ -59,7 +60,6 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.ItemType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
-import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 import com.microsoft.tfs.util.FileHelpers;
 
@@ -80,6 +80,8 @@ public class CheckinHeadCommitTask
     private boolean lock = true;
     private boolean overrideGatedCheckin;
     private boolean autoSquashMultipleParents;
+    private boolean preview = false;
+    private String comment = null;
 
     public CheckinHeadCommitTask(
         final Repository repository,
@@ -155,14 +157,36 @@ public class CheckinHeadCommitTask
         this.autoSquashMultipleParents = autoSquashMultipleParents;
     }
 
+    public boolean getPreview()
+    {
+        return preview;
+    }
+
+    public void setPreview(boolean preview)
+    {
+        this.preview = preview;
+    }
+
+    public String getComment()
+    {
+        return comment;
+    }
+
+    public void setComment(String comment)
+    {
+        this.comment = comment;
+    }
+
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {
         GitTFWorkspaceData workspaceData = null;
 
         progressMonitor.beginTask(
-            Messages.formatString(
-                "CheckinHeadCommitTask.CheckingInToPathFormat", GitTFConfiguration.loadFrom(repository).getServerPath()), 1, //$NON-NLS-1$
+            Messages.formatString("CheckinHeadCommitTask.CheckingInToPathFormat", //$NON-NLS-1$
+                preview ? Messages.getString("CheckinHeadCommitTask.Preview") : "", //$NON-NLS-1$ //$NON-NLS-2$
+                GitTFConfiguration.loadFrom(repository).getServerPath()),
+            1,
             TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
 
         try
@@ -171,10 +195,10 @@ public class CheckinHeadCommitTask
              * Create a temporary workspace
              */
 
-            final Workspace workspace;
-            final File workingFolder;
+            WorkspaceService workspace = null;
+            File workingFolder = null;
 
-            workspaceData = createWorkspace(progressMonitor.newSubTask(1));
+            workspaceData = createWorkspace(progressMonitor.newSubTask(1), preview);
 
             workspace = workspaceData.getWorkspace();
             workingFolder = workspaceData.getWorkingFolder();
@@ -199,7 +223,7 @@ public class CheckinHeadCommitTask
 
             final ChangesetCommitDetails lastBridgedChangeset = ChangesetCommitUtil.getLastBridgedChangeset(commitMap);
             final ChangesetCommitDetails latestChangeset =
-                ChangesetCommitUtil.getLatestChangeset(commitMap, workspace, serverPath);
+                ChangesetCommitUtil.getLatestChangeset(commitMap, versionControlClient, serverPath);
 
             /*
              * This is a repository that has been configured and never checked
@@ -209,7 +233,7 @@ public class CheckinHeadCommitTask
             if (lastBridgedChangeset == null || lastBridgedChangeset.getChangesetID() < 0)
             {
                 Item[] items =
-                    workspace.getClient().getItems(
+                    versionControlClient.getItems(
                         serverPath,
                         LatestVersionSpec.INSTANCE,
                         RecursionType.FULL,
@@ -294,6 +318,45 @@ public class CheckinHeadCommitTask
                         serverPath,
                         workingFolder);
 
+                pendTask.validate();
+
+                if (preview)
+                {
+                    if (i == 0)
+                    {
+                        progressMonitor.displayMessage(Messages.getString("CheckinHeadCommitTask.CheckedInPreview")); //$NON-NLS-1$
+                        progressMonitor.displayMessage(""); //$NON-NLS-1$
+                    }
+
+                    ObjectId fromCommit = commitDelta.getFromCommit();
+                    ObjectId toCommit = commitDelta.getToCommit();
+
+                    if (fromCommit == null || fromCommit == ObjectId.zeroId() || commitsToCheckin.size() != 1)
+                    {
+                        progressMonitor.displayMessage(Messages.formatString(
+                            "CheckinHeadCommitTask.CheckedInPreviewSingleCommitFormat", //$NON-NLS-1$
+                            i + 1,
+                            CommitUtil.abbreviate(repository, toCommit)));
+                    }
+                    else
+                    {
+                        progressMonitor.displayMessage(Messages.formatString(
+                            "CheckinHeadCommitTask.CheckedInPreviewDifferenceCommitsFormat", //$NON-NLS-1$
+                            i + 1,
+                            CommitUtil.abbreviate(repository, fromCommit),
+                            CommitUtil.abbreviate(repository, toCommit)));
+                    }
+
+                    String checkinComment =
+                        deep || comment == null ? commitDelta.getToCommit().getFullMessage() : comment;
+
+                    progressMonitor.displayMessage(""); //$NON-NLS-1$
+                    progressMonitor.displayMessage(getCommentDisplayString(checkinComment));
+
+                    progressMonitor.displayMessage(Messages.getString("CheckinHeadCommitTask.CheckedInPreviewTableHeader")); //$NON-NLS-1$
+                    progressMonitor.displayMessage("---------------------------------------------------------------------"); //$NON-NLS-1$
+                }
+
                 final TaskStatus pendStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(pendTask);
 
                 if (!pendStatus.isOK())
@@ -308,35 +371,46 @@ public class CheckinHeadCommitTask
 
                 anyThingCheckedIn = true;
 
-                final CheckinPendingChangesTask checkinTask =
-                    new CheckinPendingChangesTask(
-                        repository,
-                        commitDelta.getToCommit(),
-                        workspace,
-                        pendTask.getPendingChanges());
-
-                if (isLastCommit)
+                if (!preview)
                 {
-                    checkinTask.setWorkItemCheckinInfo(workItems);
+                    final CheckinPendingChangesTask checkinTask =
+                        new CheckinPendingChangesTask(
+                            repository,
+                            commitDelta.getToCommit(),
+                            workspace,
+                            pendTask.getPendingChanges());
+
+                    if (isLastCommit)
+                    {
+                        checkinTask.setWorkItemCheckinInfo(workItems);
+                    }
+
+                    checkinTask.setOverrideGatedCheckin(overrideGatedCheckin);
+                    checkinTask.setComment(comment);
+
+                    progressMonitor.setDetail(Messages.getString("CheckinHeadCommitTask.CheckingIn")); //$NON-NLS-1$
+
+                    final TaskStatus checkinStatus =
+                        new TaskExecutor(progressMonitor.newSubTask(1)).execute(checkinTask);
+
+                    if (!checkinStatus.isOK())
+                    {
+                        return checkinStatus;
+                    }
+
+                    lastChangesetID = checkinTask.getChangesetID();
+                    lastCommitID = commitDelta.getToCommit();
+
+                    progressMonitor.displayVerbose(Messages.formatString(
+                        "CheckinHeadCommitTask.CheckedInChangesetFormat", //$NON-NLS-1$
+                        CommitUtil.abbreviate(repository, lastCommitID),
+                        Integer.toString(checkinTask.getChangesetID())));
                 }
-
-                checkinTask.setOverrideGatedCheckin(overrideGatedCheckin);
-
-                progressMonitor.setDetail(Messages.getString("CheckinHeadCommitTask.CheckingIn")); //$NON-NLS-1$
-
-                final TaskStatus checkinStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(checkinTask);
-
-                if (!checkinStatus.isOK())
+                else
                 {
-                    return checkinStatus;
+                    progressMonitor.displayMessage("---------------------------------------------------------------------"); //$NON-NLS-1$
+                    progressMonitor.displayMessage(""); //$NON-NLS-1$
                 }
-
-                lastChangesetID = checkinTask.getChangesetID();
-                lastCommitID = commitDelta.getToCommit();
-
-                progressMonitor.displayVerbose(Messages.formatString("CheckinHeadCommitTask.CheckedInChangesetFormat", //$NON-NLS-1$
-                    CommitUtil.abbreviate(repository, lastCommitID),
-                    Integer.toString(checkinTask.getChangesetID())));
             }
 
             final TaskProgressMonitor cleanupMonitor = progressMonitor.newSubTask(1);
@@ -345,21 +419,24 @@ public class CheckinHeadCommitTask
 
             progressMonitor.endTask();
 
-            // There was nothing detected to checkin.
-            if (!anyThingCheckedIn)
+            if (!preview)
             {
-                return new TaskStatus(TaskStatus.OK, CheckinHeadCommitTask.ALREADY_UP_TO_DATE);
-            }
+                // There was nothing detected to checkin.
+                if (!anyThingCheckedIn)
+                {
+                    return new TaskStatus(TaskStatus.OK, CheckinHeadCommitTask.ALREADY_UP_TO_DATE);
+                }
 
-            if (commitsToCheckin.size() == 1)
-            {
-                progressMonitor.displayMessage(Messages.formatString(
-                    "CheckinHeadCommitTask.CheckedInFormat", CommitUtil.abbreviate(repository, lastCommitID), Integer.toString(lastChangesetID))); //$NON-NLS-1$
-            }
-            else
-            {
-                progressMonitor.displayMessage(Messages.formatString(
-                    "CheckinHeadCommitTask.CheckedInMultipleFormat", Integer.toString(commitsToCheckin.size()), Integer.toString(lastChangesetID))); //$NON-NLS-1$                
+                if (commitsToCheckin.size() == 1)
+                {
+                    progressMonitor.displayMessage(Messages.formatString(
+                        "CheckinHeadCommitTask.CheckedInFormat", CommitUtil.abbreviate(repository, lastCommitID), Integer.toString(lastChangesetID))); //$NON-NLS-1$
+                }
+                else
+                {
+                    progressMonitor.displayMessage(Messages.formatString(
+                        "CheckinHeadCommitTask.CheckedInMultipleFormat", Integer.toString(commitsToCheckin.size()), Integer.toString(lastChangesetID))); //$NON-NLS-1$                
+                }
             }
 
             return TaskStatus.OK_STATUS;
@@ -375,6 +452,20 @@ public class CheckinHeadCommitTask
                 cleanupWorkspace(new NullTaskProgressMonitor(), workspaceData);
             }
         }
+    }
+
+    private String getCommentDisplayString(String checkinComment)
+    {
+        String NEW_LINE = System.getProperty("line.separator"); //$NON-NLS-1$
+        String[] lines = checkinComment.split("\n|\r"); //$NON-NLS-1$
+
+        StringBuilder sb = new StringBuilder();
+        for (String line : lines)
+        {
+            sb.append(MessageFormat.format("    {0}{1}", line, NEW_LINE)); //$NON-NLS-1$
+        }
+
+        return sb.toString();
     }
 
     private final void cleanWorkingFolder(final File workingFolder)
@@ -460,7 +551,7 @@ public class CheckinHeadCommitTask
             return;
         }
 
-        final Workspace workspace = workspaceData.getWorkspace();
+        final WorkspaceService workspace = workspaceData.getWorkspace();
 
         progressMonitor.beginTask(Messages.getString("CheckinHeadCommitTask.DeletingWorkspace"), //$NON-NLS-1$
             TaskProgressMonitor.INDETERMINATE,

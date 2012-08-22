@@ -31,13 +31,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jgit.lib.Repository;
 
+import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.tasks.framework.Task;
 import com.microsoft.gittf.core.tasks.framework.TaskExecutor;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
-import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 
 public abstract class WorkspaceTask
     extends Task
@@ -45,10 +45,11 @@ public abstract class WorkspaceTask
     private final Log log = LogFactory.getLog(this.getClass());
 
     private final Repository repository;
-    private final VersionControlClient versionControlClient;
     private final String serverPath;
 
     private GitTFWorkspaceData workspaceData;
+
+    protected final VersionControlClient versionControlClient;
 
     protected WorkspaceTask(
         final Repository repository,
@@ -67,12 +68,20 @@ public abstract class WorkspaceTask
     protected GitTFWorkspaceData createWorkspace(final TaskProgressMonitor progressMonitor)
         throws Exception
     {
+        return createWorkspace(progressMonitor, false);
+    }
+
+    protected GitTFWorkspaceData createWorkspace(final TaskProgressMonitor progressMonitor, boolean previewOnly)
+        throws Exception
+    {
         Check.notNull(progressMonitor, "progressMonitor"); //$NON-NLS-1$
 
         if (workspaceData == null)
         {
             final CreateWorkspaceTask createTask =
                 new CreateWorkspaceTask(versionControlClient, serverPath, repository);
+            createTask.setPreview(previewOnly);
+
             final TaskStatus createStatus = new TaskExecutor(progressMonitor).execute(createTask);
 
             if (!createStatus.isOK() && createStatus.getException() != null)
@@ -100,7 +109,6 @@ public abstract class WorkspaceTask
             {
                 deleteWorkspaceStatus =
                     new TaskExecutor(progressMonitor).execute(new DeleteWorkspaceTask(
-                        versionControlClient,
                         workspaceData.getWorkspace(),
                         workspaceData.getWorkingFolder()));
             }
@@ -118,10 +126,10 @@ public abstract class WorkspaceTask
 
     protected static final class GitTFWorkspaceData
     {
-        private final Workspace workspace;
+        private final WorkspaceService workspace;
         private final File workingFolder;
 
-        private GitTFWorkspaceData(final Workspace workspace, final File workingFolder)
+        private GitTFWorkspaceData(final WorkspaceService workspace, final File workingFolder)
         {
             Check.notNull(workspace, "workspace"); //$NON-NLS-1$
             Check.notNull(workingFolder, "workingFolder"); //$NON-NLS-1$
@@ -130,7 +138,7 @@ public abstract class WorkspaceTask
             this.workingFolder = workingFolder;
         }
 
-        public Workspace getWorkspace()
+        public WorkspaceService getWorkspace()
         {
             return workspace;
         }

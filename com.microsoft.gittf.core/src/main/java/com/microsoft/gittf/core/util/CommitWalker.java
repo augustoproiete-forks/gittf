@@ -190,7 +190,10 @@ public final class CommitWalker
         }
         finally
         {
-            walker.dispose();
+            if (walker != null)
+            {
+                walker.dispose();
+            }
         }
 
         Collections.reverse(commitList);

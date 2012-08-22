@@ -39,6 +39,8 @@ public class WorkspaceOperationErrorListener
     private String lastError;
     private Throwable lastException;
 
+    public static final WorkspaceOperationErrorListener EMPTY = new WorkspaceOperationErrorListener();
+
     public WorkspaceOperationErrorListener(Workspace workspace)
     {
         Check.notNull(workspace, "workspace"); //$NON-NLS-1$
@@ -46,6 +48,11 @@ public class WorkspaceOperationErrorListener
         this.workspace = workspace;
 
         initialize();
+    }
+
+    private WorkspaceOperationErrorListener()
+    {
+
     }
 
     public void onNonFatalError(NonFatalErrorEvent event)
@@ -86,11 +93,17 @@ public class WorkspaceOperationErrorListener
 
     public void dispose()
     {
-        workspace.getClient().getEventEngine().removeNonFatalErrorListener(this);
+        if (workspace != null)
+        {
+            workspace.getClient().getEventEngine().removeNonFatalErrorListener(this);
+        }
     }
 
     private void initialize()
     {
-        workspace.getClient().getEventEngine().addNonFatalErrorListener(this);
+        if (workspace != null)
+        {
+            workspace.getClient().getEventEngine().addNonFatalErrorListener(this);
+        }
     }
 }

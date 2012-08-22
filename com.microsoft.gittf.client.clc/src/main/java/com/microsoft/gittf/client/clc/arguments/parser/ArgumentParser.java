@@ -273,11 +273,19 @@ public class ArgumentParser
              */
             else if (commandLine[i].startsWith("-") && !nextArgumentLiteral) //$NON-NLS-1$
             {
+                String[] nameValue = null;
+                if (commandLine[i].contains("=")) //$NON-NLS-1$
+                {
+                    nameValue = commandLine[i].split("=", 2); //$NON-NLS-1$
+                }
+
                 /*
                  * Multiple switches may be combined, eg "-asdf" ==
                  * "-a -s -d -f"
                  */
-                char[] switches = commandLine[i].substring(1).toCharArray();
+                char[] switches =
+                    nameValue != null ? nameValue[0].substring(1).toCharArray()
+                        : commandLine[i].substring(1).toCharArray();
 
                 for (int j = 0; j < switches.length; j++)
                 {
@@ -300,11 +308,22 @@ public class ArgumentParser
                         handleUnknownArgument(MessageFormat.format("-{0}", switches[j]), arguments, options); //$NON-NLS-1$
                     }
 
-                    /* The last switch may be a value argument */
-                    if (j == switches.length - 1 && argument instanceof ValueArgument)
+                    /* The first switch may be a value argument */
+                    if (j == 0 && nameValue == null && commandLine[i].length() > 2 && argument instanceof ValueArgument)
                     {
+                        ((ValueArgument) argument).setValue(commandLine[i].substring(2));
+                        arguments.add(argument);
+                        break;
+                    }
+                    /* The last switch may be a value argument */
+                    else if (j == switches.length - 1 && argument instanceof ValueArgument)
+                    {
+                        if (nameValue != null)
+                        {
+                            ((ValueArgument) argument).setValue(nameValue[1]);
+                        }
                         /* Consume the next argument as the value for this one */
-                        if (argument instanceof ValueArgument)
+                        else
                         {
                             if ((i + 1) >= commandLine.length)
                             {
@@ -317,6 +336,13 @@ public class ArgumentParser
                             i++;
                             ((ValueArgument) argument).setValue(commandLine[i]);
                         }
+                    }
+                    else if (j < switches.length && argument instanceof ValueArgument)
+                    {
+                        // add 2 to make up for the - & the argument alias
+                        ((ValueArgument) argument).setValue(commandLine[i].substring(j + 2));
+                        arguments.add(argument);
+                        break;
                     }
                     else if (argument instanceof ValueArgument)
                     {

@@ -52,6 +52,9 @@ public class ArgumentParserTest
         new ValueArgument("value-one", '1', "value one", "value one", ArgumentOptions.VALUE_REQUIRED),
         new ValueArgument("value-two", '2', "value two", "value two", ArgumentOptions.VALUE_REQUIRED),
         new ValueArgument("value-three", '3', "value three", "value three"),
+        new ValueArgument("value-four", '4', "value four", "value four", ArgumentOptions.VALUE_REQUIRED),
+        new ValueArgument("value-five", '5', "value five", "value five", ArgumentOptions.VALUE_REQUIRED),
+        new ValueArgument("value-six", '6', "value six", "value six", ArgumentOptions.VALUE_REQUIRED),
 
         new ValueArgument(
             "multiple",
@@ -71,6 +74,47 @@ public class ArgumentParserTest
 
         new FreeArgument("free-2", "free two"),
     };
+
+    public void testAliasValue()
+        throws Exception
+    {
+        ArgumentCollection args =
+            ArgumentParser.parse(new String[]
+            {
+                "-1",
+                "Argument Value is test Alias Value 1",
+                "-2=Argument Value is test Alias Value 2",
+                "-3=Argument Value is test Alias Value 3",
+                "-4Argument4",
+                "-5Argument Value in test Alias Value 5",
+                "-a6Argument Value in test Alias Value 6",
+            }, TEST_ARGUMENTS);
+
+        assertTrue(args.contains("value-one"));
+        assertTrue(args.contains("value-two"));
+        assertTrue(args.contains("value-three"));
+        assertTrue(args.contains("value-four"));
+        assertTrue(args.contains("value-five"));
+        assertTrue(args.contains("value-six"));
+
+        String v1 = ((ValueArgument) args.getArgument("value-one")).getValue();
+        assertEquals(v1, "Argument Value is test Alias Value 1");
+
+        String v2 = ((ValueArgument) args.getArgument("value-two")).getValue();
+        assertEquals(v2, "Argument Value is test Alias Value 2");
+
+        String v3 = ((ValueArgument) args.getArgument("value-three")).getValue();
+        assertEquals(v3, "Argument Value is test Alias Value 3");
+
+        String v4 = ((ValueArgument) args.getArgument("value-four")).getValue();
+        assertEquals(v4, "Argument4");
+
+        String v5 = ((ValueArgument) args.getArgument("value-five")).getValue();
+        assertEquals(v5, "Argument Value in test Alias Value 5");
+
+        String v6 = ((ValueArgument) args.getArgument("value-six")).getValue();
+        assertEquals(v6, "Argument Value in test Alias Value 6");
+    }
 
     public void testCaseSensitive()
         throws Exception

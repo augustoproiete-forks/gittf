@@ -36,6 +36,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.config.ChangesetCommitMap;
 import com.microsoft.gittf.core.config.GitTFConfiguration;
+import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.tasks.framework.NullTaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskExecutor;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressDisplay;
@@ -48,7 +49,6 @@ import com.microsoft.gittf.core.util.CommitWalker;
 import com.microsoft.gittf.core.util.CommitWalker.CommitDelta;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
-import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 
 public class ShelveDifferenceTask
     extends WorkspaceTask
@@ -115,7 +115,7 @@ public class ShelveDifferenceTask
         {
             workspaceData = createWorkspace(progressMonitor.newSubTask(1));
 
-            final Workspace workspace = workspaceData.getWorkspace();
+            final WorkspaceService workspace = workspaceData.getWorkspace();
             final File workingFolder = workspaceData.getWorkingFolder();
 
             final ChangesetCommitMap commitMap = new ChangesetCommitMap(repository);

@@ -1,0 +1,175 @@
+/***********************************************************************************************
+ * Copyright (c) Microsoft Corporation All rights reserved.
+ * 
+ * MIT License:
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ ***********************************************************************************************/
+
+package com.microsoft.gittf.core.impl;
+
+import com.microsoft.gittf.core.Messages;
+import com.microsoft.gittf.core.interfaces.WorkspaceService;
+import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
+import com.microsoft.gittf.core.util.Check;
+import com.microsoft.gittf.core.util.WorkspaceOperationErrorListener;
+import com.microsoft.tfs.core.clients.versioncontrol.CheckinFlags;
+import com.microsoft.tfs.core.clients.versioncontrol.GetOptions;
+import com.microsoft.tfs.core.clients.versioncontrol.PendChangesOptions;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.CheckinNote;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.LockLevel;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PolicyOverrideInfo;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
+import com.microsoft.tfs.core.clients.versioncontrol.specs.ItemSpec;
+import com.microsoft.tfs.core.util.FileEncoding;
+
+public class PreviewOnlyWorkspace
+    implements WorkspaceService
+{
+    private final TaskProgressMonitor progressMonitor;
+
+    public PreviewOnlyWorkspace(TaskProgressMonitor progressMonitor)
+    {
+        Check.notNull(progressMonitor, "progressMonitor"); //$NON-NLS-1$
+
+        this.progressMonitor = progressMonitor;
+    }
+
+    public void deleteWorkspace()
+    {
+    }
+
+    public int setLock(ItemSpec[] itemSpecs, LockLevel loclLevel, GetOptions getOptions, PendChangesOptions pendOptions)
+    {
+        return itemSpecs.length;
+    }
+
+    public int pendAdd(
+        String[] items,
+        boolean recursive,
+        FileEncoding fileEncoding,
+        LockLevel lockLevel,
+        GetOptions getOptions,
+        PendChangesOptions pendOptions)
+    {
+        for (String item : items)
+        {
+            progressMonitor.displayMessage(Messages.formatString("PreviewOnlyWorkspace.AddFormat", item)); //$NON-NLS-1$
+        }
+
+        return items.length;
+    }
+
+    public int pendDelete(
+        ItemSpec[] itemSpecs,
+        LockLevel lockLevel,
+        GetOptions getOptions,
+        PendChangesOptions pendOptions)
+    {
+        for (ItemSpec item : itemSpecs)
+        {
+            progressMonitor.displayMessage(Messages.formatString("PreviewOnlyWorkspace.DeleteFormat", item.getItem())); //$NON-NLS-1$
+        }
+
+        return itemSpecs.length;
+    }
+
+    public int pendEdit(
+        ItemSpec[] itemSpecs,
+        LockLevel[] loclLevels,
+        FileEncoding[] fileEncodings,
+        GetOptions getOptions,
+        PendChangesOptions pendOptions,
+        String[] arg5,
+        boolean display)
+    {
+        if (display)
+        {
+            for (ItemSpec item : itemSpecs)
+            {
+                progressMonitor.displayMessage(Messages.formatString("PreviewOnlyWorkspace.EditFormat", item.getItem())); //$NON-NLS-1$
+            }
+        }
+
+        return itemSpecs.length;
+    }
+
+    public int pendRename(
+        String[] oldPaths,
+        String[] newPaths,
+        LockLevel lockLevel,
+        GetOptions getOptions,
+        boolean detectTargetItemType,
+        PendChangesOptions pendOptions)
+    {
+        for (String item : oldPaths)
+        {
+            progressMonitor.displayMessage(Messages.formatString("PreviewOnlyWorkspace.RenameFormat", item)); //$NON-NLS-1$
+        }
+
+        return oldPaths.length;
+    }
+
+    public void undo(ItemSpec[] itemSpecs)
+    {
+
+    }
+
+    public void undo(ItemSpec[] itemSpecs, GetOptions getOptions)
+    {
+
+    }
+
+    public PendingSet getPendingChanges(String[] serverPaths, RecursionType recursionType, boolean includeDownloadInfo)
+    {
+        return null;
+    }
+
+    public boolean canCheckIn()
+    {
+        return false;
+    }
+
+    public int checkIn(
+        PendingChange[] changes,
+        String author,
+        String authorDisplayName,
+        String fullMessage,
+        CheckinNote checkinNote,
+        WorkItemCheckinInfo[] associatedWorkItems,
+        PolicyOverrideInfo policyOverrideInfo,
+        CheckinFlags flags)
+    {
+        return 0;
+    }
+
+    public void shelve(Shelveset shelveset, PendingChange[] changes, boolean replace, boolean move)
+    {
+
+    }
+
+    public WorkspaceOperationErrorListener getErrorListener()
+    {
+        return WorkspaceOperationErrorListener.EMPTY;
+    }
+}

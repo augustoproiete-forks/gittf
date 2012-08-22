@@ -25,22 +25,22 @@
 package com.microsoft.gittf.core.tasks;
 
 import com.microsoft.gittf.core.Messages;
+import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.tasks.framework.Task;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.tfs.core.clients.versioncontrol.GetOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
-import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.ItemSpec;
 
 public class UnlockTask
     extends Task
 {
-    private final Workspace workspace;
+    private final WorkspaceService workspace;
     private final String serverPath;
 
-    public UnlockTask(final Workspace workspace, final String serverPath)
+    public UnlockTask(final WorkspaceService workspace, final String serverPath)
     {
         Check.notNull(workspace, "workspace"); //$NON-NLS-1$
         Check.notNullOrEmpty(serverPath, "serverPath"); //$NON-NLS-1$

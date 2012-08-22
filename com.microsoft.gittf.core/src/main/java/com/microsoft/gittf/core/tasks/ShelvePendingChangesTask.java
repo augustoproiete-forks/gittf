@@ -30,6 +30,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 import com.microsoft.gittf.core.Messages;
+import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.tasks.framework.Task;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
@@ -38,13 +39,12 @@ import com.microsoft.tfs.core.clients.versioncontrol.VersionControlConstants;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
-import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 
 public class ShelvePendingChangesTask
     extends Task
 {
     private final RevCommit commit;
-    private final Workspace workspace;
+    private final WorkspaceService workspace;
     private final PendingChange[] changes;
     private final String shelvesetName;
 
@@ -54,7 +54,7 @@ public class ShelvePendingChangesTask
     public ShelvePendingChangesTask(
         final Repository repository,
         final RevCommit commit,
-        final Workspace workspace,
+        final WorkspaceService workspace,
         final PendingChange[] changes,
         final String shelvesetName)
     {

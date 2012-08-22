@@ -29,6 +29,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.config.ChangesetCommitMap;
+import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.tasks.framework.Task;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
@@ -36,31 +37,30 @@ import com.microsoft.gittf.core.util.Check;
 import com.microsoft.tfs.core.clients.versioncontrol.CheckinFlags;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
-import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 
 public class CheckinPendingChangesTask
     extends Task
 {
     private final Repository repository;
     private final RevCommit commit;
-    private final Workspace workspace;
+    private final WorkspaceService workspace;
     private final PendingChange[] changes;
 
     private WorkItemCheckinInfo[] workItems;
     private boolean overrideGatedCheckin;
+    private String comment = null;
 
     private int changesetID = -1;
 
     public CheckinPendingChangesTask(
         final Repository repository,
         final RevCommit commit,
-        final Workspace workspace,
+        final WorkspaceService workspace,
         final PendingChange[] changes)
     {
         Check.notNull(repository, "repository"); //$NON-NLS-1$
         Check.notNull(commit, "commit"); //$NON-NLS-1$
         Check.notNull(workspace, "workspace"); //$NON-NLS-1$
-        Check.notNull(changes, "changes"); //$NON-NLS-1$
         Check.isTrue(changes.length > 0, "changes.length > 0"); //$NON-NLS-1$
 
         this.repository = repository;
@@ -79,6 +79,16 @@ public class CheckinPendingChangesTask
         this.overrideGatedCheckin = overrideGatedCheckin;
     }
 
+    public String getComment()
+    {
+        return comment;
+    }
+
+    public void setComment(String comment)
+    {
+        this.comment = comment;
+    }
+
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {
@@ -95,11 +105,22 @@ public class CheckinPendingChangesTask
                 checkinFlags = checkinFlags.combine(CheckinFlags.OVERRIDE_GATED_CHECK_IN);
             }
 
-            changesetID =
-                workspace.checkIn(changes, null, null, commit.getFullMessage(), null, workItems, null, checkinFlags);
+            if (workspace.canCheckIn())
+            {
+                changesetID =
+                    workspace.checkIn(
+                        changes,
+                        null,
+                        null,
+                        comment == null ? commit.getFullMessage() : comment,
+                        null,
+                        workItems,
+                        null,
+                        checkinFlags);
 
-            commitMap.setChangesetCommit(changesetID, commit.getId());
+                commitMap.setChangesetCommit(changesetID, commit.getId());
 
+            }
             progressMonitor.endTask();
         }
         catch (Exception e)

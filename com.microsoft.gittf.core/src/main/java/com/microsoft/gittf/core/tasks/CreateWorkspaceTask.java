@@ -33,6 +33,9 @@ import org.eclipse.jgit.lib.Repository;
 
 import com.microsoft.gittf.core.GitTFConstants;
 import com.microsoft.gittf.core.Messages;
+import com.microsoft.gittf.core.impl.PreviewOnlyWorkspace;
+import com.microsoft.gittf.core.impl.TfsWorkspace;
+import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.tasks.framework.Task;
 import com.microsoft.gittf.core.tasks.framework.TaskExecutor;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressDisplay;
@@ -59,8 +62,9 @@ public class CreateWorkspaceTask
     private final String serverPath;
 
     private boolean updateLocalVersion = true;
+    private boolean preview = false;
 
-    private Workspace workspace;
+    private WorkspaceService workspace;
     private File workingFolder;
 
     public CreateWorkspaceTask(
@@ -75,6 +79,16 @@ public class CreateWorkspaceTask
         this.versionControlClient = versionControlClient;
         this.repository = repository;
         this.serverPath = serverPath;
+    }
+
+    public boolean getPreview()
+    {
+        return preview;
+    }
+
+    public void setPreview(boolean preview)
+    {
+        this.preview = preview;
     }
 
     @Override
@@ -109,26 +123,37 @@ public class CreateWorkspaceTask
                     workingFolder.getAbsolutePath()));
             }
 
-            tempWorkspace = versionControlClient.createWorkspace(new WorkingFolder[]
+            if (!preview)
             {
-                new WorkingFolder(serverPath, tempFolder.getAbsolutePath())
-            }, workspaceName, Messages.getString("CreateWorkspaceTask.WorkspaceComment"), //$NON-NLS-1$
-                WorkspaceLocation.SERVER,
-                WorkspaceOptions.NONE);
-
-            if (updateLocalVersion)
-            {
-                TaskStatus updateStatus =
-                    new TaskExecutor(progressMonitor.newSubTask(TaskProgressMonitor.INDETERMINATE)).execute(new UpdateLocalVersionToLatestDownloadedChangesetTask(
-                        repository,
-                        tempWorkspace));
-
-                if (!updateStatus.isOK())
+                tempWorkspace = versionControlClient.createWorkspace(new WorkingFolder[]
                 {
-                    cleanup = true;
-                    return updateStatus;
+                    new WorkingFolder(serverPath, tempFolder.getAbsolutePath())
+                }, workspaceName, Messages.getString("CreateWorkspaceTask.WorkspaceComment"), //$NON-NLS-1$
+                    WorkspaceLocation.SERVER,
+                    WorkspaceOptions.NONE);
+
+                if (updateLocalVersion)
+                {
+                    TaskStatus updateStatus =
+                        new TaskExecutor(progressMonitor.newSubTask(TaskProgressMonitor.INDETERMINATE)).execute(new UpdateLocalVersionToLatestDownloadedChangesetTask(
+                            repository,
+                            tempWorkspace));
+
+                    if (!updateStatus.isOK())
+                    {
+                        cleanup = true;
+                        return updateStatus;
+                    }
                 }
+
+                this.workspace = new TfsWorkspace(tempWorkspace);
             }
+            else
+            {
+                this.workspace = new PreviewOnlyWorkspace(progressMonitor);
+            }
+
+            this.workingFolder = tempFolder;
 
             progressMonitor.endTask();
         }
@@ -166,13 +191,10 @@ public class CreateWorkspaceTask
             }
         }
 
-        this.workingFolder = tempFolder;
-        this.workspace = tempWorkspace;
-
         return TaskStatus.OK_STATUS;
     }
 
-    public Workspace getWorkspace()
+    public WorkspaceService getWorkspace()
     {
         return workspace;
     }

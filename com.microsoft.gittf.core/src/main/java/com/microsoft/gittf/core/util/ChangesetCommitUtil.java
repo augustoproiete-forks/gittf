@@ -27,10 +27,10 @@ package com.microsoft.gittf.core.util;
 import org.eclipse.jgit.lib.ObjectId;
 
 import com.microsoft.gittf.core.config.ChangesetCommitMap;
+import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.path.ServerPath;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
-import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 
@@ -64,11 +64,11 @@ public final class ChangesetCommitUtil
 
     public static ChangesetCommitDetails getLatestChangeset(
         ChangesetCommitMap commitMap,
-        Workspace workspace,
+        VersionControlClient versionControlClient,
         final String serverPath)
     {
         Check.notNull(commitMap, "commitMap"); //$NON-NLS-1$
-        Check.notNull(workspace, "workspace"); //$NON-NLS-1$
+        Check.notNull(versionControlClient, "versionControlClient"); //$NON-NLS-1$
         Check.notNull(serverPath, "serverPath"); //$NON-NLS-1$
         Check.isTrue(ServerPath.isServerPath(serverPath), "serverPath.isServerPath"); //$NON-NLS-1$
 
@@ -77,7 +77,7 @@ public final class ChangesetCommitUtil
          * destination path exists and its current changeset.
          */
         Changeset[] changesets =
-            workspace.getClient().queryHistory(
+            versionControlClient.queryHistory(
                 serverPath,
                 LatestVersionSpec.INSTANCE,
                 0,

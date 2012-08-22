@@ -342,6 +342,12 @@ public class Main
         }
     }
 
+    public static void printWarning(String warningMessage)
+    {
+        String message = Messages.formatString("Main.WarningFormat", warningMessage); //$NON-NLS-1$
+        printError(message, false);
+    }
+
     public static void printError(String message)
     {
         printError(message, true);

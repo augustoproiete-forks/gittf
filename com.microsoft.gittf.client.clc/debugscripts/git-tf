@@ -45,7 +45,7 @@ esac
 # On cygwin and mingw32, simply run the cmd script, otherwise we'd have to
 # figure out how to mangle the paths appropriately for each platform
 if [ "$PLATFORM" = "cygwin" -o "$PLATFORM" = "mingw32" ]; then
-	exec cmd //C "$0.cmd" "$@"
+	exec $COMSPEC //C "$0.cmd" "$@"
 fi
 
 # BASE_DIRECTORY is the directory containing the Java libraries

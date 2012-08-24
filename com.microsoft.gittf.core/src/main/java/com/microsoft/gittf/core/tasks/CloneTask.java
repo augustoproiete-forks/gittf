@@ -47,6 +47,7 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.gittf.core.util.CommitUtil;
+import com.microsoft.gittf.core.util.TfsBranchUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.GetItemsOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.DeletedState;
@@ -236,6 +237,9 @@ public class CloneTask
             RefUpdate ref = repository.updateRef(Constants.R_HEADS + Constants.MASTER);
             ref.setNewObjectId(lastCommitID);
             ref.update();
+
+            /* Create tfs branch */
+            TfsBranchUtil.create(repository, Constants.R_HEADS + Constants.MASTER);
 
             /*
              * Check out the cloned commit.

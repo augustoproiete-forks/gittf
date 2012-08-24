@@ -51,6 +51,7 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.gittf.core.util.CommitUtil;
+import com.microsoft.gittf.core.util.TfsBranchUtil;
 import com.microsoft.gittf.core.util.VersionSpecUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
@@ -233,6 +234,8 @@ public class FetchTask
 
         progressMonitor.endTask();
 
+        /* update fetch head */
+
         if (shouldUpdateFetchHead)
         {
             boolean updatedFetchHead = false;
@@ -276,6 +279,15 @@ public class FetchTask
                         CommitUtil.abbreviate(repository, finalCommitID)));
                 }
             }
+        }
+
+        try
+        {
+            TfsBranchUtil.update(repository, finalCommitID);
+        }
+        catch (Exception e)
+        {
+            return new TaskStatus(TaskStatus.ERROR, e);
         }
 
         log.info("Fetch task complete"); //$NON-NLS-1$

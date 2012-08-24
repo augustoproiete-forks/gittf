@@ -34,6 +34,7 @@ import com.microsoft.gittf.client.clc.arguments.Argument;
 import com.microsoft.gittf.client.clc.arguments.ChoiceArgument;
 import com.microsoft.gittf.client.clc.arguments.FreeArgument;
 import com.microsoft.gittf.client.clc.arguments.SwitchArgument;
+import com.microsoft.gittf.client.clc.arguments.ValueArgument;
 import com.microsoft.gittf.client.clc.commands.framework.Command;
 import com.microsoft.gittf.client.clc.commands.framework.CommandTaskExecutor;
 import com.microsoft.gittf.core.config.GitTFConfiguration;
@@ -88,6 +89,10 @@ public class ConfigureCommand
             new SwitchArgument("no-tag", //$NON-NLS-1$
                 Messages.getString("Command.Argument.NoTag.HelpText")) //$NON-NLS-1$
         ),
+
+        new ValueArgument("git-dir", //$NON-NLS-1$
+            Messages.getString("CloneCommand.Argument.GitDir.ValueDescription"), //$NON-NLS-1$
+            Messages.getString("CloneCommand.Argument.GitDir.HelpText")), //$NON-NLS-1$),
 
         new FreeArgument("projectcollection", //$NON-NLS-1$
             Messages.getString("Command.Argument.ProjectCollection.HelpText")), //$NON-NLS-1$

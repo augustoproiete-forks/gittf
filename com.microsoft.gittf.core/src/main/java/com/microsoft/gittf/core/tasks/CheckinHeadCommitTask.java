@@ -217,7 +217,7 @@ public class CheckinHeadCommitTask
             /*
              * Walk the repo
              */
-            ObjectId headCommitID = RepositoryUtil.getHeadCommitID(repository);
+            ObjectId headCommitID = RepositoryUtil.getMasterHeadCommitID(repository);
 
             final ChangesetCommitMap commitMap = new ChangesetCommitMap(repository);
 

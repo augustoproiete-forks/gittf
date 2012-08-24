@@ -100,7 +100,7 @@ public class ShelveCommand
 
         final String name = ((FreeArgument) getArguments().getArgument("name")).getValue(); //$NON-NLS-1$
 
-        final ObjectId headCommitId = RepositoryUtil.getHeadCommitID(getRepository());
+        final ObjectId headCommitId = RepositoryUtil.getCurrentBranchHeadCommitID(getRepository());
 
         final ShelveDifferenceTask shelveTask =
             new ShelveDifferenceTask(

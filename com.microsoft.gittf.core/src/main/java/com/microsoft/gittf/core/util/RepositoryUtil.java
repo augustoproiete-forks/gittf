@@ -124,7 +124,19 @@ public final class RepositoryUtil
         return repoBuilder.build();
     }
 
-    public static ObjectId getHeadCommitID(final Repository repository)
+    public static ObjectId getCurrentBranchHeadCommitID(final Repository repository)
+        throws Exception
+    {
+        return getCommitId(repository, Constants.HEAD);
+    }
+
+    public static ObjectId getMasterHeadCommitID(final Repository repository)
+        throws Exception
+    {
+        return getCommitId(repository, Constants.R_HEADS + Constants.MASTER);
+    }
+
+    private static ObjectId getCommitId(final Repository repository, String name)
         throws Exception
     {
         Check.notNull(repository, "repository"); //$NON-NLS-1$
@@ -133,20 +145,20 @@ public final class RepositoryUtil
          * Determine the HEAD commit. Ensure that it is parented off the commit
          * from the latest changeset.
          */
-        Ref headRef = repository.getRef(Constants.R_HEADS + Constants.MASTER);
+        Ref ref = repository.getRef(name);
 
-        if (headRef == null)
+        if (ref == null)
         {
             throw new Exception(Messages.getString("RepositoryUtil.NoHeadRef")); //$NON-NLS-1$
         }
 
-        ObjectId headCommitID = headRef.getObjectId();
+        ObjectId commitId = ref.getObjectId();
 
-        if (headCommitID == null)
+        if (commitId == null)
         {
             throw new Exception(Messages.getString("RepositoryUtil.NoCommitForHead")); //$NON-NLS-1$
         }
 
-        return headCommitID;
+        return commitId;
     }
 }

@@ -27,6 +27,7 @@ package com.microsoft.gittf.core.util;
 import static org.eclipse.jgit.lib.Constants.OBJ_BLOB;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.MessageFormat;
 
 import org.eclipse.jgit.lib.ObjectInserter;
@@ -48,7 +49,18 @@ public final class DirectoryUtil
     {
         Check.notNull(repository, "repository"); //$NON-NLS-1$
 
-        return new File(repository.getDirectory(), GitTFConstants.GIT_TF_DIRNAME);
+        File rootDirectory = repository.getDirectory().getAbsoluteFile();
+
+        try
+        {
+            rootDirectory = rootDirectory.getCanonicalFile();
+        }
+        catch (IOException e)
+        {
+
+        }
+
+        return new File(rootDirectory, GitTFConstants.GIT_TF_DIRNAME);
     }
 
     public static File getTempDir(final Repository repository)

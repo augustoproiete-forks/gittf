@@ -34,6 +34,7 @@ import com.microsoft.gittf.core.tasks.framework.Task;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
+import com.microsoft.gittf.core.util.TfsBranchUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.CheckinFlags;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
@@ -120,6 +121,15 @@ public class CheckinPendingChangesTask
 
                 commitMap.setChangesetCommit(changesetID, commit.getId());
 
+                /* udpate tfs branch */
+                try
+                {
+                    TfsBranchUtil.update(repository, commit);
+                }
+                catch (Exception e)
+                {
+                    return new TaskStatus(TaskStatus.ERROR, e);
+                }
             }
             progressMonitor.endTask();
         }

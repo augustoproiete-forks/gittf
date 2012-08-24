@@ -42,9 +42,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <version.major>0</version.major>
-        <version.minor>1</version.minor>
-        <version.service>0</version.service>
+        <version.major>1</version.major>
+        <version.minor>0</version.minor>
+        <version.service>1</version.service>
         <version.build>SNAPSHOT</version.build>
     </properties>
 

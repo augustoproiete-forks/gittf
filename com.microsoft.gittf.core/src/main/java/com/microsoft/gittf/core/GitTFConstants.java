@@ -31,7 +31,7 @@ public final class GitTFConstants
     public static final String GIT_TF_DIRNAME = "tf"; //$NON-NLS-1$
     public static final boolean GIT_TF_DEFAULT_DEEP = false;
     public static final int GIT_TF_SHALLOW_DEPTH = 1;
-    public static final String GIT_TF_REMOTE = "origin/"; //$NON-NLS-1$
+    public static final String GIT_TF_REMOTE = "origin_tfs/"; //$NON-NLS-1$
     public static final String GIT_TF_BRANCHNAME = "tfs"; //$NON-NLS-1$
 
     private GitTFConstants()

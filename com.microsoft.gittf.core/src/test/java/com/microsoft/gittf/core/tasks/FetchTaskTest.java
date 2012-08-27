@@ -28,9 +28,11 @@ import static org.eclipse.jgit.lib.Constants.OBJ_BLOB;
 
 import java.net.URI;
 import java.util.Calendar;
+import java.util.List;
 
 import junit.framework.TestCase;
 
+import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -183,6 +185,12 @@ public class FetchTaskTest
 
             count++;
         }
+
+        Git git = new Git(repository);
+
+        // Verify the tags
+        List<Ref> tags = git.tagList().call();
+        assertEquals(2, tags.size());
     }
 
     @Test
@@ -368,5 +376,11 @@ public class FetchTaskTest
 
             count++;
         }
+
+        Git git = new Git(repository);
+
+        // Verify the tags
+        List<Ref> tags = git.tagList().call();
+        assertEquals(3, tags.size());
     }
 }

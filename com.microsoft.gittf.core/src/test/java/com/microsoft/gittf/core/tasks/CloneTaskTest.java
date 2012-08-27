@@ -27,11 +27,13 @@ package com.microsoft.gittf.core.tasks;
 import java.io.File;
 import java.net.URI;
 import java.util.Calendar;
+import java.util.List;
 
 import junit.framework.TestCase;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.junit.Test;
@@ -179,6 +181,10 @@ public class CloneTaskTest
         }
 
         assertEquals(commitCounter, 1);
+
+        // Verify the tags
+        List<Ref> tags = git.tagList().call();
+        assertEquals(1, tags.size());
     }
 
     @Test
@@ -321,5 +327,9 @@ public class CloneTaskTest
         }
 
         assertEquals(commitCounter, 0);
+
+        // Verify the tags
+        List<Ref> tags = git.tagList().call();
+        assertEquals(3, tags.size());
     }
 }

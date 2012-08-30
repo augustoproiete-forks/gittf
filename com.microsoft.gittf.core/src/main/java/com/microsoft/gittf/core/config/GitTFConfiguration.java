@@ -34,6 +34,7 @@ import org.eclipse.jgit.lib.Repository;
 
 import com.microsoft.gittf.core.GitTFConstants;
 import com.microsoft.gittf.core.Messages;
+import com.microsoft.gittf.core.OutputConstants;
 import com.microsoft.gittf.core.util.Check;
 
 /**
@@ -227,11 +228,10 @@ public class GitTFConfiguration
     public String toString()
     {
         StringBuilder result = new StringBuilder();
-        String NEW_LINE = System.getProperty("line.separator"); //$NON-NLS-1$
 
-        result.append(Messages.formatString("GitTFConfiguration.ToString.ServerURIFormat", this.serverURI) + NEW_LINE); //$NON-NLS-1$
-        result.append(Messages.formatString("GitTFConfiguration.ToString.TfsPathFormat", this.tfsPath) + NEW_LINE); //$NON-NLS-1$
-        result.append(Messages.formatString("GitTFConfiguration.ToString.DepthFormat", getDepthString()) + NEW_LINE); //$NON-NLS-1$
+        result.append(Messages.formatString("GitTFConfiguration.ToString.ServerURIFormat", this.serverURI) + OutputConstants.NEW_LINE); //$NON-NLS-1$
+        result.append(Messages.formatString("GitTFConfiguration.ToString.TfsPathFormat", this.tfsPath) + OutputConstants.NEW_LINE); //$NON-NLS-1$
+        result.append(Messages.formatString("GitTFConfiguration.ToString.DepthFormat", getDepthString()) + OutputConstants.NEW_LINE); //$NON-NLS-1$
         result.append(Messages.formatString("GitTFConfiguration.ToString.TagFormat", this.tag)); //$NON-NLS-1$
 
         return result.toString();

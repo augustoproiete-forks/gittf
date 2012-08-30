@@ -46,26 +46,29 @@ public class CheckinPendingChangesTask
     private final RevCommit commit;
     private final WorkspaceService workspace;
     private final PendingChange[] changes;
+    private final String comment;
 
     private WorkItemCheckinInfo[] workItems;
     private boolean overrideGatedCheckin;
-    private String comment = null;
 
     private int changesetID = -1;
 
     public CheckinPendingChangesTask(
         final Repository repository,
         final RevCommit commit,
+        final String comment,
         final WorkspaceService workspace,
         final PendingChange[] changes)
     {
         Check.notNull(repository, "repository"); //$NON-NLS-1$
         Check.notNull(commit, "commit"); //$NON-NLS-1$
+        Check.notNullOrEmpty(comment, "comment"); //$NON-NLS-1$
         Check.notNull(workspace, "workspace"); //$NON-NLS-1$
         Check.isTrue(changes.length > 0, "changes.length > 0"); //$NON-NLS-1$
 
         this.repository = repository;
         this.commit = commit;
+        this.comment = comment;
         this.workspace = workspace;
         this.changes = changes;
     }
@@ -78,16 +81,6 @@ public class CheckinPendingChangesTask
     public void setOverrideGatedCheckin(boolean overrideGatedCheckin)
     {
         this.overrideGatedCheckin = overrideGatedCheckin;
-    }
-
-    public String getComment()
-    {
-        return comment;
-    }
-
-    public void setComment(String comment)
-    {
-        this.comment = comment;
     }
 
     @Override

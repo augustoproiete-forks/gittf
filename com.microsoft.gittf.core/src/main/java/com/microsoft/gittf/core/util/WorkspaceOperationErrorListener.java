@@ -25,6 +25,7 @@
 package com.microsoft.gittf.core.util;
 
 import com.microsoft.gittf.core.Messages;
+import com.microsoft.gittf.core.OutputConstants;
 import com.microsoft.tfs.core.clients.versioncontrol.events.NonFatalErrorEvent;
 import com.microsoft.tfs.core.clients.versioncontrol.events.NonFatalErrorListener;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Failure;
@@ -75,7 +76,7 @@ public class WorkspaceOperationErrorListener
         {
             StringBuilder sb = new StringBuilder();
             sb.append(Messages.getString("WorkspaceOperationErrorListener.ErrorMessage")); //$NON-NLS-1$
-            sb.append(System.getProperty("line.separator")); //$NON-NLS-1$
+            sb.append(OutputConstants.NEW_LINE);
             sb.append(lastError);
 
             throw new Exception(sb.toString());
@@ -84,7 +85,7 @@ public class WorkspaceOperationErrorListener
         {
             StringBuilder sb = new StringBuilder();
             sb.append(Messages.getString("WorkspaceOperationErrorListener.ErrorMessage")); //$NON-NLS-1$
-            sb.append(System.getProperty("line.separator")); //$NON-NLS-1$
+            sb.append(OutputConstants.NEW_LINE);
             sb.append(lastException.getLocalizedMessage());
 
             throw new Exception(sb.toString());

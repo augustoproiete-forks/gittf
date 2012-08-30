@@ -27,10 +27,13 @@ package com.microsoft.gittf.core.tasks;
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -38,6 +41,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 
 import com.microsoft.gittf.core.GitTFConstants;
 import com.microsoft.gittf.core.Messages;
+import com.microsoft.gittf.core.OutputConstants;
 import com.microsoft.gittf.core.config.ChangesetCommitMap;
 import com.microsoft.gittf.core.config.GitTFConfiguration;
 import com.microsoft.gittf.core.interfaces.WorkspaceService;
@@ -52,6 +56,7 @@ import com.microsoft.gittf.core.util.Check;
 import com.microsoft.gittf.core.util.CommitUtil;
 import com.microsoft.gittf.core.util.CommitWalker;
 import com.microsoft.gittf.core.util.CommitWalker.CommitDelta;
+import com.microsoft.gittf.core.util.DateUtil;
 import com.microsoft.gittf.core.util.RepositoryUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.path.ServerPath;
@@ -343,12 +348,11 @@ public class CheckinHeadCommitTask
                         progressMonitor.displayMessage(Messages.formatString(
                             "CheckinHeadCommitTask.CheckedInPreviewDifferenceCommitsFormat", //$NON-NLS-1$
                             i + 1,
-                            CommitUtil.abbreviate(repository, fromCommit),
-                            CommitUtil.abbreviate(repository, toCommit)));
+                            CommitUtil.abbreviate(repository, toCommit),
+                            CommitUtil.abbreviate(repository, fromCommit)));
                     }
 
-                    String checkinComment =
-                        deep || comment == null ? commitDelta.getToCommit().getFullMessage() : comment;
+                    String checkinComment = comment == null ? buildCommitComment(commitDelta) : comment;
 
                     progressMonitor.displayMessage(""); //$NON-NLS-1$
                     progressMonitor.displayMessage(getCommentDisplayString(checkinComment));
@@ -374,11 +378,8 @@ public class CheckinHeadCommitTask
                 if (!preview)
                 {
                     final CheckinPendingChangesTask checkinTask =
-                        new CheckinPendingChangesTask(
-                            repository,
-                            commitDelta.getToCommit(),
-                            workspace,
-                            pendTask.getPendingChanges());
+                        new CheckinPendingChangesTask(repository, commitDelta.getToCommit(), comment == null
+                            ? buildCommitComment(commitDelta) : comment, workspace, pendTask.getPendingChanges());
 
                     if (isLastCommit)
                     {
@@ -386,7 +387,6 @@ public class CheckinHeadCommitTask
                     }
 
                     checkinTask.setOverrideGatedCheckin(overrideGatedCheckin);
-                    checkinTask.setComment(comment);
 
                     progressMonitor.setDetail(Messages.getString("CheckinHeadCommitTask.CheckingIn")); //$NON-NLS-1$
 
@@ -454,15 +454,76 @@ public class CheckinHeadCommitTask
         }
     }
 
+    private String buildCommitComment(CommitDelta commitDelta)
+    {
+        if (deep)
+        {
+            return commitDelta.getToCommit().getFullMessage();
+        }
+
+        try
+        {
+            LogCommand logCommand = new Git(repository).log();
+            logCommand.addRange(commitDelta.getFromCommit().getId(), commitDelta.getToCommit().getId());
+            logCommand.setMaxCount(OutputConstants.DEFAULT_MAXCOMMENTROLLUP + 1);
+            Iterable<RevCommit> commits = logCommand.call();
+
+            int commitCounter = 0;
+
+            StringBuilder comment = new StringBuilder();
+
+            comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinRollupFormat", //$NON-NLS-1$
+                CommitUtil.abbreviate(repository, commitDelta.getToCommit().getId()),
+                CommitUtil.abbreviate(repository, commitDelta.getFromCommit().getId())) + OutputConstants.NEW_LINE);
+            comment.append(OutputConstants.NEW_LINE);
+
+            for (RevCommit commit : commits)
+            {
+                commitCounter++;
+
+                if (commitCounter > OutputConstants.DEFAULT_MAXCOMMENTROLLUP)
+                {
+                    comment.append(Messages.formatString(
+                        "CheckinHeadCommitTask.ShallowCheckinCommentDisplayTruncatedFormat", //$NON-NLS-1$
+                        OutputConstants.DEFAULT_MAXCOMMENTROLLUP,
+                        CommitUtil.abbreviate(repository, commit.getId()),
+                        CommitUtil.abbreviate(repository, commitDelta.getFromCommit().getId())));
+
+                    break;
+                }
+
+                comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinCommentFormat", //$NON-NLS-1$
+                    CommitUtil.abbreviate(repository, commit.getId()),
+                    DateUtil.formatDate(new Date(((long) commit.getCommitTime()) * 1000))) + OutputConstants.NEW_LINE);
+                comment.append("-----------------------------------------------------------------" + OutputConstants.NEW_LINE); //$NON-NLS-1$
+                comment.append(commit.getFullMessage());
+                comment.append(OutputConstants.NEW_LINE);
+            }
+
+            if (commitCounter == 1)
+            {
+                return commitDelta.getToCommit().getFullMessage();
+            }
+
+            return comment.toString();
+        }
+        catch (Exception e)
+        {
+            // if we fail execute the log command we default to the destination
+            // commit full message
+
+            return commitDelta.getToCommit().getFullMessage();
+        }
+    }
+
     private String getCommentDisplayString(String checkinComment)
     {
-        String NEW_LINE = System.getProperty("line.separator"); //$NON-NLS-1$
-        String[] lines = checkinComment.split("\n|\r"); //$NON-NLS-1$
+        String[] lines = checkinComment.split(OutputConstants.NEW_LINE);
 
         StringBuilder sb = new StringBuilder();
         for (String line : lines)
         {
-            sb.append(MessageFormat.format("    {0}{1}", line, NEW_LINE)); //$NON-NLS-1$
+            sb.append(MessageFormat.format("    {0}{1}", line, OutputConstants.NEW_LINE)); //$NON-NLS-1$
         }
 
         return sb.toString();

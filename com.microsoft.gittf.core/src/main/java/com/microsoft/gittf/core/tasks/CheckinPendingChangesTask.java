@@ -24,11 +24,6 @@
 
 package com.microsoft.gittf.core.tasks;
 
-import com.microsoft.tfs.core.clients.build.IBuildRequest;
-import com.microsoft.tfs.core.clients.build.IBuildServer;
-import com.microsoft.tfs.core.clients.build.flags.BuildReason;
-import com.microsoft.tfs.core.clients.versioncontrol.exceptions.ActionDeniedBySubscriberException;
-import com.microsoft.tfs.core.clients.versioncontrol.exceptions.TeamFoundationServerExceptionProperties;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 
@@ -40,7 +35,12 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.gittf.core.util.TfsBranchUtil;
+import com.microsoft.tfs.core.clients.build.IBuildRequest;
+import com.microsoft.tfs.core.clients.build.IBuildServer;
+import com.microsoft.tfs.core.clients.build.flags.BuildReason;
 import com.microsoft.tfs.core.clients.versioncontrol.CheckinFlags;
+import com.microsoft.tfs.core.clients.versioncontrol.exceptions.ActionDeniedBySubscriberException;
+import com.microsoft.tfs.core.clients.versioncontrol.exceptions.TeamFoundationServerExceptionProperties;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
 
@@ -119,7 +119,7 @@ public class CheckinPendingChangesTask
 
                 commitMap.setChangesetCommit(changesetID, commit.getId());
 
-                /* udpate tfs branch */
+                /* Update tfs branch */
                 try
                 {
                     TfsBranchUtil.update(repository, commit);
@@ -138,20 +138,20 @@ public class CheckinPendingChangesTask
             // http://msdn.microsoft.com/en-us/library/microsoft.teamfoundation.versioncontrol.client.checkinparameters.queuebuildforgatedcheckin.aspx
 
             /*
-                If one or more of the items being checked in affects a gated build definition,
-                the check-in will be rejected because it must go through the gated check-in system.
-                The server will create a shelveset of the changes submitted for check-in
-                and throw a GatedCheckinException to the client containing the names
-                of the affected build definitions,
-                the name of the created shelveset,
-                and a check-in ticket string (a cookie).
-
-                The client must call IBuildServer.QueueBuild with an IBuildRequest
-                containing the shelveset name, the checkin ticket string,
-                and a reason of BuildReason.CheckInShelveset.
-                The build can be queued against any of the affected definitions
+             * If one or more of the items being checked in affects a gated
+             * build definition, the check-in will be rejected because it must
+             * go through the gated check-in system. The server will create a
+             * shelveset of the changes submitted for check-in and throw a
+             * GatedCheckinException to the client containing the names of the
+             * affected build definitions, the name of the created shelveset,
+             * and a check-in ticket string (a cookie).
+             * 
+             * The client must call IBuildServer.QueueBuild with an
+             * IBuildRequest containing the shelveset name, the checkin ticket
+             * string, and a reason of BuildReason.CheckInShelveset. The build
+             * can be queued against any of the affected definitions
              */
-            IBuildServer buildServer = workspace.getClient().getConnection().getBuildServer();
+            IBuildServer buildServer = workspace.getBuildServer();
             if (buildServer == null)
             {
                 // no active build server, display message and exit
@@ -159,19 +159,23 @@ public class CheckinPendingChangesTask
                 return new TaskStatus(TaskStatus.ERROR, e);
             }
             TeamFoundationServerExceptionProperties properties = e.getProperties();
-            Object[] buildDefUris = properties.getObjectArrayProperty("AffectedBuildDefinitionUris");
-            String checkInTicket = properties.getStringProperty("CheckInTicket");
-            String shelvesetName = properties.getStringProperty("ShelvesetName");
+            Object[] buildDefUris = properties.getObjectArrayProperty("AffectedBuildDefinitionUris"); //$NON-NLS-1$
+            String checkInTicket = properties.getStringProperty("CheckInTicket"); //$NON-NLS-1$
+            String shelvesetName = properties.getStringProperty("ShelvesetName"); //$NON-NLS-1$
             // delegate error if any of these missing
             if (buildDefUris == null || buildDefUris.length == 0 || checkInTicket == null || shelvesetName == null)
             {
                 return new TaskStatus(TaskStatus.ERROR, e);
             }
 
-            // if there are more than one affected builds, then do not queue a build and delegate error
-            // the reason being
-            //   (a) this is how TF.exe /no prompt behave and we would like to keep git-tf and tf.exe as consistent as possible.
-            //   (b) the first gated definition might not be the correct one, it might pass and code might get checked in that actually breaks the build
+            /*
+             * if there are more than one affected builds, then do not queue a
+             * build and delegate error the reason being (a) this is how TF.exe
+             * /no prompt behave and we would like to keep git-tf and tf.exe as
+             * consistent as possible. (b) the first gated definition might not
+             * be the correct one, it might pass and code might get checked in
+             * that actually breaks the build
+             */
             if (buildDefUris.length > 1)
             {
                 return new TaskStatus(TaskStatus.ERROR, e);
@@ -184,8 +188,9 @@ public class CheckinPendingChangesTask
             try
             {
                 buildServer.queueBuild(buildRequest);
-                return new TaskStatus(TaskStatus.ERROR, Messages.formatString("CheckinPendingChangesTask.GatedBuildQueuedFormat", //$NON-NLS-1$
-                        shelvesetName));
+                return new TaskStatus(TaskStatus.ERROR, Messages.formatString(
+                    "CheckinPendingChangesTask.GatedBuildQueuedFormat", //$NON-NLS-1$
+                    shelvesetName));
             }
             catch (Exception ex)
             {

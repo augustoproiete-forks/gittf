@@ -29,6 +29,7 @@ import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.gittf.core.util.WorkspaceOperationErrorListener;
+import com.microsoft.tfs.core.clients.build.IBuildServer;
 import com.microsoft.tfs.core.clients.versioncontrol.CheckinFlags;
 import com.microsoft.tfs.core.clients.versioncontrol.GetOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.PendChangesOptions;
@@ -171,5 +172,10 @@ public class PreviewOnlyWorkspace
     public WorkspaceOperationErrorListener getErrorListener()
     {
         return WorkspaceOperationErrorListener.EMPTY;
+    }
+
+    public IBuildServer getBuildServer()
+    {
+        return null;
     }
 }

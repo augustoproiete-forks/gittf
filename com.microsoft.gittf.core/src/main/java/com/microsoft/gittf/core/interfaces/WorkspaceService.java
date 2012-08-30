@@ -25,6 +25,7 @@
 package com.microsoft.gittf.core.interfaces;
 
 import com.microsoft.gittf.core.util.WorkspaceOperationErrorListener;
+import com.microsoft.tfs.core.clients.build.IBuildServer;
 import com.microsoft.tfs.core.clients.versioncontrol.CheckinFlags;
 import com.microsoft.tfs.core.clients.versioncontrol.GetOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.PendChangesOptions;
@@ -94,4 +95,6 @@ public interface WorkspaceService
     void shelve(Shelveset shelveset, PendingChange[] changes, boolean replace, boolean move);
 
     WorkspaceOperationErrorListener getErrorListener();
+    
+    IBuildServer getBuildServer();
 }

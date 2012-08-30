@@ -27,6 +27,7 @@ package com.microsoft.gittf.core.impl;
 import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.gittf.core.util.WorkspaceOperationErrorListener;
+import com.microsoft.tfs.core.clients.build.IBuildServer;
 import com.microsoft.tfs.core.clients.versioncontrol.CheckinFlags;
 import com.microsoft.tfs.core.clients.versioncontrol.GetOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.PendChangesOptions;
@@ -156,5 +157,10 @@ public class TfsWorkspace
     public WorkspaceOperationErrorListener getErrorListener()
     {
         return new WorkspaceOperationErrorListener(workspace);
+    }
+
+    public IBuildServer getBuildServer()
+    {
+        return workspace.getClient().getConnection().getBuildServer();
     }
 }

@@ -168,6 +168,15 @@ public class CheckinPendingChangesTask
                 return new TaskStatus(TaskStatus.ERROR, e);
             }
 
+            // if there are more than one affected builds, then do not queue a build and delegate error
+            // the reason being
+            //   (a) this is how TF.exe /no prompt behave and we would like to keep git-tf and tf.exe as consistent as possible.
+            //   (b) the first gated definition might not be the correct one, it might pass and code might get checked in that actually breaks the build
+            if (buildDefUris.length > 1)
+            {
+                return new TaskStatus(TaskStatus.ERROR, e);
+            }
+
             IBuildRequest buildRequest = buildServer.createBuildRequest(buildDefUris[0].toString());
             buildRequest.setGatedCheckInTicket(checkInTicket);
             buildRequest.setShelvesetName(shelvesetName);

@@ -41,7 +41,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         <version.major>1</version.major>
         <version.minor>0</version.minor>
         <version.service>1</version.service>
-	<version.build>SNAPSHOT</version.build>
+	    <version.build>SNAPSHOT</version.build>
+        <maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
+        <buildNumber>${version.major}.${version.minor}.${version.service}.${maven.build.timestamp}</buildNumber>
     </properties>
 
     <dependencies>
@@ -63,12 +65,31 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
+                    <appendAssemblyId>false</appendAssemblyId>
                     <descriptors>
                         <descriptor>src/main/assembly/bin.xml</descriptor>
                     </descriptors>
+                    <finalName>${pom.artifactId}-${buildNumber}</finalName>
                 </configuration>
             </plugin>
-
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>                
+                        <configuration>
+                            <tasks>
+                                <mkdir dir="target"/>
+                                <zip update="true" basedir="com.microsoft.gittf.client.clc/target/temp" destfile="target/git-tf.${buildNumber}.nupkg" />
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <artifactId>maven-eclipse-plugin</artifactId>
                 <configuration>

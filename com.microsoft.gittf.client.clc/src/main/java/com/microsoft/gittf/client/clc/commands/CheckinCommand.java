@@ -163,6 +163,8 @@ public class CheckinCommand
         if (deep && message != null)
         {
             Main.printWarning(Messages.getString("CheckinCommand.MessageWillBeIgnoreBecauseDeepSpecified")); //$NON-NLS-1$
+
+            message = null;
         }
 
         final CheckinHeadCommitTask checkinTask =

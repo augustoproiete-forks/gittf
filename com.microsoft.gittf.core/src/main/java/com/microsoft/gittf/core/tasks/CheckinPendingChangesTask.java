@@ -24,17 +24,23 @@
 
 package com.microsoft.gittf.core.tasks;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.config.ChangesetCommitMap;
+import com.microsoft.gittf.core.config.GitTFConfiguration;
 import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.tasks.framework.Task;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
+import com.microsoft.gittf.core.util.StringUtil;
 import com.microsoft.gittf.core.util.TfsBranchUtil;
+import com.microsoft.tfs.core.clients.build.IBuildDefinition;
 import com.microsoft.tfs.core.clients.build.IBuildRequest;
 import com.microsoft.tfs.core.clients.build.IBuildServer;
 import com.microsoft.tfs.core.clients.build.flags.BuildReason;
@@ -55,6 +61,7 @@ public class CheckinPendingChangesTask
 
     private WorkItemCheckinInfo[] workItems;
     private boolean overrideGatedCheckin;
+    private String buildDefinition = null;
 
     private int changesetID = -1;
 
@@ -88,6 +95,16 @@ public class CheckinPendingChangesTask
         this.overrideGatedCheckin = overrideGatedCheckin;
     }
 
+    public String getBuildDefinition()
+    {
+        return buildDefinition;
+    }
+
+    public void setBuildDefinition(String buildDefinition)
+    {
+        this.buildDefinition = buildDefinition;
+    }
+
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {
@@ -96,6 +113,12 @@ public class CheckinPendingChangesTask
         try
         {
             ChangesetCommitMap commitMap = new ChangesetCommitMap(repository);
+            GitTFConfiguration configuration = GitTFConfiguration.loadFrom(repository);
+
+            if (buildDefinition == null || buildDefinition.length() == 0)
+            {
+                buildDefinition = configuration.getBuildDefinition();
+            }
 
             CheckinFlags checkinFlags = CheckinFlags.NONE;
 
@@ -162,8 +185,16 @@ public class CheckinPendingChangesTask
             Object[] buildDefUris = properties.getObjectArrayProperty("AffectedBuildDefinitionUris"); //$NON-NLS-1$
             String checkInTicket = properties.getStringProperty("CheckInTicket"); //$NON-NLS-1$
             String shelvesetName = properties.getStringProperty("ShelvesetName"); //$NON-NLS-1$
+
             // delegate error if any of these missing
             if (buildDefUris == null || buildDefUris.length == 0 || checkInTicket == null || shelvesetName == null)
+            {
+                return new TaskStatus(TaskStatus.ERROR, e);
+            }
+
+            IBuildDefinition[] buildDefs =
+                buildServer.queryBuildDefinitionsByURI(StringUtil.convertToStringArray(buildDefUris));
+            if (buildDefs == null || buildDefs.length == 0)
             {
                 return new TaskStatus(TaskStatus.ERROR, e);
             }
@@ -176,12 +207,22 @@ public class CheckinPendingChangesTask
              * be the correct one, it might pass and code might get checked in
              * that actually breaks the build
              */
-            if (buildDefUris.length > 1)
+            String buildDefinitionToUse = null;
+            if (buildDefinition != null && buildDefinition.length() > 0)
+            {
+                buildDefinitionToUse = getBuildDefinitionFromList(buildDefinition, buildDefs);
+            }
+            else if (buildDefUris.length == 1)
+            {
+                buildDefinitionToUse = buildDefUris[0].toString();
+            }
+
+            if (buildDefinitionToUse == null || buildDefinitionToUse.length() == 0)
             {
                 return new TaskStatus(TaskStatus.ERROR, e);
             }
 
-            IBuildRequest buildRequest = buildServer.createBuildRequest(buildDefUris[0].toString());
+            IBuildRequest buildRequest = buildServer.createBuildRequest(buildDefinitionToUse);
             buildRequest.setGatedCheckInTicket(checkInTicket);
             buildRequest.setShelvesetName(shelvesetName);
             buildRequest.setReason(BuildReason.CHECK_IN_SHELVESET);
@@ -212,5 +253,33 @@ public class CheckinPendingChangesTask
     public int getChangesetID()
     {
         return changesetID;
+    }
+
+    private String getBuildDefinitionFromList(String buildDefinitionToUse, IBuildDefinition[] buildDefs)
+    {
+        Check.notNull(buildDefinitionToUse, "buildDefinitionToUse"); //$NON-NLS-1$
+        Check.notNullOrEmpty(buildDefs, "buildDefUris"); //$NON-NLS-1$
+
+        List<String> possibleBuildDefinitions = new ArrayList<String>();
+
+        for (IBuildDefinition buildDef : buildDefs)
+        {
+            if (buildDef.getName().equalsIgnoreCase(buildDefinitionToUse))
+            {
+                return buildDef.getURI();
+            }
+
+            if (buildDef.getName().toLowerCase().contains(buildDefinitionToUse.toLowerCase()))
+            {
+                possibleBuildDefinitions.add(buildDef.getURI());
+            }
+        }
+
+        if (possibleBuildDefinitions.size() == 1)
+        {
+            return possibleBuildDefinitions.get(0);
+        }
+
+        return null;
     }
 }

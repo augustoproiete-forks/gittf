@@ -60,6 +60,7 @@ public class GitTFConfiguration
     private final boolean deep;
     private final boolean tag;
     private final int fileFormatVersion;
+    private final String buildDefinition;
 
     /**
      * Creates a new git-tf configuration, suitable for use by the command or
@@ -86,7 +87,8 @@ public class GitTFConfiguration
         final String password,
         final boolean deep,
         final boolean tag,
-        final int fileFormatVersion)
+        final int fileFormatVersion,
+        final String buildDefinition)
     {
         Check.notNull(serverURI, "serverURI"); //$NON-NLS-1$
         Check.notNullOrEmpty(tfsPath, "tfsPath"); //$NON-NLS-1$
@@ -98,6 +100,7 @@ public class GitTFConfiguration
         this.deep = deep;
         this.tag = tag;
         this.fileFormatVersion = fileFormatVersion;
+        this.buildDefinition = buildDefinition;
     }
 
     /**
@@ -170,6 +173,11 @@ public class GitTFConfiguration
         return fileFormatVersion;
     }
 
+    public String getBuildDefinition()
+    {
+        return buildDefinition;
+    }
+
     /**
      * Saves this configuration to the given git repository's configuration.
      * 
@@ -212,6 +220,15 @@ public class GitTFConfiguration
             ConfigurationConstants.TAG,
             tag);
 
+        if (buildDefinition != null && buildDefinition.length() > 0)
+        {
+            repository.getConfig().setString(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.SERVER_SUBSECTION,
+                ConfigurationConstants.GATED_BUILD_DEFINITION,
+                buildDefinition);
+        }
+
         try
         {
             repository.getConfig().save();
@@ -231,6 +248,12 @@ public class GitTFConfiguration
 
         result.append(Messages.formatString("GitTFConfiguration.ToString.ServerURIFormat", this.serverURI) + OutputConstants.NEW_LINE); //$NON-NLS-1$
         result.append(Messages.formatString("GitTFConfiguration.ToString.TfsPathFormat", this.tfsPath) + OutputConstants.NEW_LINE); //$NON-NLS-1$
+
+        if (buildDefinition != null && buildDefinition.length() > 0)
+        {
+            result.append(Messages.formatString("GitTFConfiguration.ToString.GatedBuildFormat", this.buildDefinition) + OutputConstants.NEW_LINE); //$NON-NLS-1$
+        }
+
         result.append(Messages.formatString("GitTFConfiguration.ToString.DepthFormat", getDepthString()) + OutputConstants.NEW_LINE); //$NON-NLS-1$
         result.append(Messages.formatString("GitTFConfiguration.ToString.TagFormat", this.tag)); //$NON-NLS-1$
 
@@ -307,6 +330,12 @@ public class GitTFConfiguration
                 ConfigurationConstants.FILE_FORMAT_VERSION,
                 0);
 
+        final String buildDefinition =
+            repository.getConfig().getString(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.SERVER_SUBSECTION,
+                ConfigurationConstants.GATED_BUILD_DEFINITION);
+
         if (projectCollection == null)
         {
             log.error("No project collection configuration in repository"); //$NON-NLS-1$
@@ -338,7 +367,8 @@ public class GitTFConfiguration
             password,
             depth > GitTFConstants.GIT_TF_SHALLOW_DEPTH,
             tag,
-            fileFormatVersion);
+            fileFormatVersion,
+            buildDefinition);
     }
 
     /**

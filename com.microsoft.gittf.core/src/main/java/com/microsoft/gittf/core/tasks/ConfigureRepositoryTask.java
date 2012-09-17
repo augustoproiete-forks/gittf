@@ -46,6 +46,7 @@ public class ConfigureRepositoryTask
 
     private boolean deep;
     private boolean tag = true;
+    private String buildDefinition;
 
     public ConfigureRepositoryTask(final Repository repository, final URI projectCollectionURI, final String tfsPath)
     {
@@ -80,6 +81,16 @@ public class ConfigureRepositoryTask
         this.tag = tag;
     }
 
+    public String getBuildDefinition()
+    {
+        return buildDefinition;
+    }
+
+    public void setBuildDefinition(String buildDefinition)
+    {
+        this.buildDefinition = buildDefinition;
+    }
+
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {
@@ -100,7 +111,8 @@ public class ConfigureRepositoryTask
             null,
             deep,
             tag,
-            GitTFConstants.GIT_TF_CURRENT_FORMAT_VERSION).saveTo(repository);
+            GitTFConstants.GIT_TF_CURRENT_FORMAT_VERSION,
+            buildDefinition).saveTo(repository);
 
         progressMonitor.endTask();
 

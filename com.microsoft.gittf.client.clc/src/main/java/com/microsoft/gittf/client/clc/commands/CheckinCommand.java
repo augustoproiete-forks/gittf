@@ -114,9 +114,18 @@ public class CheckinCommand
 
         new SwitchArgument("preview", 'p', Messages.getString("CheckinCommand.Argument.Preview.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
 
-        new SwitchArgument("bypass", //$NON-NLS-1$
-            Messages.getString("CheckinCommand.Argument.Bypass.HelpText")), //$NON-NLS-1$
+        new ChoiceArgument(Messages.getString("CheckinCommand.Argument.GatedBuild.HelpText"), //$NON-NLS-1$
+            /*
+             * User can specify one of --gated:[gatedbuildName] or --bypass
+             */
+            new SwitchArgument("bypass", //$NON-NLS-1$
+                Messages.getString("CheckinCommand.Argument.Bypass.HelpText")), //$NON-NLS-1$
 
+            new ValueArgument("gated", //$NON-NLS-1$
+                'g',
+                Messages.getString("CheckinCommand.Argument.Gated.ValueDescription"), //$NON-NLS-1$
+                Messages.getString("CheckinCommand.Argument.Gated.HelpText"), //$NON-NLS-1$
+                ArgumentOptions.VALUE_REQUIRED))
     };
 
     @Override
@@ -167,6 +176,9 @@ public class CheckinCommand
             message = null;
         }
 
+        String buildDefinition = getArguments().contains("gated") ? //$NON-NLS-1$
+            ((ValueArgument) getArguments().getArgument("gated")).getValue() : null; //$NON-NLS-1$
+
         final CheckinHeadCommitTask checkinTask =
             new CheckinHeadCommitTask(
                 getRepository(),
@@ -181,6 +193,7 @@ public class CheckinCommand
         checkinTask.setSquashCommitIDs(getSquashCommitIDs());
         checkinTask.setAutoSquash(autoSquashMultipleParents);
         checkinTask.setComment(message);
+        checkinTask.setBuildDefinition(buildDefinition);
 
         /*
          * Hook up a custom task executor that does not print gated errors to

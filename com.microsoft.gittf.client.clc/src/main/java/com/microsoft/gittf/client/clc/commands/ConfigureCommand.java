@@ -31,6 +31,7 @@ import org.eclipse.jgit.lib.Repository;
 import com.microsoft.gittf.client.clc.ExitCode;
 import com.microsoft.gittf.client.clc.Messages;
 import com.microsoft.gittf.client.clc.arguments.Argument;
+import com.microsoft.gittf.client.clc.arguments.ArgumentOptions;
 import com.microsoft.gittf.client.clc.arguments.ChoiceArgument;
 import com.microsoft.gittf.client.clc.arguments.FreeArgument;
 import com.microsoft.gittf.client.clc.arguments.SwitchArgument;
@@ -80,6 +81,12 @@ public class ConfigureCommand
             new SwitchArgument("shallow", //$NON-NLS-1$
                 Messages.getString("Command.Argument.Shallow.HelpText")) //$NON-NLS-1$
         ),
+
+        new ValueArgument("gated", //$NON-NLS-1$
+            'g',
+            Messages.getString("ConfigureCommand.Argument.Gated.ValueDescription"), //$NON-NLS-1$
+            Messages.getString("ConfigureCommand.Argument.Gated.HelpText"), //$NON-NLS-1$
+            ArgumentOptions.VALUE_REQUIRED),
 
         new ChoiceArgument(Messages.getString("Command.Argument.TagChoice.HelpText"), //$NON-NLS-1$
             /* Users can specify one of --tag or --no-tag (Default: tag). */
@@ -151,6 +158,7 @@ public class ConfigureCommand
         String tfsPath = null;
         boolean deep = false;
         boolean tag = true;
+        String buildDefinition = null;
 
         if (currentConfiguration == null || getArguments().contains("force")) //$NON-NLS-1$
         {
@@ -185,7 +193,8 @@ public class ConfigureCommand
             if (!getArguments().contains("deep") //$NON-NLS-1$
                 && !getArguments().contains("shallow") //$NON-NLS-1$
                 && !getArguments().contains("tag") //$NON-NLS-1$
-                && !getArguments().contains("no-tag")) //$NON-NLS-1$ 
+                && !getArguments().contains("no-tag") //$NON-NLS-1$
+                && !getArguments().contains("gated")) //$NON-NLS-1$ 
             {
                 throw new Exception(Messages.getString("ConfigureCommand.InvalidOptionsSpecified")); //$NON-NLS-1$
             }
@@ -217,9 +226,19 @@ public class ConfigureCommand
             tag = currentConfiguration.getTag();
         }
 
+        if (getArguments().contains("gated")) //$NON-NLS-1$
+        {
+            buildDefinition = ((ValueArgument) getArguments().getArgument("gated")).getValue(); //$NON-NLS-1$
+        }
+        else if (currentConfiguration != null)
+        {
+            buildDefinition = currentConfiguration.getBuildDefinition();
+        }
+
         ConfigureRepositoryTask configureTask = new ConfigureRepositoryTask(repository, serverURI, tfsPath);
         configureTask.setDeep(deep);
         configureTask.setTag(tag);
+        configureTask.setBuildDefinition(buildDefinition);
 
         TaskStatus configureStatus = new CommandTaskExecutor(getProgressMonitor()).execute(configureTask);
 

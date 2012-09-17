@@ -87,6 +87,7 @@ public class CheckinHeadCommitTask
     private boolean autoSquashMultipleParents;
     private boolean preview = false;
     private String comment = null;
+    private String buildDefinition = null;
 
     public CheckinHeadCommitTask(
         final Repository repository,
@@ -180,6 +181,16 @@ public class CheckinHeadCommitTask
     public void setComment(String comment)
     {
         this.comment = comment;
+    }
+
+    public String getBuildDefinition()
+    {
+        return buildDefinition;
+    }
+
+    public void setBuildDefinition(String buildDefinition)
+    {
+        this.buildDefinition = buildDefinition;
     }
 
     @Override
@@ -387,6 +398,7 @@ public class CheckinHeadCommitTask
                     }
 
                     checkinTask.setOverrideGatedCheckin(overrideGatedCheckin);
+                    checkinTask.setBuildDefinition(buildDefinition);
 
                     progressMonitor.setDetail(Messages.getString("CheckinHeadCommitTask.CheckingIn")); //$NON-NLS-1$
 

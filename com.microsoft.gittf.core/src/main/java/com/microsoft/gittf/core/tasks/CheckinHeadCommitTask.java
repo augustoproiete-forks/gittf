@@ -470,7 +470,7 @@ public class CheckinHeadCommitTask
     {
         if (deep)
         {
-            return commitDelta.getToCommit().getFullMessage();
+            return buildCommitComment(commitDelta.getToCommit());
         }
 
         try
@@ -504,17 +504,12 @@ public class CheckinHeadCommitTask
                     break;
                 }
 
-                comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinCommentFormat", //$NON-NLS-1$
-                    CommitUtil.abbreviate(repository, commit.getId()),
-                    DateUtil.formatDate(new Date(((long) commit.getCommitTime()) * 1000))) + OutputConstants.NEW_LINE);
-                comment.append("-----------------------------------------------------------------" + OutputConstants.NEW_LINE); //$NON-NLS-1$
-                comment.append(commit.getFullMessage());
-                comment.append(OutputConstants.NEW_LINE);
+                comment.append(buildCommitComment(commit));
             }
 
             if (commitCounter == 1)
             {
-                return commitDelta.getToCommit().getFullMessage();
+                return buildCommitComment(commitDelta.getToCommit());
             }
 
             return comment.toString();
@@ -524,8 +519,28 @@ public class CheckinHeadCommitTask
             // if we fail execute the log command we default to the destination
             // commit full message
 
-            return commitDelta.getToCommit().getFullMessage();
+            return buildCommitComment(commitDelta.getToCommit());
         }
+    }
+
+    private String buildCommitComment(RevCommit commit)
+    {
+        StringBuilder comment = new StringBuilder();
+
+        comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinCommentFormat", //$NON-NLS-1$
+            CommitUtil.abbreviate(repository, commit.getId()),
+            DateUtil.formatDate(new Date(((long) commit.getCommitTime()) * 1000))) + OutputConstants.NEW_LINE);
+        comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinCommentAuthorFormat", //$NON-NLS-1$
+            commit.getAuthorIdent().getName(),
+            commit.getAuthorIdent().getEmailAddress()) + OutputConstants.NEW_LINE);
+        comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinCommentCommitterFormat", //$NON-NLS-1$
+            commit.getCommitterIdent().getName(),
+            commit.getCommitterIdent().getEmailAddress()) + OutputConstants.NEW_LINE);
+        comment.append("-----------------------------------------------------------------" + OutputConstants.NEW_LINE); //$NON-NLS-1$
+        comment.append(getCommentDisplayString(commit.getFullMessage()));
+        comment.append(OutputConstants.NEW_LINE);
+
+        return comment.toString();
     }
 
     private String getCommentDisplayString(String checkinComment)

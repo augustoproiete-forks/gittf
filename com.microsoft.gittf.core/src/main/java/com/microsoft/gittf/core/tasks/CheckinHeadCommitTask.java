@@ -88,6 +88,7 @@ public class CheckinHeadCommitTask
     private boolean preview = false;
     private String comment = null;
     private String buildDefinition = null;
+    private boolean includeMetaData = true;
 
     public CheckinHeadCommitTask(
         final Repository repository,
@@ -191,6 +192,16 @@ public class CheckinHeadCommitTask
     public void setBuildDefinition(String buildDefinition)
     {
         this.buildDefinition = buildDefinition;
+    }
+
+    public boolean getIncludeMetaData()
+    {
+        return includeMetaData;
+    }
+
+    public void setIncludeMetaData(boolean includeMetaData)
+    {
+        this.includeMetaData = includeMetaData;
     }
 
     @Override
@@ -470,7 +481,14 @@ public class CheckinHeadCommitTask
     {
         if (deep)
         {
-            return buildCommitComment(commitDelta.getToCommit());
+            if (includeMetaData)
+            {
+                return buildCommitComment(commitDelta.getToCommit());
+            }
+            else
+            {
+                return commitDelta.getToCommit().getFullMessage();
+            }
         }
 
         try

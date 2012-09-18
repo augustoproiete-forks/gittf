@@ -77,6 +77,8 @@ public class CheckinCommand
             Messages.getString("CheckinCommand.Argument.Message.HelpText"), //$NON-NLS-1$
             ArgumentOptions.VALUE_REQUIRED),
 
+        new SwitchArgument("no-metadata", Messages.getString("CheckinCommand.Argument.NoMetaData.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+
         new ChoiceArgument(Messages.getString("CheckinCommand.Argument.DepthChoice.HelpText"), //$NON-NLS-1$
             /* Users can specify one of --deep, --depth or --shallow. */
             new SwitchArgument("deep", //$NON-NLS-1$
@@ -165,6 +167,7 @@ public class CheckinCommand
         final boolean preview = getArguments().contains("preview"); //$NON-NLS-1$
         final boolean overrideGatedCheckin = getArguments().contains("bypass"); //$NON-NLS-1$
         final boolean autoSquashMultipleParents = getArguments().contains("autosquash"); //$NON-NLS-1$
+        final boolean includeMetaData = !getArguments().contains("no-metadata"); //$NON-NLS-1$ 
 
         String message = getArguments().contains("message") ? //$NON-NLS-1$
             ((ValueArgument) getArguments().getArgument("message")).getValue() : null; //$NON-NLS-1$
@@ -174,6 +177,11 @@ public class CheckinCommand
             Main.printWarning(Messages.getString("CheckinCommand.MessageWillBeIgnoreBecauseDeepSpecified")); //$NON-NLS-1$
 
             message = null;
+        }
+
+        if (!deep && !includeMetaData)
+        {
+            Main.printWarning(Messages.getString("CheckinCommand.NoMetaDataWillBeIgnoreBecauseShallowSpecified")); //$NON-NLS-1$
         }
 
         String buildDefinition = getArguments().contains("gated") ? //$NON-NLS-1$
@@ -194,6 +202,7 @@ public class CheckinCommand
         checkinTask.setAutoSquash(autoSquashMultipleParents);
         checkinTask.setComment(message);
         checkinTask.setBuildDefinition(buildDefinition);
+        checkinTask.setIncludeMetaData(includeMetaData);
 
         /*
          * Hook up a custom task executor that does not print gated errors to

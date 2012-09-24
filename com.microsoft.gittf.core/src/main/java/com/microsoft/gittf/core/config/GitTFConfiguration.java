@@ -30,6 +30,8 @@ import java.net.URISyntaxException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.eclipse.jgit.lib.ConfigConstants;
+import org.eclipse.jgit.lib.CoreConfig.AutoCRLF;
 import org.eclipse.jgit.lib.Repository;
 
 import com.microsoft.gittf.core.GitTFConstants;
@@ -228,6 +230,12 @@ public class GitTFConfiguration
                 ConfigurationConstants.GATED_BUILD_DEFINITION,
                 buildDefinition);
         }
+
+        repository.getConfig().setEnum(
+            ConfigConstants.CONFIG_CORE_SECTION,
+            null,
+            ConfigConstants.CONFIG_KEY_AUTOCRLF,
+            AutoCRLF.FALSE);
 
         try
         {

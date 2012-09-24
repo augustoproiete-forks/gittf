@@ -263,8 +263,8 @@ public class CheckinHeadCommitTask
                     versionControlClient.getItems(
                         serverPath,
                         LatestVersionSpec.INSTANCE,
-                        RecursionType.FULL,
-                        DeletedState.ANY,
+                        RecursionType.ONE_LEVEL,
+                        DeletedState.NON_DELETED,
                         ItemType.ANY).getItems();
 
                 if (items != null && items.length > 0)

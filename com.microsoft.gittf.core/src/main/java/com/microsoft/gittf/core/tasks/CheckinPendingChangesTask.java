@@ -31,6 +31,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 import com.microsoft.gittf.core.Messages;
+import com.microsoft.gittf.core.OutputConstants;
 import com.microsoft.gittf.core.config.ChangesetCommitMap;
 import com.microsoft.gittf.core.config.GitTFConfiguration;
 import com.microsoft.gittf.core.interfaces.WorkspaceService;
@@ -211,6 +212,13 @@ public class CheckinPendingChangesTask
             if (buildDefinition != null && buildDefinition.length() > 0)
             {
                 buildDefinitionToUse = getBuildDefinitionFromList(buildDefinition, buildDefs);
+
+                if (buildDefinitionToUse == null || buildDefinitionToUse.length() == 0)
+                {
+                    return new TaskStatus(TaskStatus.ERROR, Messages.formatString(
+                        "CheckinPendingChangesTask.InvalidGatedDefinitionSpecifiedFormat", //$NON-NLS-1$
+                        buildDefinition) + OutputConstants.NEW_LINE + e.getLocalizedMessage());
+                }
             }
             else if (buildDefUris.length == 1)
             {

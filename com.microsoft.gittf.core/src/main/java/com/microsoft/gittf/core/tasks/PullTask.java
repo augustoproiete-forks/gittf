@@ -66,6 +66,7 @@ public class PullTask
     private VersionSpec versionSpec = LatestVersionSpec.INSTANCE;
     private boolean deep = false;
     private boolean rebase = false;
+    private boolean force = false;
 
     private ObjectId fetchedCommitId;
 
@@ -99,6 +100,11 @@ public class PullTask
     public void setStrategy(MergeStrategy mergeStrategy)
     {
         getMergeCommand().setStrategy(mergeStrategy);
+    }
+
+    public void setForce(final boolean force)
+    {
+        this.force = force;
     }
 
     public ObjectId getCommitId()
@@ -137,6 +143,7 @@ public class PullTask
         final FetchTask fetchTask = new FetchTask(repository, versionControlClient);
         fetchTask.setVersionSpec(versionSpec);
         fetchTask.setDeep(deep);
+        fetchTask.setForce(force);
         fetchTask.setShouldUpdateFetchHead(false);
 
         final TaskStatus fetchStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(fetchTask);

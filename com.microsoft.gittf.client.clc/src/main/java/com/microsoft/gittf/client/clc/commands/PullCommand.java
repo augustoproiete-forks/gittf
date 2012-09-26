@@ -89,6 +89,8 @@ public class PullCommand
         ),
 
         new SwitchArgument("rebase", Messages.getString("PullCommand.Argument.Rebase.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+
+        new SwitchArgument("force", Messages.getString("PullCommand.Argument.Force.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
     };
 
     @Override
@@ -135,6 +137,8 @@ public class PullCommand
             deep = getDeepFromArguments();
         }
 
+        boolean force = getArguments().contains("force"); //$NON-NLS-1$
+
         boolean rebase = getArguments().contains("rebase"); //$NON-NLS-1$
 
         final PullTask pullTask = new PullTask(getRepository(), getVersionControlService());
@@ -142,6 +146,7 @@ public class PullCommand
         pullTask.setDeep(deep);
         pullTask.setStrategy(getSpecifiedMergeStrategy());
         pullTask.setRebase(rebase);
+        pullTask.setForce(force);
 
         final TaskStatus pullStatus = new CommandTaskExecutor(getProgressMonitor()).execute(pullTask);
 

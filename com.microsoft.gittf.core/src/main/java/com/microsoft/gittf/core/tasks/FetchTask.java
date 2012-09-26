@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -72,6 +74,7 @@ public class FetchTask
     private VersionSpec versionSpec = LatestVersionSpec.INSTANCE;
     private boolean deep = false;
     private boolean shouldUpdateFetchHead = true;
+    private boolean force = false;
 
     private ObjectId fetchedCommitId = null;
     private int fetchedChangesetId = -1;
@@ -98,6 +101,11 @@ public class FetchTask
     public void setShouldUpdateFetchHead(boolean shouldUpdateFetchHead)
     {
         this.shouldUpdateFetchHead = shouldUpdateFetchHead;
+    }
+
+    public void setForce(final boolean force)
+    {
+        this.force = force;
     }
 
     public ObjectId getCommitId()
@@ -134,33 +142,33 @@ public class FetchTask
             return new TaskStatus(TaskStatus.ERROR, Messages.getString("FetchTask.NothingToFetchInNewlyConfiguredRepo")); //$NON-NLS-1$
         }
 
-        Changeset[] changesets =
+        Changeset[] latestChangesets =
             versionControlClient.queryHistory(
                 configuration.getServerPath(),
                 versionSpec,
                 0,
                 RecursionType.FULL,
                 null,
-                new ChangesetVersionSpec(latestChangesetID),
+                new ChangesetVersionSpec(force ? latestChangesetID - 1 : latestChangesetID),
                 versionSpec,
-                deep ? Integer.MAX_VALUE : GitTFConstants.GIT_TF_SHALLOW_DEPTH,
+                deep || force ? Integer.MAX_VALUE : GitTFConstants.GIT_TF_SHALLOW_DEPTH,
                 false,
                 false,
                 false,
                 false);
 
-        if (changesets.length == 0)
+        if (latestChangesets.length == 0)
         {
             return new TaskStatus(TaskStatus.ERROR, Messages.formatString(
                 "FetchTask.CouldNotDetermineVersionFormat", versionSpec.toString(), configuration.getServerPath())); //$NON-NLS-1$
         }
 
-        int finalChangesetID = changesets[0].getChangesetID();
+        int finalChangesetID = latestChangesets[0].getChangesetID();
         ObjectId finalCommitID = changesetCommitMap.getCommitID(finalChangesetID, true);
 
-        int numberOfChangesetToDownload = 0;
+        int changesetCounter = 0;
 
-        if (finalCommitID != null)
+        if (finalCommitID != null && !force)
         {
             log.info(MessageFormat.format("The changeset to download {0} has been downloaded before in commit id {1}", //$NON-NLS-1$
                 Integer.toString(finalChangesetID),
@@ -185,15 +193,13 @@ public class FetchTask
              * changesets since last bridged changeset.) Filter this changeset
              * out.
              */
-            final int skip =
-                (changesets.length > 1 && changesets[changesets.length - 1].getChangesetID() == latestChangesetID) ? 1
-                    : 0;
+            Changeset[] changesets = calculateChangesetsToDownload(latestChangesets, latestChangesetID);
 
-            numberOfChangesetToDownload = (changesets.length - 1) - skip;
+            changesetCounter = changesets.length - 1;
 
-            progressMonitor.setWork(numberOfChangesetToDownload + 1);
+            progressMonitor.setWork(changesetCounter + 1);
 
-            for (int i = numberOfChangesetToDownload; i >= 0; i--)
+            for (int i = changesetCounter; i >= 0; i--)
             {
                 progressMonitor.setDetail(Messages.formatString("FetchTask.ChangesetNumberFormat", //$NON-NLS-1$
                     Integer.toString(changesets[i].getChangesetID())));
@@ -265,7 +271,7 @@ public class FetchTask
             }
             else
             {
-                if (numberOfChangesetToDownload <= 1)
+                if (changesetCounter <= 1)
                 {
                     progressMonitor.displayMessage(Messages.formatString("FetchTask.FetchedFormat", //$NON-NLS-1$
                         Integer.toString(finalChangesetID),
@@ -274,7 +280,7 @@ public class FetchTask
                 else
                 {
                     progressMonitor.displayMessage(Messages.formatString("FetchTask.FetchedMultipleFormat", //$NON-NLS-1$
-                        numberOfChangesetToDownload,
+                        changesetCounter,
                         Integer.toString(finalChangesetID),
                         CommitUtil.abbreviate(repository, finalCommitID)));
                 }
@@ -293,6 +299,30 @@ public class FetchTask
         log.info("Fetch task complete"); //$NON-NLS-1$
 
         return TaskStatus.OK_STATUS;
+    }
+
+    private Changeset[] calculateChangesetsToDownload(Changeset[] changesets, int latestChangeset)
+    {
+        Check.notNullOrEmpty(changesets, "changesets"); //$NON-NLS-1$
+
+        List<Changeset> changesetsToDownload = new ArrayList<Changeset>(changesets.length);
+        changesetsToDownload.add(changesets[0]);
+
+        for (int count = 1; count < changesets.length; count++)
+        {
+            if ((changesets[count].getChangesetID() > latestChangeset && deep)
+                || (changesets[count].getChangesetID() == latestChangeset && force))
+            {
+                changesetsToDownload.add(changesets[count]);
+            }
+
+            if (changesets[count].getChangesetID() < latestChangeset)
+            {
+                break;
+            }
+        }
+
+        return changesetsToDownload.toArray(new Changeset[changesetsToDownload.size()]);
     }
 
     private boolean writeFetchHead(final ObjectId commitID, final int changesetID)

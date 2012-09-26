@@ -72,6 +72,8 @@ public class FetchCommand
             new SwitchArgument("shallow", //$NON-NLS-1$
                 Messages.getString("FetchCommand.Argument.Shallow.HelpText")) //$NON-NLS-1$
         ),
+
+        new SwitchArgument("force", Messages.getString("FetchCommand.Argument.Force.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
     };
 
     @Override
@@ -110,9 +112,12 @@ public class FetchCommand
             deep = getDeepFromArguments();
         }
 
+        boolean force = getArguments().contains("force"); //$NON-NLS-1$
+
         final FetchTask fetchTask = new FetchTask(getRepository(), getVersionControlService());
         fetchTask.setVersionSpec(versionSpec);
         fetchTask.setDeep(deep);
+        fetchTask.setForce(force);
 
         final TaskStatus fetchStatus = new CommandTaskExecutor(getProgressMonitor()).execute(fetchTask);
 

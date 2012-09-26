@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import com.microsoft.gittf.core.OutputConstants;
 import com.microsoft.gittf.core.interfaces.VersionControlService;
 import com.microsoft.gittf.core.test.Util;
 import com.microsoft.tfs.core.clients.versioncontrol.GetItemsOptions;
@@ -319,8 +320,15 @@ public class MockVersionControlService
 
     private String generateFileContent(String path, int changeset)
     {
-        String content = String.format("FilePath : %s - Version : %s .", path, Integer.toString(changeset)); //$NON-NLS-1$ 
-        return content;
+        StringBuilder sb = new StringBuilder();
+
+        for (int count = 0; count < 10; count++)
+        {
+            sb.append(String.format("FilePath : %s - Version : %s .", path, Integer.toString(changeset)));//$NON-NLS-1$
+            sb.append(OutputConstants.NEW_LINE);
+        }
+
+        return sb.toString();
     }
 
     private boolean DoesChangesetDataHasServerPath(HashSet<String> changesetData, String serverOrLocalPath)

@@ -32,6 +32,7 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.TagCommand;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -63,13 +64,22 @@ public final class CommitUtil
 
         if (repository != null)
         {
+            ObjectReader objReader = repository.getObjectDatabase().newReader();
+
             try
             {
-                return repository.getObjectDatabase().newReader().abbreviate(objectID, ABBREVIATED_LENGTH).name();
+                return objReader.abbreviate(objectID, ABBREVIATED_LENGTH).name();
             }
             catch (IOException e)
             {
                 log.warn("Could not read object from object database", e); //$NON-NLS-1$
+            }
+            finally
+            {
+                if (objReader != null)
+                {
+                    objReader.release();
+                }
             }
         }
 

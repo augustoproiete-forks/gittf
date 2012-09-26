@@ -24,8 +24,10 @@
 
 package com.microsoft.gittf.core.test;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -146,5 +148,21 @@ public class Util
         {
             stream.close();
         }
+    }
+
+    public static void touchFile(File toTest)
+        throws IOException
+    {
+        FileWriter fstream = new FileWriter(toTest, true);
+        BufferedWriter out = new BufferedWriter(fstream);
+
+        out.write("."); //$NON-NLS-1$
+        out.close();
+    }
+
+    public static void move(File from, File to)
+    {
+        to.getParentFile().mkdirs();
+        from.renameTo(to);
     }
 }

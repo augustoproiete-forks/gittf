@@ -50,6 +50,7 @@ import com.microsoft.gittf.core.tasks.framework.TaskExecutor;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressDisplay;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
+import com.microsoft.gittf.core.tasks.pendDiff.PendDifferenceTask;
 import com.microsoft.gittf.core.util.ChangesetCommitUtil;
 import com.microsoft.gittf.core.util.ChangesetCommitUtil.ChangesetCommitDetails;
 import com.microsoft.gittf.core.util.Check;

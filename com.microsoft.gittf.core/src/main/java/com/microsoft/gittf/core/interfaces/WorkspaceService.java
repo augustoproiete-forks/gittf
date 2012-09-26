@@ -69,6 +69,7 @@ public interface WorkspaceService
     int pendRename(
         String[] oldPaths,
         String[] newPaths,
+        Boolean[] editFlag,
         LockLevel lockLevel,
         GetOptions getOptions,
         boolean detectTargetItemType,
@@ -95,6 +96,6 @@ public interface WorkspaceService
     void shelve(Shelveset shelveset, PendingChange[] changes, boolean replace, boolean move);
 
     WorkspaceOperationErrorListener getErrorListener();
-    
+
     IBuildServer getBuildServer();
 }

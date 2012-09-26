@@ -32,7 +32,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.microsoft.gittf.core.Messages;
 
-public class URIUtil
+public final class URIUtil
 {
     private static final String hostedServerName = "tfspreview.com"; //$NON-NLS-1$
     private static final String hostedServerScheme = "https"; //$NON-NLS-1$

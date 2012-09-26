@@ -22,40 +22,33 @@
  * SOFTWARE.
  ***********************************************************************************************/
 
-package com.microsoft.gittf.core.util;
+package com.microsoft.gittf.core.tasks.pendDiff;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import org.eclipse.jgit.lib.ObjectId;
 
-/**
- * A utility class for formatting dates.
- * 
- */
-public final class DateUtil
+import com.microsoft.gittf.core.util.Check;
+
+public class Change
 {
-    private DateUtil()
-    {
+    private final String path;
+    private final ObjectId objectID;
 
+    public Change(final String path, final ObjectId objectID)
+    {
+        Check.notNullOrEmpty(path, "path"); //$NON-NLS-1$
+        Check.notNull(objectID, "objectID"); //$NON-NLS-1$
+
+        this.path = path;
+        this.objectID = objectID;
     }
 
-    private static final DateFormat LOCAL_DATETIME_FORMAT = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy Z"); //$NON-NLS-1$
-
-    /**
-     * 
-     * Formats the given date according to the specified pattern. The pattern
-     * must conform to that used by the {@link SimpleDateFormat simple date
-     * format} class.
-     * 
-     * @param date
-     *        The date to format.
-     * 
-     * @return A formatted date string.
-     */
-    public static String formatDate(final Date date)
+    public String getPath()
     {
-        Check.notNull(date, "date"); //$NON-NLS-1$
+        return path;
+    }
 
-        return LOCAL_DATETIME_FORMAT.format(date);
+    public ObjectId getObjectID()
+    {
+        return objectID;
     }
 }

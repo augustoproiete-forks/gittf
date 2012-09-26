@@ -100,6 +100,7 @@ public class TfsWorkspace
     public int pendRename(
         String[] oldPaths,
         String[] newPaths,
+        Boolean[] editFlag,
         LockLevel lockLevel,
         GetOptions getOptions,
         boolean detectTargetItemType,

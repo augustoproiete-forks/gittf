@@ -24,6 +24,9 @@
 
 package com.microsoft.gittf.core.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.OutputConstants;
 import com.microsoft.tfs.core.clients.versioncontrol.events.NonFatalErrorEvent;
@@ -37,8 +40,7 @@ public class WorkspaceOperationErrorListener
 
 {
     private Workspace workspace;
-    private String lastError;
-    private Throwable lastException;
+    private List<String> errors = new ArrayList<String>();
 
     public static final WorkspaceOperationErrorListener EMPTY = new WorkspaceOperationErrorListener();
 
@@ -61,32 +63,32 @@ public class WorkspaceOperationErrorListener
         Failure failure = event.getFailure();
         if (failure != null && failure.getSeverity() == SeverityType.ERROR)
         {
-            lastError = event.getMessage();
+            errors.add(event.getMessage());
         }
         else if (failure == null && event.getThrowable() != null)
         {
-            lastException = event.getThrowable();
+            errors.add(event.getThrowable().getLocalizedMessage());
         }
     }
 
     public void validate()
         throws Exception
     {
-        if (lastError != null && lastError.length() > 0)
+        if (errors.size() > 0)
         {
             StringBuilder sb = new StringBuilder();
             sb.append(Messages.getString("WorkspaceOperationErrorListener.ErrorMessage")); //$NON-NLS-1$
             sb.append(OutputConstants.NEW_LINE);
-            sb.append(lastError);
 
-            throw new Exception(sb.toString());
-        }
-        else if (lastException != null)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.append(Messages.getString("WorkspaceOperationErrorListener.ErrorMessage")); //$NON-NLS-1$
-            sb.append(OutputConstants.NEW_LINE);
-            sb.append(lastException.getLocalizedMessage());
+            for (int count = 0; count < errors.size(); count++)
+            {
+                sb.append(errors.get(count));
+
+                if (count != (errors.size() - 1))
+                {
+                    sb.append(OutputConstants.NEW_LINE);
+                }
+            }
 
             throw new Exception(sb.toString());
         }

@@ -28,9 +28,12 @@ import static org.eclipse.jgit.lib.Constants.DOT_GIT;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 
+import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
@@ -134,6 +137,48 @@ public final class RepositoryUtil
         throws Exception
     {
         return getCommitId(repository, Constants.R_HEADS + Constants.MASTER);
+    }
+
+    public static final ObjectId expandAbbreviatedId(final Repository repository, final AbbreviatedObjectId objectID)
+    {
+        Check.notNull(repository, "repository"); //$NON-NLS-1$
+        Check.notNull(objectID, "objectID"); //$NON-NLS-1$
+
+        if (repository != null)
+        {
+            ObjectReader objReader = repository.getObjectDatabase().newReader();
+
+            try
+            {
+                Collection<ObjectId> objects = objReader.resolve(objectID);
+
+                if (objects.size() == 0)
+                {
+                    return null;
+                }
+                else if (objects.size() == 1)
+                {
+                    return objects.iterator().next();
+                }
+                else
+                {
+                    throw new RuntimeException(Messages.formatString("RepositoryUtil.AmbiguousObjectFormat", objectID)); //$NON-NLS-1$
+                }
+            }
+            catch (IOException exception)
+            {
+                throw new RuntimeException(exception);
+            }
+            finally
+            {
+                if (objReader != null)
+                {
+                    objReader.release();
+                }
+            }
+        }
+
+        return null;
     }
 
     private static ObjectId getCommitId(final Repository repository, String name)

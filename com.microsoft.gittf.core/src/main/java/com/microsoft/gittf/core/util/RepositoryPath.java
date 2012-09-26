@@ -24,6 +24,8 @@
 
 package com.microsoft.gittf.core.util;
 
+import java.util.List;
+
 /**
  * Repository path utility functions.
  * 
@@ -42,6 +44,7 @@ public final class RepositoryPath
      * The preferred separator character.
      */
     public static final char PREFERRED_SEPARATOR_CHARACTER = '/';
+    public static final String PREFERRED_SEPARATOR_STRING = "/"; //$NON-NLS-1$
 
     /**
      * Allowed path separator characters in repository paths. All characters are
@@ -154,11 +157,56 @@ public final class RepositoryPath
 
         int depth = 0;
 
-        for (int i = repositoryPath.indexOf("/"); i != -1 && maxDepth > depth; i = repositoryPath.indexOf("/", i + 1)) //$NON-NLS-1$ //$NON-NLS-2$
+        for (int i = repositoryPath.indexOf(PREFERRED_SEPARATOR_STRING); i != -1 && maxDepth > depth; i =
+            repositoryPath.indexOf(PREFERRED_SEPARATOR_STRING, i + 1))
         {
             depth++;
         }
 
         return depth;
+    }
+
+    public static String getCommonPrefix(String path1, String path2, List<String> difference)
+    {
+        String[] path1Components = path1.split(PREFERRED_SEPARATOR_STRING);
+        String[] path2Components = path2.split(PREFERRED_SEPARATOR_STRING);
+
+        String commonPrefix = ""; //$NON-NLS-1$
+        String path1Difference = ""; //$NON-NLS-1$
+        String path2Difference = ""; //$NON-NLS-1$
+
+        int longestLength = Math.max(path1Components.length, path2Components.length);
+        boolean firstDifferenceFound = false;
+
+        for (int count = 0; count < longestLength; count++)
+        {
+            String path1Component = count < path1Components.length ? path1Components[count] : ""; //$NON-NLS-1$
+            String path2Component = count < path2Components.length ? path2Components[count] : ""; //$NON-NLS-1$
+
+            if (path1Component.equals(path2Component) && path1Component.length() > 0 && !firstDifferenceFound)
+            {
+                commonPrefix += path1Component + PREFERRED_SEPARATOR_STRING;
+            }
+            else
+            {
+                firstDifferenceFound = true;
+                if (path1Component.length() > 0)
+                    path1Difference += path1Component + PREFERRED_SEPARATOR_STRING;
+
+                if (path2Component.length() > 0)
+                    path2Difference += path2Component + PREFERRED_SEPARATOR_STRING;
+            }
+        }
+
+        if (difference != null)
+        {
+            difference.clear();
+            difference.add(path1Difference.length() > 0 ? path1Difference.substring(0, path1Difference.length() - 1)
+                : path1Difference);
+            difference.add(path2Difference.length() > 0 ? path2Difference.substring(0, path2Difference.length() - 1)
+                : path2Difference);
+        }
+
+        return commonPrefix.length() > 0 ? commonPrefix.substring(0, commonPrefix.length() - 1) : commonPrefix;
     }
 }

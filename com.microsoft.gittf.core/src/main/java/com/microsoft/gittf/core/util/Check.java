@@ -26,7 +26,7 @@ package com.microsoft.gittf.core.util;
 
 import com.microsoft.gittf.core.Messages;
 
-public class Check
+public final class Check
 {
     private Check()
     {

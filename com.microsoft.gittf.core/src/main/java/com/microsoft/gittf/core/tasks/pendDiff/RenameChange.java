@@ -22,40 +22,41 @@
  * SOFTWARE.
  ***********************************************************************************************/
 
-package com.microsoft.gittf.core.util;
+package com.microsoft.gittf.core.tasks.pendDiff;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import org.eclipse.jgit.lib.ObjectId;
 
-/**
- * A utility class for formatting dates.
- * 
- */
-public final class DateUtil
+import com.microsoft.gittf.core.util.Check;
+
+public class RenameChange
+    extends Change
 {
-    private DateUtil()
-    {
+    private final String oldPath;
+    private final boolean isEdit;
 
+    public RenameChange(final String oldPath, final String newPath, final ObjectId objectID, boolean isEdit)
+    {
+        super(newPath, objectID);
+
+        Check.notNullOrEmpty(oldPath, "oldPath"); //$NON-NLS-1$
+        Check.notNullOrEmpty(newPath, "newPath"); //$NON-NLS-1$
+
+        this.oldPath = oldPath;
+        this.isEdit = isEdit;
     }
 
-    private static final DateFormat LOCAL_DATETIME_FORMAT = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy Z"); //$NON-NLS-1$
-
-    /**
-     * 
-     * Formats the given date according to the specified pattern. The pattern
-     * must conform to that used by the {@link SimpleDateFormat simple date
-     * format} class.
-     * 
-     * @param date
-     *        The date to format.
-     * 
-     * @return A formatted date string.
-     */
-    public static String formatDate(final Date date)
+    public String getOldPath()
     {
-        Check.notNull(date, "date"); //$NON-NLS-1$
+        return oldPath;
+    }
 
-        return LOCAL_DATETIME_FORMAT.format(date);
+    public String getNewPath()
+    {
+        return getPath();
+    }
+
+    public boolean isEdit()
+    {
+        return isEdit;
     }
 }

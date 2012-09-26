@@ -118,14 +118,24 @@ public class PreviewOnlyWorkspace
     public int pendRename(
         String[] oldPaths,
         String[] newPaths,
+        Boolean[] editFlag,
         LockLevel lockLevel,
         GetOptions getOptions,
         boolean detectTargetItemType,
         PendChangesOptions pendOptions)
     {
-        for (String item : oldPaths)
+        for (int count = 0; count < oldPaths.length; count++)
         {
-            progressMonitor.displayMessage(Messages.formatString("PreviewOnlyWorkspace.RenameFormat", item)); //$NON-NLS-1$
+            if (editFlag[count])
+            {
+                progressMonitor.displayMessage(Messages.formatString(
+                    "PreviewOnlyWorkspace.RenameEditFormat", newPaths[count])); //$NON-NLS-1$
+            }
+            else
+            {
+                progressMonitor.displayMessage(Messages.formatString(
+                    "PreviewOnlyWorkspace.RenameFormat", newPaths[count])); //$NON-NLS-1$
+            }
         }
 
         return oldPaths.length;

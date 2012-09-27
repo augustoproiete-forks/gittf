@@ -61,6 +61,7 @@ import com.microsoft.gittf.core.util.DateUtil;
 import com.microsoft.gittf.core.util.RepositoryUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.path.ServerPath;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.DeletedState;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.ItemType;
@@ -231,7 +232,11 @@ public class CheckinHeadCommitTask
             workspace = workspaceData.getWorkspace();
             workingFolder = workspaceData.getWorkingFolder();
 
-            if (lock)
+            int expectedChangesetNumber = -1;
+            boolean otherUserCheckinDetected = false;
+
+            /* in deep mode we should always lock the workspace */
+            if (lock && deep)
             {
                 final TaskStatus lockStatus =
                     new TaskExecutor(progressMonitor.newSubTask(1)).execute(new LockTask(workspace, serverPath));
@@ -240,6 +245,31 @@ public class CheckinHeadCommitTask
                 {
                     return lockStatus;
                 }
+            }
+            /*
+             * if we are not locking we should attempt to detect other users
+             * checkin in shallow mode
+             */
+            else if (!deep)
+            {
+                Changeset[] latestChangesets =
+                    versionControlClient.queryHistory(
+                        serverPath,
+                        LatestVersionSpec.INSTANCE,
+                        0,
+                        RecursionType.FULL,
+                        null,
+                        null,
+                        null,
+                        1,
+                        false,
+                        false,
+                        false,
+                        false);
+
+                Check.notNull(latestChangesets, "latestChangesets"); //$NON-NLS-1$
+
+                expectedChangesetNumber = latestChangesets[0].getChangesetID() + 1;
             }
 
             /*
@@ -401,8 +431,13 @@ public class CheckinHeadCommitTask
                 if (!preview)
                 {
                     final CheckinPendingChangesTask checkinTask =
-                        new CheckinPendingChangesTask(repository, commitDelta.getToCommit(), comment == null
-                            ? buildCommitComment(commitDelta) : comment, workspace, pendTask.getPendingChanges());
+                        new CheckinPendingChangesTask(
+                            repository,
+                            commitDelta.getToCommit(),
+                            comment == null ? buildCommitComment(commitDelta) : comment,
+                            versionControlClient,
+                            workspace,
+                            pendTask.getPendingChanges());
 
                     if (isLastCommit)
                     {
@@ -411,6 +446,7 @@ public class CheckinHeadCommitTask
 
                     checkinTask.setOverrideGatedCheckin(overrideGatedCheckin);
                     checkinTask.setBuildDefinition(buildDefinition);
+                    checkinTask.setExpectedChangesetNumber(expectedChangesetNumber);
 
                     progressMonitor.setDetail(Messages.getString("CheckinHeadCommitTask.CheckingIn")); //$NON-NLS-1$
 
@@ -424,6 +460,10 @@ public class CheckinHeadCommitTask
 
                     lastChangesetID = checkinTask.getChangesetID();
                     lastCommitID = commitDelta.getToCommit();
+                    otherUserCheckinDetected =
+                        checkinStatus.getCode() == CheckinPendingChangesTask.CHANGESET_NUMBER_NOT_AS_EXPECTED;
+
+                    expectedChangesetNumber = -1;
 
                     progressMonitor.displayVerbose(Messages.formatString(
                         "CheckinHeadCommitTask.CheckedInChangesetFormat", //$NON-NLS-1$
@@ -460,6 +500,11 @@ public class CheckinHeadCommitTask
                 {
                     progressMonitor.displayMessage(Messages.formatString(
                         "CheckinHeadCommitTask.CheckedInMultipleFormat", Integer.toString(commitsToCheckin.size()), Integer.toString(lastChangesetID))); //$NON-NLS-1$                
+                }
+
+                if (otherUserCheckinDetected)
+                {
+                    progressMonitor.displayWarning(Messages.getString("CheckinHeadCommitTask.OtherUserCheckinDetected")); //$NON-NLS-1$
                 }
             }
 
@@ -664,7 +709,7 @@ public class CheckinHeadCommitTask
             TaskProgressMonitor.INDETERMINATE,
             TaskProgressDisplay.DISPLAY_PROGRESS);
 
-        if (workspaceData.getWorkspace() != null && lock)
+        if (workspaceData.getWorkspace() != null && lock && deep)
         {
             final TaskStatus unlockStatus =
                 new TaskExecutor(progressMonitor.newSubTask(1)).execute(new UnlockTask(workspace, serverPath));

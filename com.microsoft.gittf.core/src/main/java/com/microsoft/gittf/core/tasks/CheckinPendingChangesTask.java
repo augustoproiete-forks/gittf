@@ -46,23 +46,32 @@ import com.microsoft.tfs.core.clients.build.IBuildRequest;
 import com.microsoft.tfs.core.clients.build.IBuildServer;
 import com.microsoft.tfs.core.clients.build.flags.BuildReason;
 import com.microsoft.tfs.core.clients.versioncontrol.CheckinFlags;
+import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.exceptions.ActionDeniedBySubscriberException;
 import com.microsoft.tfs.core.clients.versioncontrol.exceptions.TeamFoundationServerExceptionProperties;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
+import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVersionSpec;
+import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 
 public class CheckinPendingChangesTask
     extends Task
 {
+    public static final int CHANGESET_NUMBER_NOT_AS_EXPECTED = 32;
+
     private final Repository repository;
     private final RevCommit commit;
     private final WorkspaceService workspace;
+    private final VersionControlClient versionControlClient;
     private final PendingChange[] changes;
     private final String comment;
 
     private WorkItemCheckinInfo[] workItems;
     private boolean overrideGatedCheckin;
     private String buildDefinition = null;
+    private int expectedChangesetNumber = -1;
 
     private int changesetID = -1;
 
@@ -70,6 +79,7 @@ public class CheckinPendingChangesTask
         final Repository repository,
         final RevCommit commit,
         final String comment,
+        final VersionControlClient versionControlClient,
         final WorkspaceService workspace,
         final PendingChange[] changes)
     {
@@ -77,13 +87,20 @@ public class CheckinPendingChangesTask
         Check.notNull(commit, "commit"); //$NON-NLS-1$
         Check.notNullOrEmpty(comment, "comment"); //$NON-NLS-1$
         Check.notNull(workspace, "workspace"); //$NON-NLS-1$
+        Check.notNull(versionControlClient, "versionControlClient"); //$NON-NLS-1$
         Check.isTrue(changes.length > 0, "changes.length > 0"); //$NON-NLS-1$
 
         this.repository = repository;
         this.commit = commit;
         this.comment = comment;
         this.workspace = workspace;
+        this.versionControlClient = versionControlClient;
         this.changes = changes;
+    }
+
+    public int getChangesetID()
+    {
+        return changesetID;
     }
 
     public void setWorkItemCheckinInfo(WorkItemCheckinInfo[] workItems)
@@ -96,14 +113,14 @@ public class CheckinPendingChangesTask
         this.overrideGatedCheckin = overrideGatedCheckin;
     }
 
-    public String getBuildDefinition()
-    {
-        return buildDefinition;
-    }
-
     public void setBuildDefinition(String buildDefinition)
     {
         this.buildDefinition = buildDefinition;
+    }
+
+    public void setExpectedChangesetNumber(int expectedChangesetNumber)
+    {
+        this.expectedChangesetNumber = expectedChangesetNumber;
     }
 
     @Override
@@ -153,7 +170,11 @@ public class CheckinPendingChangesTask
                     return new TaskStatus(TaskStatus.ERROR, e);
                 }
             }
-            progressMonitor.endTask();
+
+            if (shouldVerifyChangesetNumber())
+            {
+                return verifyChangesetNumber();
+            }
         }
         catch (ActionDeniedBySubscriberException e)
         {
@@ -252,15 +273,11 @@ public class CheckinPendingChangesTask
         }
         finally
         {
+            progressMonitor.endTask();
             progressMonitor.dispose();
         }
 
         return TaskStatus.OK_STATUS;
-    }
-
-    public int getChangesetID()
-    {
-        return changesetID;
     }
 
     private String getBuildDefinitionFromList(String buildDefinitionToUse, IBuildDefinition[] buildDefs)
@@ -289,5 +306,64 @@ public class CheckinPendingChangesTask
         }
 
         return null;
+    }
+
+    private boolean shouldVerifyChangesetNumber()
+    {
+        return expectedChangesetNumber > 0;
+    }
+
+    private TaskStatus verifyChangesetNumber()
+    {
+        if (changesetID == expectedChangesetNumber)
+        {
+            return TaskStatus.OK_STATUS;
+        }
+
+        if (anyChangesetModifiesMappedPath(expectedChangesetNumber, changesetID))
+        {
+            return new TaskStatus(TaskStatus.OK, CHANGESET_NUMBER_NOT_AS_EXPECTED);
+        }
+
+        return TaskStatus.OK_STATUS;
+    }
+
+    private boolean anyChangesetModifiesMappedPath(int start, int end)
+    {
+        GitTFConfiguration configuration = GitTFConfiguration.loadFrom(repository);
+
+        Changeset[] sneakedInChangesets =
+            versionControlClient.queryHistory(
+                configuration.getServerPath(),
+                LatestVersionSpec.INSTANCE,
+                0,
+                RecursionType.FULL,
+                null,
+                new ChangesetVersionSpec(start),
+                new ChangesetVersionSpec(end),
+                Integer.MAX_VALUE,
+                false,
+                false,
+                false,
+                false);
+
+        for (Changeset changeset : sneakedInChangesets)
+        {
+            // if this is before the range we are interested in - ignore
+            if (changeset.getChangesetID() < start)
+            {
+                break;
+            }
+
+            // if this is between start and end - then yes the changes do affect
+            // the mapping
+            if (changeset.getChangesetID() < end)
+            {
+                return true;
+            }
+        }
+
+        // otherwise we are good
+        return false;
     }
 }

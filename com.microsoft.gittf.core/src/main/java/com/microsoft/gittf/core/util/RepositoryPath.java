@@ -24,8 +24,6 @@
 
 package com.microsoft.gittf.core.util;
 
-import java.util.List;
-
 /**
  * Repository path utility functions.
  * 
@@ -84,6 +82,34 @@ public final class RepositoryPath
         }
 
         return ""; //$NON-NLS-1$
+    }
+
+    /**
+     * Determines if the specified parent is an ancestor of the specified child.
+     * 
+     * @param child
+     * @param ancestor
+     * @return true if child is a decendant of parent
+     */
+    public static boolean isAncestor(String child, String ancestor)
+    {
+        if (child.length() <= ancestor.length())
+        {
+            return false;
+        }
+
+        String currentParent = getParent(child);
+        while (currentParent != null && currentParent.length() > 0)
+        {
+            if (currentParent.equals(ancestor))
+            {
+                return true;
+            }
+
+            currentParent = getParent(currentParent);
+        }
+
+        return false;
     }
 
     /**
@@ -164,49 +190,5 @@ public final class RepositoryPath
         }
 
         return depth;
-    }
-
-    public static String getCommonPrefix(String path1, String path2, List<String> difference)
-    {
-        String[] path1Components = path1.split(PREFERRED_SEPARATOR_STRING);
-        String[] path2Components = path2.split(PREFERRED_SEPARATOR_STRING);
-
-        String commonPrefix = ""; //$NON-NLS-1$
-        String path1Difference = ""; //$NON-NLS-1$
-        String path2Difference = ""; //$NON-NLS-1$
-
-        int longestLength = Math.max(path1Components.length, path2Components.length);
-        boolean firstDifferenceFound = false;
-
-        for (int count = 0; count < longestLength; count++)
-        {
-            String path1Component = count < path1Components.length ? path1Components[count] : ""; //$NON-NLS-1$
-            String path2Component = count < path2Components.length ? path2Components[count] : ""; //$NON-NLS-1$
-
-            if (path1Component.equals(path2Component) && path1Component.length() > 0 && !firstDifferenceFound)
-            {
-                commonPrefix += path1Component + PREFERRED_SEPARATOR_STRING;
-            }
-            else
-            {
-                firstDifferenceFound = true;
-                if (path1Component.length() > 0)
-                    path1Difference += path1Component + PREFERRED_SEPARATOR_STRING;
-
-                if (path2Component.length() > 0)
-                    path2Difference += path2Component + PREFERRED_SEPARATOR_STRING;
-            }
-        }
-
-        if (difference != null)
-        {
-            difference.clear();
-            difference.add(path1Difference.length() > 0 ? path1Difference.substring(0, path1Difference.length() - 1)
-                : path1Difference);
-            difference.add(path2Difference.length() > 0 ? path2Difference.substring(0, path2Difference.length() - 1)
-                : path2Difference);
-        }
-
-        return commonPrefix.length() > 0 ? commonPrefix.substring(0, commonPrefix.length() - 1) : commonPrefix;
     }
 }

@@ -33,6 +33,7 @@ import com.microsoft.gittf.client.clc.Messages;
 import com.microsoft.gittf.client.clc.arguments.Argument;
 import com.microsoft.gittf.client.clc.arguments.ValueArgument;
 import com.microsoft.gittf.client.clc.commands.framework.Command;
+import com.microsoft.gittf.core.tasks.pendDiff.RenameMode;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
 import com.microsoft.tfs.core.clients.workitem.CheckinWorkItemAction;
 import com.microsoft.tfs.core.clients.workitem.WorkItem;
@@ -41,6 +42,28 @@ public abstract class PendingChangesCommand
     extends Command
 {
     private List<WorkItemCheckinInfo> workItemsCheckinInfo = null;
+
+    protected RenameMode getRenameModeIfSpecified()
+        throws Exception
+    {
+        String renameModeString = getArguments().contains("renamemode") ? //$NON-NLS-1$
+            ((ValueArgument) getArguments().getArgument("renamemode")).getValue() : null; //$NON-NLS-1$
+
+        if (renameModeString == null)
+        {
+            return RenameMode.ALL;
+        }
+
+        try
+        {
+            return RenameMode.valueOf(renameModeString.toUpperCase());
+        }
+        catch (Exception e)
+        {
+            throw new Exception(
+                Messages.formatString("PendingChangesCommand.InvalidRenameModeFormat", renameModeString)); //$NON-NLS-1$
+        }
+    }
 
     protected WorkItemCheckinInfo[] getWorkItemCheckinInfo()
         throws Exception

@@ -51,6 +51,7 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressDisplay;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.tasks.pendDiff.PendDifferenceTask;
+import com.microsoft.gittf.core.tasks.pendDiff.RenameMode;
 import com.microsoft.gittf.core.util.ChangesetCommitUtil;
 import com.microsoft.gittf.core.util.ChangesetCommitUtil.ChangesetCommitDetails;
 import com.microsoft.gittf.core.util.Check;
@@ -91,6 +92,7 @@ public class CheckinHeadCommitTask
     private String comment = null;
     private String buildDefinition = null;
     private boolean includeMetaData = true;
+    private RenameMode renameMode = RenameMode.ALL;
 
     public CheckinHeadCommitTask(
         final Repository repository,
@@ -204,6 +206,11 @@ public class CheckinHeadCommitTask
     public void setIncludeMetaData(boolean includeMetaData)
     {
         this.includeMetaData = includeMetaData;
+    }
+
+    public void setRenameMode(RenameMode renameMode)
+    {
+        this.renameMode = renameMode;
     }
 
     @Override
@@ -375,6 +382,8 @@ public class CheckinHeadCommitTask
                         workspace,
                         serverPath,
                         workingFolder);
+
+                pendTask.setRenameMode(renameMode);
 
                 pendTask.validate();
 

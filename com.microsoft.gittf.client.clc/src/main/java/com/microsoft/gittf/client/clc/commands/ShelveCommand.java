@@ -60,6 +60,11 @@ public class ShelveCommand
 
         new SwitchArgument("replace", Messages.getString("ShelveCommand.Argument.Replace.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
 
+        new ValueArgument("renamemode", //$NON-NLS-1$
+            Messages.getString("PendingChangesCommand.Argument.RenameMode.ValueDescription"), //$NON-NLS-1$
+            Messages.getString("PendingChangesCommand.Argument.RenameMode.HelpText"), //$NON-NLS-1$
+            ArgumentOptions.VALUE_REQUIRED),
+
         new ValueArgument("resolve", //$NON-NLS-1$
             Messages.getString("PendingChangesCommand.Argument.Resolve.ValueDescription"), //$NON-NLS-1$
             Messages.getString("PendingChangesCommand.Argument.Resolve.HelpText"), //$NON-NLS-1$
@@ -112,6 +117,7 @@ public class ShelveCommand
 
         shelveTask.setWorkItemCheckinInfo(getWorkItemCheckinInfo());
         shelveTask.setReplaceExistingShelveset(getArguments().contains("replace")); //$NON-NLS-1$
+        shelveTask.setRenameMode(getRenameModeIfSpecified());
 
         final TaskStatus shelveStatus = new CommandTaskExecutor(getProgressMonitor()).execute(shelveTask);
 

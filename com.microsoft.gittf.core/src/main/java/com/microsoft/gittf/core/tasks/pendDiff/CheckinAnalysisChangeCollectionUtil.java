@@ -43,7 +43,7 @@ public final class CheckinAnalysisChangeCollectionUtil
         return false;
     }
 
-    private static boolean contains(List<? extends Change> changes, String path)
+    public static boolean contains(List<? extends Change> changes, String path)
     {
         for (Change change : changes)
         {
@@ -54,5 +54,18 @@ public final class CheckinAnalysisChangeCollectionUtil
         }
 
         return false;
+    }
+
+    public static Change getChange(List<? extends Change> changes, String path)
+    {
+        for (Change change : changes)
+        {
+            if (change.getPath().equals(path))
+            {
+                return change;
+            }
+        }
+
+        return null;
     }
 }

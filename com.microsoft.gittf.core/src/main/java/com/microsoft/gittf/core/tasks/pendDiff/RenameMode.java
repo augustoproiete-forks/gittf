@@ -24,45 +24,20 @@
 
 package com.microsoft.gittf.core.tasks.pendDiff;
 
-import org.eclipse.jgit.lib.ObjectId;
-
-import com.microsoft.gittf.core.util.Check;
-
-public class RenameChange
-    extends Change
+public enum RenameMode
 {
-    private final String oldPath;
-    private boolean isEdit;
+    /**
+     * Do not pend renames
+     */
+    NONE,
 
-    public RenameChange(final String oldPath, final String newPath, final ObjectId objectID, boolean isEdit)
-    {
-        super(newPath, objectID);
+    /**
+     * Pend renames for files only
+     */
+    JUSTFILES,
 
-        Check.notNullOrEmpty(oldPath, "oldPath"); //$NON-NLS-1$
-        Check.notNullOrEmpty(newPath, "newPath"); //$NON-NLS-1$
-
-        this.oldPath = oldPath;
-        this.isEdit = isEdit;
-    }
-
-    public String getOldPath()
-    {
-        return oldPath;
-    }
-
-    public String getNewPath()
-    {
-        return getPath();
-    }
-
-    public boolean isEdit()
-    {
-        return isEdit;
-    }
-
-    public void updateEditInformation(ObjectId objectID)
-    {
-        isEdit = !ObjectId.zeroId().equals(objectID);
-        this.objectID = objectID;
-    }
+    /**
+     * Pend renames for files and folders
+     */
+    ALL
 }

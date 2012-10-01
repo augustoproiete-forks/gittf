@@ -1,3 +1,27 @@
+/***********************************************************************************************
+ * Copyright (c) Microsoft Corporation All rights reserved.
+ * 
+ * MIT License:
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ ***********************************************************************************************/
+
 package com.microsoft.gittf.core.tasks.pendDiff;
 
 import java.io.File;
@@ -152,12 +176,11 @@ public class CheckinAnalysisChangeCollectionTest
 
         RevCommit newCommit = commit();
 
-        CheckinAnalysisChangeCollection analysis = buildCheckinAnalysis(newCommit);
+        List<RenameChange> renames = buildRenames(newCommit);
 
-        assertEquals(1, analysis.size());
-        assertEquals(1, analysis.getRenames().size());
+        assertEquals(1, renames.size());
 
-        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(analysis, "root/file2-rename.txt")); //$NON-NLS-1$
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(renames, "root/file2-rename.txt")); //$NON-NLS-1$
     }
 
     public void testFileRenames2()
@@ -183,23 +206,22 @@ public class CheckinAnalysisChangeCollectionTest
 
         RevCommit newCommit = commit();
 
-        CheckinAnalysisChangeCollection analysis = buildCheckinAnalysis(newCommit);
+        List<RenameChange> renames = buildRenames(newCommit);
 
-        assertEquals(5, analysis.size());
-        assertEquals(5, analysis.getRenames().size());
+        assertEquals(5, renames.size());
 
-        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(analysis, "root/file2-rename.txt")); //$NON-NLS-1$
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(renames, "root/file2-rename.txt")); //$NON-NLS-1$
 
-        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(analysis, "root/file2-parent-rename.txt")); //$NON-NLS-1$
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(renames, "root/file2-parent-rename.txt")); //$NON-NLS-1$
 
-        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(analysis, "root/file2-parent-child-rename.txt")); //$NON-NLS-1$
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(renames, "root/file2-parent-child-rename.txt")); //$NON-NLS-1$
 
         assertTrue(CheckinAnalysisChangeCollectionUtil.contains(
-            analysis,
+            renames,
             "root/file2-parent-child-grandChild-rename.txt")); //$NON-NLS-1$
 
         assertTrue(CheckinAnalysisChangeCollectionUtil.contains(
-            analysis,
+            renames,
             "root/file2-parent-child-grandChild-greatGrandChild-rename.txt")); //$NON-NLS-1$
     }
 
@@ -220,10 +242,9 @@ public class CheckinAnalysisChangeCollectionTest
 
         RevCommit newCommit = commit();
 
-        CheckinAnalysisChangeCollection analysis = buildCheckinAnalysis(newCommit);
+        List<RenameChange> renames = buildRenames(newCommit);
 
-        assertEquals(3, analysis.size());
-        assertEquals(3, analysis.getRenames().size());
+        assertEquals(3, renames.size());
     }
 
     /* Rename Edit Tests */
@@ -240,14 +261,186 @@ public class CheckinAnalysisChangeCollectionTest
 
         RevCommit newCommit = commit();
 
-        CheckinAnalysisChangeCollection analysis = buildCheckinAnalysis(newCommit);
+        List<RenameChange> renames = buildRenames(newCommit);
 
-        assertEquals(1, analysis.size());
-        assertEquals(1, analysis.getRenames().size());
-        assertTrue(analysis.getRenames().get(0).isEdit());
-        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(analysis, "root/file2-rename.txt")); //$NON-NLS-1$
+        assertEquals(1, renames.size());
+        assertTrue(renames.get(0).isEdit());
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(renames, "root/file2-rename.txt")); //$NON-NLS-1$
     }
 
+    public void testFolderRename()
+        throws Exception
+    {
+        new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild") //$NON-NLS-1$
+        .renameTo(new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild-rename")); //$NON-NLS-1$
+
+        add("root/parent/child/grandChild"); //$NON-NLS-1$
+
+        RevCommit newCommit = commit();
+
+        List<RenameChange> renames = buildRenames(newCommit);
+
+        assertEquals(1, renames.size());
+
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(
+            renames,
+            "root/parent/child/grandChild/greatGrandChild-rename")); //$NON-NLS-1$
+    }
+
+    public void testFolderRenameEdit()
+        throws Exception
+    {
+        new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild") //$NON-NLS-1$
+        .renameTo(new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild-rename")); //$NON-NLS-1$
+
+        File toTest =
+            new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild-rename/file2.txt"); //$NON-NLS-1$
+        Util.touchFile(toTest);
+
+        add("root/parent/child/grandChild"); //$NON-NLS-1$
+
+        RevCommit newCommit = commit();
+
+        List<RenameChange> renames = buildRenames(newCommit);
+
+        assertEquals(2, renames.size());
+
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(
+            renames,
+            "root/parent/child/grandChild/greatGrandChild-rename")); //$NON-NLS-1$
+
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(
+            renames,
+            "root/parent/child/grandChild/greatGrandChild-rename/file2.txt")); //$NON-NLS-1$
+
+        assertTrue(((RenameChange) CheckinAnalysisChangeCollectionUtil.getChange(
+            renames,
+            "root/parent/child/grandChild/greatGrandChild-rename/file2.txt")).isEdit()); //$NON-NLS-1$
+    }
+
+    public void testFolderRenameWithParent()
+        throws Exception
+    {
+        new File(repository.getWorkTree(), "root/parent/child/grandChild") //$NON-NLS-1$
+        .renameTo(new File(repository.getWorkTree(), "root/parent/child/grandChild-rename")); //$NON-NLS-1$
+
+        add("root/parent/child"); //$NON-NLS-1$
+
+        RevCommit newCommit = commit();
+
+        List<RenameChange> renames = buildRenames(newCommit);
+
+        assertEquals(1, renames.size());
+
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(renames, "root/parent/child/grandChild-rename")); //$NON-NLS-1$
+    }
+
+    public void testNestedFolderRename()
+        throws Exception
+    {
+        new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild") //$NON-NLS-1$
+        .renameTo(new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild-rename")); //$NON-NLS-1$
+
+        new File(repository.getWorkTree(), "root/parent/child/grandChild") //$NON-NLS-1$
+        .renameTo(new File(repository.getWorkTree(), "root/parent/child/grandChild-rename")); //$NON-NLS-1$
+
+        add("root/parent/child"); //$NON-NLS-1$
+
+        RevCommit newCommit = commit();
+
+        List<RenameChange> renames = buildRenames(newCommit);
+
+        assertEquals(2, renames.size());
+
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(renames, "root/parent/child/grandChild-rename")); //$NON-NLS-1$
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(
+            renames,
+            "root/parent/child/grandChild-rename/greatGrandChild-rename")); //$NON-NLS-1$
+    }
+
+    public void testNestedFolderRenameWithEdits()
+        throws Exception
+    {
+        new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild") //$NON-NLS-1$
+        .renameTo(new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild-rename")); //$NON-NLS-1$
+
+        new File(repository.getWorkTree(), "root/parent/child/grandChild") //$NON-NLS-1$
+        .renameTo(new File(repository.getWorkTree(), "root/parent/child/grandChild-rename")); //$NON-NLS-1$
+
+        File toTest =
+            new File(repository.getWorkTree(), "root/parent/child/grandChild-rename/greatGrandChild-rename/file2.txt"); //$NON-NLS-1$
+        Util.touchFile(toTest);
+
+        add("root/parent/child"); //$NON-NLS-1$
+
+        RevCommit newCommit = commit();
+
+        List<RenameChange> renames = buildRenames(newCommit);
+
+        assertEquals(3, renames.size());
+
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(renames, "root/parent/child/grandChild-rename")); //$NON-NLS-1$
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(
+            renames,
+            "root/parent/child/grandChild-rename/greatGrandChild-rename")); //$NON-NLS-1$
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(
+            renames,
+            "root/parent/child/grandChild-rename/greatGrandChild-rename/file2.txt")); //$NON-NLS-1$
+
+        assertTrue(((RenameChange) CheckinAnalysisChangeCollectionUtil.getChange(
+            renames,
+            "root/parent/child/grandChild-rename/greatGrandChild-rename/file2.txt")).isEdit()); //$NON-NLS-1$
+    }
+
+    public void testFolderRenameToSubFolderWithEdits()
+        throws Exception
+    {
+        new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild/subFolder").mkdirs(); //$NON-NLS-1$
+
+        new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild/file1.txt") //$NON-NLS-1$
+        .renameTo(new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild/subFolder/file1.txt")); //$NON-NLS-1$
+
+        new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild/file2.txt") //$NON-NLS-1$
+        .renameTo(new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild/subFolder/file2.txt")); //$NON-NLS-1$
+
+        new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild/file3.txt") //$NON-NLS-1$
+        .renameTo(new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild/subFolder/file3.txt")); //$NON-NLS-1$
+
+        File toTest =
+            new File(repository.getWorkTree(), "root/parent/child/grandChild/greatGrandChild/subFolder/file2.txt"); //$NON-NLS-1$
+        Util.touchFile(toTest);
+
+        add("root/parent/child/grandChild/greatGrandChild"); //$NON-NLS-1$
+
+        RevCommit newCommit = commit();
+
+        List<RenameChange> renames = buildRenames(newCommit);
+
+        assertEquals(3, renames.size());
+
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(
+            renames,
+            "root/parent/child/grandChild/greatGrandChild/subFolder/file1.txt")); //$NON-NLS-1$
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(
+            renames,
+            "root/parent/child/grandChild/greatGrandChild/subFolder/file2.txt")); //$NON-NLS-1$
+        assertTrue(CheckinAnalysisChangeCollectionUtil.contains(
+            renames,
+            "root/parent/child/grandChild/greatGrandChild/subFolder/file3.txt")); //$NON-NLS-1$
+
+        assertTrue(((RenameChange) CheckinAnalysisChangeCollectionUtil.getChange(
+            renames,
+            "root/parent/child/grandChild/greatGrandChild/subFolder/file2.txt")).isEdit()); //$NON-NLS-1$
+    }
+
+    public void testNestedFolderRenameWhereParentFoldersHaveNoFilesWithEdits()
+        throws Exception
+    {
+    }
+
+    // test renames where levels differ
+
+    /* Utility */
     private void initRepository()
         throws Exception
     {
@@ -327,13 +520,37 @@ public class CheckinAnalysisChangeCollectionTest
         return git.commit().setAll(true).setMessage("commit").call(); //$NON-NLS-1$
     }
 
+    private List<RenameChange> buildRenames(RevCommit newCommit)
+        throws Exception
+    {
+        RevTree fromTree = initialCommit.getTree();
+        RevTree toTree = newCommit.getTree();
+
+        CheckinAnalysisChangeCollection analysis =
+            PendDifferenceTask.analyzeDifferences(
+                repository,
+                fromTree,
+                toTree,
+                RenameMode.ALL,
+                new NullTaskProgressMonitor());
+
+        TfsFolderRenameDetector folderRenameDetector = analysis.createFolderRenameDetector();
+        folderRenameDetector.compute();
+
+        return folderRenameDetector.getRenames();
+    }
+
     private CheckinAnalysisChangeCollection buildCheckinAnalysis(RevCommit newCommit)
         throws Exception
     {
         RevTree fromTree = initialCommit.getTree();
         RevTree toTree = newCommit.getTree();
 
-        return PendDifferenceTask.analyzeDifferences(repository, fromTree, toTree, new NullTaskProgressMonitor());
+        return PendDifferenceTask.analyzeDifferences(
+            repository,
+            fromTree,
+            toTree,
+            RenameMode.ALL,
+            new NullTaskProgressMonitor());
     }
-
 }

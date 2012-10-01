@@ -49,6 +49,7 @@ import com.microsoft.gittf.core.tasks.CheckinHeadCommitTask;
 import com.microsoft.gittf.core.tasks.framework.Task;
 import com.microsoft.gittf.core.tasks.framework.TaskCompletedHandler;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
+import com.microsoft.gittf.core.tasks.pendDiff.RenameMode;
 import com.microsoft.tfs.core.clients.versioncontrol.exceptions.ActionDeniedBySubscriberException;
 
 public class CheckinCommand
@@ -78,6 +79,11 @@ public class CheckinCommand
             ArgumentOptions.VALUE_REQUIRED),
 
         new SwitchArgument("no-metadata", Messages.getString("CheckinCommand.Argument.NoMetaData.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+
+        new ValueArgument("renamemode", //$NON-NLS-1$
+            Messages.getString("PendingChangesCommand.Argument.RenameMode.ValueDescription"), //$NON-NLS-1$
+            Messages.getString("PendingChangesCommand.Argument.RenameMode.HelpText"), //$NON-NLS-1$
+            ArgumentOptions.VALUE_REQUIRED),
 
         new ChoiceArgument(Messages.getString("CheckinCommand.Argument.DepthChoice.HelpText"), //$NON-NLS-1$
             /* Users can specify one of --deep, --depth or --shallow. */
@@ -187,6 +193,8 @@ public class CheckinCommand
         String buildDefinition = getArguments().contains("gated") ? //$NON-NLS-1$
             ((ValueArgument) getArguments().getArgument("gated")).getValue() : null; //$NON-NLS-1$
 
+        RenameMode renameMode = getRenameModeIfSpecified();
+
         final CheckinHeadCommitTask checkinTask =
             new CheckinHeadCommitTask(
                 getRepository(),
@@ -203,6 +211,7 @@ public class CheckinCommand
         checkinTask.setComment(message);
         checkinTask.setBuildDefinition(buildDefinition);
         checkinTask.setIncludeMetaData(includeMetaData);
+        checkinTask.setRenameMode(renameMode);
 
         /*
          * Hook up a custom task executor that does not print gated errors to

@@ -31,7 +31,7 @@ import com.microsoft.gittf.core.util.Check;
 public class Change
 {
     private final String path;
-    private final ObjectId objectID;
+    protected ObjectId objectID;
 
     public Change(final String path, final ObjectId objectID)
     {

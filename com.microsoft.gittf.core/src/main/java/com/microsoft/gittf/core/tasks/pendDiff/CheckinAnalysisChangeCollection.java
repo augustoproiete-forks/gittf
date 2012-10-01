@@ -54,7 +54,7 @@ public class CheckinAnalysisChangeCollection
     private final List<DeleteChange> deletes = new ArrayList<DeleteChange>();
     private final List<RenameChange> renames = new ArrayList<RenameChange>();
 
-    Set<String> processedDeletedFolders = new HashSet<String>();
+    private Set<String> processedDeletedFolders = new HashSet<String>();
 
     public CheckinAnalysisChangeCollection()
     {
@@ -134,10 +134,7 @@ public class CheckinAnalysisChangeCollection
     public final void pendRename(RenameChange change)
         throws Exception
     {
-        if (!pendFolderRenamesIfNeeded(change))
-        {
-            renames.add(change);
-        }
+        renames.add(change);
     }
 
     public int size()
@@ -146,7 +143,16 @@ public class CheckinAnalysisChangeCollection
             CorruptObjectException,
             IOException
     {
-        return adds.size() + deletes.size() + renames.size() + edits.size();
+        return adds.size() + deletes.size() + edits.size() + renames.size();
+    }
+
+    public TfsFolderRenameDetector createFolderRenameDetector()
+        throws MissingObjectException,
+            IncorrectObjectTypeException,
+            CorruptObjectException,
+            IOException
+    {
+        return new TfsFolderRenameDetector(repository, sourceTree, targetTree, getRenames());
     }
 
     private void pendFolderDeleteIfNeeded(String folderPath)
@@ -184,11 +190,6 @@ public class CheckinAnalysisChangeCollection
                 objectReader.release();
             }
         }
-    }
-
-    private boolean pendFolderRenamesIfNeeded(RenameChange rename)
-    {
-        return false;
     }
 
     private String getUpperMostFolderToDelete(

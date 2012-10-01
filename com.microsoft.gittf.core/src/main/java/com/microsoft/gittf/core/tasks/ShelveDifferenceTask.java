@@ -43,6 +43,7 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressDisplay;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.tasks.pendDiff.PendDifferenceTask;
+import com.microsoft.gittf.core.tasks.pendDiff.RenameMode;
 import com.microsoft.gittf.core.util.ChangesetCommitUtil;
 import com.microsoft.gittf.core.util.ChangesetCommitUtil.ChangesetCommitDetails;
 import com.microsoft.gittf.core.util.Check;
@@ -65,6 +66,7 @@ public class ShelveDifferenceTask
 
     private WorkItemCheckinInfo[] workItems;
     private boolean replace = false;
+    private RenameMode renameMode = RenameMode.ALL;
 
     public ShelveDifferenceTask(
         final Repository repository,
@@ -102,6 +104,11 @@ public class ShelveDifferenceTask
         this.replace = replace;
     }
 
+    public void setRenameMode(RenameMode renameMode)
+    {
+        this.renameMode = renameMode;
+    }
+
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {
@@ -137,6 +144,9 @@ public class ShelveDifferenceTask
 
             final PendDifferenceTask pendTask =
                 new PendDifferenceTask(repository, fromCommit, toCommit, workspace, serverPath, workingFolder);
+
+            pendTask.setRenameMode(renameMode);
+
             final TaskStatus pendStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(pendTask);
 
             if (!pendStatus.isOK())

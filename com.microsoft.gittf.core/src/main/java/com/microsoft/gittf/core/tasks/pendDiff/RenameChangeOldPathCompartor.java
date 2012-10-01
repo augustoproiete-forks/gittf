@@ -24,45 +24,13 @@
 
 package com.microsoft.gittf.core.tasks.pendDiff;
 
-import org.eclipse.jgit.lib.ObjectId;
+import java.util.Comparator;
 
-import com.microsoft.gittf.core.util.Check;
-
-public class RenameChange
-    extends Change
+public class RenameChangeOldPathCompartor
+    implements Comparator<RenameChange>
 {
-    private final String oldPath;
-    private boolean isEdit;
-
-    public RenameChange(final String oldPath, final String newPath, final ObjectId objectID, boolean isEdit)
+    public int compare(RenameChange arg0, RenameChange arg1)
     {
-        super(newPath, objectID);
-
-        Check.notNullOrEmpty(oldPath, "oldPath"); //$NON-NLS-1$
-        Check.notNullOrEmpty(newPath, "newPath"); //$NON-NLS-1$
-
-        this.oldPath = oldPath;
-        this.isEdit = isEdit;
-    }
-
-    public String getOldPath()
-    {
-        return oldPath;
-    }
-
-    public String getNewPath()
-    {
-        return getPath();
-    }
-
-    public boolean isEdit()
-    {
-        return isEdit;
-    }
-
-    public void updateEditInformation(ObjectId objectID)
-    {
-        isEdit = !ObjectId.zeroId().equals(objectID);
-        this.objectID = objectID;
+        return arg0.getOldPath().compareTo(arg1.getOldPath());
     }
 }

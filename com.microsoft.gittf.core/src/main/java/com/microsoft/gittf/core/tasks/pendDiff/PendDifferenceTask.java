@@ -85,6 +85,8 @@ public class PendDifferenceTask
 
     private final GitTFConfiguration configuration;
 
+    private RenameMode renameMode = RenameMode.ALL;
+
     private PendingChange[] pendingChanges;
 
     private boolean validated = false;
@@ -121,6 +123,11 @@ public class PendDifferenceTask
     public PendingChange[] getPendingChanges()
     {
         return pendingChanges;
+    }
+
+    public void setRenameMode(RenameMode renameMode)
+    {
+        this.renameMode = renameMode;
     }
 
     @Override
@@ -176,7 +183,7 @@ public class PendDifferenceTask
 
             if (fromTree != null)
             {
-                analysis = analyzeDifferences(repository, fromTree, toTree, analyzeMonitor);
+                analysis = analyzeDifferences(repository, fromTree, toTree, renameMode, analyzeMonitor);
             }
             else
             {
@@ -286,6 +293,7 @@ public class PendDifferenceTask
         Repository repository,
         RevObject fromRootTree,
         RevObject toRootTree,
+        RenameMode renameMode,
         final TaskProgressMonitor progressMonitor)
         throws Exception
     {
@@ -312,9 +320,12 @@ public class PendDifferenceTask
             treeWalker.setFilter(TreeFilter.ANY_DIFF);
 
             List<DiffEntry> treeDifferences = DiffEntry.scan(treeWalker);
-            repositoryRenameDetector.addAll(treeDifferences);
 
-            treeDifferences = repositoryRenameDetector.compute();
+            if (renameMode != RenameMode.NONE)
+            {
+                repositoryRenameDetector.addAll(treeDifferences);
+                treeDifferences = repositoryRenameDetector.compute();
+            }
 
             for (DiffEntry change : treeDifferences)
             {
@@ -577,9 +588,28 @@ public class PendDifferenceTask
     private void pendRenames(CheckinAnalysisChangeCollection analysis, WorkspaceOperationErrorListener errorListener)
         throws Exception
     {
-        Check.notNull(analysis, "analysis"); //$NON-NLS-1$
+        if (renameMode == RenameMode.ALL)
+        {
+            TfsFolderRenameDetector folderRenameDetector = analysis.createFolderRenameDetector();
+            folderRenameDetector.compute();
 
-        List<RenameChange> renames = analysis.getRenames();
+            for (List<RenameChange> renames : folderRenameDetector.getRenameBatches())
+            {
+                pendBatchRenames(renames, errorListener);
+            }
+        }
+        else
+        {
+            pendBatchRenames(analysis.getRenames(), errorListener);
+        }
+    }
+
+    private void pendBatchRenames(List<RenameChange> renames, WorkspaceOperationErrorListener errorListener)
+        throws Exception
+    {
+        Check.notNull(renames, "renames"); //$NON-NLS-1$
+        Check.notNull(errorListener, "errorListener"); //$NON-NLS-1$
+
         if (renames.size() == 0)
         {
             return;
@@ -592,13 +622,19 @@ public class PendDifferenceTask
         List<ItemSpec> editSpecs = new ArrayList<ItemSpec>();
         List<LockLevel> lockLevels = new ArrayList<LockLevel>();
 
+        int renameCountToValidate = 0, editCountToValidate = 0;
         for (int i = 0; i < renames.size(); i++)
         {
-            final RenameChange rename = analysis.getRenames().get(i);
+            final RenameChange rename = renames.get(i);
 
-            renameOldPaths.add(ServerPath.combine(serverPathRoot, rename.getOldPath()));
-            renameNewPaths.add(ServerPath.combine(serverPathRoot, rename.getNewPath()));
-            renameEdits.add(rename.isEdit());
+            if (!rename.getOldPath().equals(rename.getNewPath()))
+            {
+                renameOldPaths.add(ServerPath.combine(serverPathRoot, rename.getOldPath()));
+                renameNewPaths.add(ServerPath.combine(serverPathRoot, rename.getNewPath()));
+                renameEdits.add(rename.isEdit());
+
+                renameCountToValidate++;
+            }
 
             if (rename.isEdit())
             {
@@ -606,24 +642,29 @@ public class PendDifferenceTask
                 lockLevels.add(LockLevel.NONE);
 
                 extractToWorkingFolder(rename.getOldPath(), rename.getObjectID());
+
+                editCountToValidate++;
             }
         }
 
-        int count =
-            workspace.pendRename(
-                renameOldPaths.toArray(new String[renameOldPaths.size()]),
-                renameNewPaths.toArray(new String[renameNewPaths.size()]),
-                renameEdits.toArray(new Boolean[renameEdits.size()]),
-                LockLevel.NONE,
-                GetOptions.NONE,
-                false,
-                PendChangesOptions.NONE);
-
-        errorListener.validate();
-
-        if (count < renames.size())
+        if (renameOldPaths.size() > 0)
         {
-            throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
+            int count =
+                workspace.pendRename(
+                    renameOldPaths.toArray(new String[renameOldPaths.size()]),
+                    renameNewPaths.toArray(new String[renameNewPaths.size()]),
+                    renameEdits.toArray(new Boolean[renameEdits.size()]),
+                    LockLevel.NONE,
+                    GetOptions.NONE,
+                    false,
+                    PendChangesOptions.NONE);
+
+            errorListener.validate();
+
+            if (count < renameCountToValidate)
+            {
+                throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
+            }
         }
 
         // If this is a file we need to pend an edit as well just in case
@@ -634,7 +675,7 @@ public class PendDifferenceTask
         // change if the contents are the same.
         if (editSpecs.size() > 0)
         {
-            count =
+            int count =
                 workspace.pendEdit(
                     editSpecs.toArray(new ItemSpec[editSpecs.size()]),
                     lockLevels.toArray(new LockLevel[lockLevels.size()]),
@@ -642,11 +683,11 @@ public class PendDifferenceTask
                     GetOptions.NO_DISK_UPDATE,
                     PendChangesOptions.NONE,
                     null,
-                    false);
+                    renameOldPaths.size() == 0);
 
             errorListener.validate();
 
-            if (count < editSpecs.size())
+            if (count < editCountToValidate)
             {
                 throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
             }

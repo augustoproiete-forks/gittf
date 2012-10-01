@@ -285,6 +285,16 @@ public class TfsFolderRenameDetector
                     return processedRename.getNewPath() + oldPath.substring(processedPath.length());
                 }
             }
+
+            if (oldPath.equals(processedPath))
+            {
+                RenameChange processedRename = processedRenames.get(processedPath);
+
+                if (newPath.equals(processedRename.getNewPath()))
+                {
+                    return processedRename.getNewPath();
+                }
+            }
         }
 
         return oldPath;

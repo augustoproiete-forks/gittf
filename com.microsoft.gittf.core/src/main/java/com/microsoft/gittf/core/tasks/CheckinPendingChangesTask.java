@@ -48,6 +48,7 @@ import com.microsoft.tfs.core.clients.build.flags.BuildReason;
 import com.microsoft.tfs.core.clients.versioncontrol.CheckinFlags;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.exceptions.ActionDeniedBySubscriberException;
+import com.microsoft.tfs.core.clients.versioncontrol.exceptions.CheckinException;
 import com.microsoft.tfs.core.clients.versioncontrol.exceptions.TeamFoundationServerExceptionProperties;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
@@ -55,6 +56,7 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionTyp
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
+import com.microsoft.tfs.core.pendingcheckin.CheckinConflict;
 
 public class CheckinPendingChangesTask
     extends Task
@@ -267,6 +269,21 @@ public class CheckinPendingChangesTask
                 return new TaskStatus(TaskStatus.ERROR, ex);
             }
         }
+        catch (CheckinException e)
+        {
+            if (e.allConflictsResolved() || e.isAnyResolvable())
+            {
+                return new TaskStatus(
+                    TaskStatus.ERROR,
+                    Messages.getString("CheckinPendingChangesTask.OtherUserCheckinDetected")); //$NON-NLS-1$
+            }
+            else if (e.getCheckinConflicts().length > 0)
+            {
+                return new TaskStatus(TaskStatus.ERROR, buildErrorMessage(e.getCheckinConflicts()));
+            }
+
+            return new TaskStatus(TaskStatus.ERROR, e);
+        }
         catch (Exception e)
         {
             return new TaskStatus(TaskStatus.ERROR, e);
@@ -278,6 +295,23 @@ public class CheckinPendingChangesTask
         }
 
         return TaskStatus.OK_STATUS;
+    }
+
+    private String buildErrorMessage(CheckinConflict[] checkinConflicts)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        for (int count = 0; count < checkinConflicts.length; count++)
+        {
+            sb.append(checkinConflicts[count].getMessage());
+
+            if (count != (checkinConflicts.length - 1))
+            {
+                sb.append(OutputConstants.NEW_LINE);
+            }
+        }
+
+        return sb.toString();
     }
 
     private String getBuildDefinitionFromList(String buildDefinitionToUse, IBuildDefinition[] buildDefs)

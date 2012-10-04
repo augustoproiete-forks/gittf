@@ -290,7 +290,7 @@ public class CreateCommitTask
                     folderName));
             }
 
-            File tempFile = File.createTempFile(GitTFConstants.GIT_TF_NAME, null, tempDir);
+            File tempFile = null;
             InputStream tempInputStream = null;
 
             try
@@ -300,6 +300,8 @@ public class CreateCommitTask
 
                 if (blobID == null || ObjectId.equals(blobID, ObjectId.zeroId()))
                 {
+                    tempFile = File.createTempFile(GitTFConstants.GIT_TF_NAME, null, tempDir);
+
                     versionControlClient.downloadFile(item, tempFile.getAbsolutePath());
 
                     if (tempFile.exists())
@@ -337,7 +339,10 @@ public class CreateCommitTask
                     tempInputStream.close();
                 }
 
-                tempFile.delete();
+                if (tempFile != null)
+                {
+                    tempFile.delete();
+                }
             }
         }
         else

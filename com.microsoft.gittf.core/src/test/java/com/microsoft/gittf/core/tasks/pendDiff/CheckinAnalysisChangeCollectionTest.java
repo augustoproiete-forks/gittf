@@ -433,13 +433,6 @@ public class CheckinAnalysisChangeCollectionTest
             "root/parent/child/grandChild/greatGrandChild/subFolder/file2.txt")).isEdit()); //$NON-NLS-1$
     }
 
-    public void testNestedFolderRenameWhereParentFoldersHaveNoFilesWithEdits()
-        throws Exception
-    {
-    }
-
-    // test renames where levels differ
-
     /* Utility */
     private void initRepository()
         throws Exception

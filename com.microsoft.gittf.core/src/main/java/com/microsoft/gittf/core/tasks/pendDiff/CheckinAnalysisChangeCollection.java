@@ -54,6 +54,8 @@ public class CheckinAnalysisChangeCollection
     private final List<DeleteChange> deletes = new ArrayList<DeleteChange>();
     private final List<RenameChange> renames = new ArrayList<RenameChange>();
 
+    private boolean processDeletedFolders = true;
+
     private Set<String> processedDeletedFolders = new HashSet<String>();
 
     public CheckinAnalysisChangeCollection()
@@ -75,6 +77,11 @@ public class CheckinAnalysisChangeCollection
         this.repository = repository;
         this.sourceTree = sourceTree;
         this.targetTree = targetTree;
+    }
+
+    public void setProcessDeletedFolders(boolean processDeletedFolders)
+    {
+        this.processDeletedFolders = processDeletedFolders;
     }
 
     public boolean isEmpty()
@@ -125,8 +132,11 @@ public class CheckinAnalysisChangeCollection
     public final void pendDelete(DeleteChange change)
         throws Exception
     {
-        pendFolderDeleteIfNeeded(change.getType() == FileMode.TREE ? change.getPath()
-            : RepositoryPath.getParent(change.getPath()));
+        if (processDeletedFolders)
+        {
+            pendFolderDeleteIfNeeded(change.getType() == FileMode.TREE ? change.getPath()
+                : RepositoryPath.getParent(change.getPath()));
+        }
 
         deletes.add(change);
     }

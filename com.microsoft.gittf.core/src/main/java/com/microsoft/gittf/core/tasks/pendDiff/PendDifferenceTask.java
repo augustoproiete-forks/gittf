@@ -327,6 +327,11 @@ public class PendDifferenceTask
                 treeDifferences = repositoryRenameDetector.compute();
             }
 
+            if (renameMode != RenameMode.ALL)
+            {
+                analysis.setProcessDeletedFolders(false);
+            }
+
             for (DiffEntry change : treeDifferences)
             {
                 switch (change.getChangeType())

@@ -261,7 +261,7 @@ public class CheckinHeadCommitTask
             {
                 Changeset[] latestChangesets =
                     versionControlClient.queryHistory(
-                        serverPath,
+                        ServerPath.ROOT,
                         LatestVersionSpec.INSTANCE,
                         0,
                         RecursionType.FULL,

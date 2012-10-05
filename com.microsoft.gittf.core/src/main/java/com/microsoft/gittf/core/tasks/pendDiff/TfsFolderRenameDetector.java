@@ -59,6 +59,14 @@ public class TfsFolderRenameDetector
     private List<RenameChange> resultRenames = new ArrayList<RenameChange>();
     private List<List<RenameChange>> resultBatchedRenames = new ArrayList<List<RenameChange>>();
 
+    public TfsFolderRenameDetector()
+    {
+        this.repository = null;
+        this.sourceTree = null;
+        this.targetTree = null;
+        this.fileRenames = new ArrayList<RenameChange>();
+    }
+
     public TfsFolderRenameDetector(
         Repository repository,
         RevObject sourceTree,

@@ -162,6 +162,11 @@ public class CheckinAnalysisChangeCollection
             CorruptObjectException,
             IOException
     {
+        if (repository == null || sourceTree == null || targetTree == null)
+        {
+            return new TfsFolderRenameDetector();
+        }
+
         return new TfsFolderRenameDetector(repository, sourceTree, targetTree, getRenames());
     }
 

@@ -58,7 +58,9 @@ public final class CommitWalker
 
         try
         {
-            final RevCommit headCommit = walker.parseCommit(targetCommitID);
+            final RevCommit headCommit = walker.lookupCommit(targetCommitID);
+            walker.parseHeaders(headCommit);
+
             RevCommit currentCommit = headCommit;
 
             /*
@@ -99,7 +101,8 @@ public final class CommitWalker
                         }
                     }
 
-                    fromCommit = walker.parseCommit(parents[0].getId());
+                    fromCommit = parents[0];
+                    walker.parseHeaders(fromCommit);
                 }
                 else
                 {
@@ -179,7 +182,8 @@ public final class CommitWalker
                     /* We only had one non-squashed parent */
                     else
                     {
-                        fromCommit = walker.parseCommit(possibleFrom.getId());
+                        fromCommit = possibleFrom;
+                        walker.parseHeaders(possibleFrom);
                     }
                 }
 
@@ -215,8 +219,13 @@ public final class CommitWalker
         {
             walker = new RevWalk(repository);
 
-            RevCommit start = walker.parseCommit(targetCommitID);
-            RevCommit end = sourceCommitID != null ? walker.parseCommit(sourceCommitID) : null;
+            RevCommit start = walker.lookupCommit(targetCommitID);
+            RevCommit end = sourceCommitID != null ? walker.lookupCommit(sourceCommitID) : null;
+
+            walker.parseHeaders(start);
+
+            if (end != null)
+                walker.parseHeaders(end);
 
             List<RevCommit> commitPath = detectAutoSquashedPath(walker, start, end);
 
@@ -257,7 +266,7 @@ public final class CommitWalker
          * loaded. This is essential for the getParents method to complete
          * results.
          */
-        start = walker.parseCommit(start.getId());
+        walker.parseHeaders(start);
 
         // parents are sorted in order of oldest first
         RevCommit[] parents = start.getParents();

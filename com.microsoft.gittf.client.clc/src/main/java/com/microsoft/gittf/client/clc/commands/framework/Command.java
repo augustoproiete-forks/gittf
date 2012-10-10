@@ -78,7 +78,7 @@ public abstract class Command
 {
     protected final Log log = LogFactory.getLog(this.getClass());
 
-    private Console console;
+    protected Console console;
 
     private Credentials userCredentials;
     private TFSTeamProjectCollection connection;

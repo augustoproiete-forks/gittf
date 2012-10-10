@@ -39,7 +39,9 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.DeletedState;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.ItemType;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
@@ -378,5 +380,20 @@ public class MockVersionControlService
 
         Item[] items = new Item[toReturn.size()];
         return toReturn.toArray(items);
+    }
+
+    public Shelveset[] queryShelvesets(String shelvesetName, String shelvesetOwner)
+    {
+        return null;
+    }
+
+    public PendingSet[] queryShelvesetChanges(Shelveset shelveset, boolean includeDownloadInfo)
+    {
+        return null;
+    }
+
+    public void deleteShelveset(Shelveset shelveset)
+    {
+
     }
 }

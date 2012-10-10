@@ -38,18 +38,18 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
+import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
 
 public abstract class WorkspaceTask
     extends Task
 {
     private final Log log = LogFactory.getLog(this.getClass());
 
-    private final Repository repository;
-    private final String serverPath;
-
     private GitTFWorkspaceData workspaceData;
 
     protected final VersionControlClient versionControlClient;
+    protected final Repository repository;
+    protected final String serverPath;
 
     protected WorkspaceTask(
         final Repository repository,
@@ -74,6 +74,15 @@ public abstract class WorkspaceTask
     protected GitTFWorkspaceData createWorkspace(final TaskProgressMonitor progressMonitor, boolean previewOnly)
         throws Exception
     {
+        return createWorkspace(progressMonitor, previewOnly, null);
+    }
+
+    protected GitTFWorkspaceData createWorkspace(
+        final TaskProgressMonitor progressMonitor,
+        boolean previewOnly,
+        VersionSpec versionSpec)
+        throws Exception
+    {
         Check.notNull(progressMonitor, "progressMonitor"); //$NON-NLS-1$
 
         if (workspaceData == null)
@@ -81,6 +90,7 @@ public abstract class WorkspaceTask
             final CreateWorkspaceTask createTask =
                 new CreateWorkspaceTask(versionControlClient, serverPath, repository);
             createTask.setPreview(previewOnly);
+            createTask.setVersionSpec(versionSpec);
 
             final TaskStatus createStatus = new TaskExecutor(progressMonitor).execute(createTask);
 

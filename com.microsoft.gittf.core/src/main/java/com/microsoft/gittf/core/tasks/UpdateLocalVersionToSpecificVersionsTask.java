@@ -24,27 +24,72 @@
 
 package com.microsoft.gittf.core.tasks;
 
+import org.eclipse.jgit.lib.Repository;
+
+import com.microsoft.gittf.core.config.GitTFConfiguration;
 import com.microsoft.gittf.core.util.Check;
+import com.microsoft.tfs.core.clients.versioncontrol.GetOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.GetOperation;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.GetRequest;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
+import com.microsoft.tfs.core.clients.versioncontrol.specs.ItemSpec;
+import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
 
 public class UpdateLocalVersionToSpecificVersionsTask
     extends UpdateLocalVersionTask
 {
-    protected GetOperation[][] tfsGetOperations;
+    private final VersionSpec versionSpec;
+    private final Repository repository;
 
-    public UpdateLocalVersionToSpecificVersionsTask(final Workspace workspace, final GetOperation[][] tfsGetOperations)
+    private GetOperation[][] tfsGetOperations;
+
+    public UpdateLocalVersionToSpecificVersionsTask(
+        final Workspace workspace,
+        final Repository repository,
+        final VersionSpec versionSpec)
     {
         super(workspace);
 
-        Check.notNull(tfsGetOperations, "tfsGetOperations"); //$NON-NLS-1$
+        Check.notNull(repository, "repository"); //$NON-NLS-1$
+        Check.notNull(versionSpec, "versionSpec"); //$NON-NLS-1$
 
-        this.tfsGetOperations = tfsGetOperations;
+        this.repository = repository;
+        this.versionSpec = versionSpec;
     }
 
     @Override
     protected GetOperation[][] getGetOperations()
     {
+        if (tfsGetOperations == null)
+        {
+            tfsGetOperations = getVersionSpecGetOps();
+        }
+
+        return tfsGetOperations;
+    }
+
+    private GetOperation[][] getVersionSpecGetOps()
+    {
+        final Workspace workspace = getWorkspace();
+        Check.notNull(workspace, "workspace"); //$NON-NLS-1$
+
+        GitTFConfiguration configuration = GitTFConfiguration.loadFrom(repository);
+
+        GetOperation[][] tfsGetOperations =
+            workspace.getClient().getWebServiceLayer().get(
+                workspace.getName(),
+                workspace.getOwnerName(),
+                new GetRequest[]
+                {
+                    new GetRequest(new ItemSpec(configuration.getServerPath(), RecursionType.FULL), versionSpec)
+                },
+                0,
+                GetOptions.NO_DISK_UPDATE.combine(GetOptions.GET_ALL),
+                null,
+                null,
+                false);
+
         return tfsGetOperations;
     }
 }

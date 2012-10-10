@@ -27,7 +27,6 @@ package com.microsoft.gittf.core.tasks;
 import java.util.Calendar;
 
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.interfaces.WorkspaceService;
@@ -43,7 +42,7 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemChec
 public class ShelvePendingChangesTask
     extends Task
 {
-    private final RevCommit commit;
+    private final String message;
     private final WorkspaceService workspace;
     private final PendingChange[] changes;
     private final String shelvesetName;
@@ -53,19 +52,18 @@ public class ShelvePendingChangesTask
 
     public ShelvePendingChangesTask(
         final Repository repository,
-        final RevCommit commit,
+        final String message,
         final WorkspaceService workspace,
         final PendingChange[] changes,
         final String shelvesetName)
     {
         Check.notNull(repository, "repository"); //$NON-NLS-1$
-        Check.notNull(commit, "commit"); //$NON-NLS-1$
         Check.notNull(workspace, "workspace"); //$NON-NLS-1$
         Check.notNull(changes, "changes"); //$NON-NLS-1$
         Check.isTrue(changes.length >= 1, "changes.length >= 1"); //$NON-NLS-1$
         Check.notNullOrEmpty(shelvesetName, "shelvesetName"); //$NON-NLS-1$
 
-        this.commit = commit;
+        this.message = message;
         this.workspace = workspace;
         this.changes = changes;
         this.shelvesetName = shelvesetName;
@@ -94,7 +92,7 @@ public class ShelvePendingChangesTask
                     shelvesetName,
                     VersionControlConstants.AUTHENTICATED_USER,
                     VersionControlConstants.AUTHENTICATED_USER,
-                    commit.getFullMessage(),
+                    message,
                     null,
                     null,
                     workItems,

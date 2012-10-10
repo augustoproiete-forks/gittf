@@ -37,6 +37,8 @@ import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepository;
 
 import com.microsoft.gittf.core.Messages;
@@ -127,6 +129,35 @@ public final class RepositoryUtil
         return repoBuilder.build();
     }
 
+    public static boolean isValidCommitId(final Repository repository, ObjectId commitId)
+    {
+        final RevWalk walker = new RevWalk(repository);
+
+        try
+        {
+            RevCommit commit = walker.parseCommit(commitId);
+
+            return commit != null;
+        }
+        catch (Exception exception)
+        {
+            return false;
+        }
+        finally
+        {
+            if (walker != null)
+            {
+                walker.release();
+            }
+        }
+    }
+
+    public static ObjectId getRefNameCommitID(final Repository repository, String ref)
+        throws Exception
+    {
+        return getCommitId(repository, ref);
+    }
+
     public static ObjectId getCurrentBranchHeadCommitID(final Repository repository)
         throws Exception
     {
@@ -194,14 +225,14 @@ public final class RepositoryUtil
 
         if (ref == null)
         {
-            throw new Exception(Messages.getString("RepositoryUtil.NoHeadRef")); //$NON-NLS-1$
+            throw new Exception(Messages.formatString("RepositoryUtil.NoRefFormat", name)); //$NON-NLS-1$
         }
 
         ObjectId commitId = ref.getObjectId();
 
         if (commitId == null)
         {
-            throw new Exception(Messages.getString("RepositoryUtil.NoCommitForHead")); //$NON-NLS-1$
+            throw new Exception(Messages.formatString("RepositoryUtil.NoObjectForRefFormat", name)); //$NON-NLS-1$
         }
 
         return commitId;

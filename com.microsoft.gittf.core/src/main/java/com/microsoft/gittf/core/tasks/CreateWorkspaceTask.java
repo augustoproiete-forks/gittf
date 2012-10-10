@@ -49,6 +49,7 @@ import com.microsoft.tfs.core.clients.versioncontrol.WorkspaceOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.path.ServerPath;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkingFolder;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
+import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
 import com.microsoft.tfs.util.FileHelpers;
 import com.microsoft.tfs.util.GUID;
 
@@ -63,6 +64,7 @@ public class CreateWorkspaceTask
 
     private boolean updateLocalVersion = true;
     private boolean preview = false;
+    private VersionSpec localVersionSpec = null;
 
     private WorkspaceService workspace;
     private File workingFolder;
@@ -89,6 +91,11 @@ public class CreateWorkspaceTask
     public void setPreview(boolean preview)
     {
         this.preview = preview;
+    }
+
+    public void setVersionSpec(VersionSpec versionSpec)
+    {
+        localVersionSpec = versionSpec;
     }
 
     @Override
@@ -134,10 +141,20 @@ public class CreateWorkspaceTask
 
                 if (updateLocalVersion)
                 {
+                    UpdateLocalVersionTask updateLocalVersionTask = null;
+                    if (localVersionSpec != null)
+                    {
+                        updateLocalVersionTask =
+                            new UpdateLocalVersionToSpecificVersionsTask(tempWorkspace, repository, localVersionSpec);
+                    }
+                    else
+                    {
+                        updateLocalVersionTask =
+                            new UpdateLocalVersionToLatestDownloadedChangesetTask(tempWorkspace, repository);
+                    }
+
                     TaskStatus updateStatus =
-                        new TaskExecutor(progressMonitor.newSubTask(TaskProgressMonitor.INDETERMINATE)).execute(new UpdateLocalVersionToLatestDownloadedChangesetTask(
-                            repository,
-                            tempWorkspace));
+                        new TaskExecutor(progressMonitor.newSubTask(TaskProgressMonitor.INDETERMINATE)).execute(updateLocalVersionTask);
 
                     if (!updateStatus.isOK())
                     {

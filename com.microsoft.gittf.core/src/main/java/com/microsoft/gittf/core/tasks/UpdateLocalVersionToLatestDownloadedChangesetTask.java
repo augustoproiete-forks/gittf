@@ -44,7 +44,7 @@ public class UpdateLocalVersionToLatestDownloadedChangesetTask
 
     private GetOperation[][] tfsGetOperations;
 
-    public UpdateLocalVersionToLatestDownloadedChangesetTask(Repository repository, Workspace workspace)
+    public UpdateLocalVersionToLatestDownloadedChangesetTask(final Workspace workspace, final Repository repository)
     {
         super(workspace);
 

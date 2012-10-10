@@ -32,6 +32,7 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.config.ChangesetCommitMap;
@@ -44,29 +45,28 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.tasks.pendDiff.PendDifferenceTask;
 import com.microsoft.gittf.core.tasks.pendDiff.RenameMode;
-import com.microsoft.gittf.core.util.ChangesetCommitUtil;
-import com.microsoft.gittf.core.util.ChangesetCommitUtil.ChangesetCommitDetails;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.gittf.core.util.CommitWalker;
 import com.microsoft.gittf.core.util.CommitWalker.CommitDelta;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
+import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVersionSpec;
+import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
 
 public class ShelveDifferenceTask
     extends WorkspaceTask
 {
-    public static final int NO_CHANGES = 1;
-
     private static final Log log = LogFactory.getLog(ShelveDifferenceTask.class);
 
-    private final Repository repository;
     private final ObjectId shelveCommitID;
-    private final String serverPath;
     private final String shelvesetName;
 
     private WorkItemCheckinInfo[] workItems;
     private boolean replace = false;
     private RenameMode renameMode = RenameMode.ALL;
+    private String message = null;
+
+    private VersionSpec shelveAgainstVersion = null;
 
     public ShelveDifferenceTask(
         final Repository repository,
@@ -83,20 +83,13 @@ public class ShelveDifferenceTask
         Check.notNullOrEmpty(serverPath, "serverPath"); //$NON-NLS-1$
         Check.notNullOrEmpty(shelvesetName, "shelvesetName"); //$NON-NLS-1$
 
-        this.repository = repository;
         this.shelveCommitID = shelveCommitID;
-        this.serverPath = serverPath;
         this.shelvesetName = shelvesetName;
     }
 
     public void setWorkItemCheckinInfo(WorkItemCheckinInfo[] workItems)
     {
         this.workItems = workItems;
-    }
-
-    public WorkItemCheckinInfo[] getWorkItemCheckinInfo()
-    {
-        return workItems;
     }
 
     public void setReplaceExistingShelveset(boolean replace)
@@ -107,6 +100,11 @@ public class ShelveDifferenceTask
     public void setRenameMode(RenameMode renameMode)
     {
         this.renameMode = renameMode;
+    }
+
+    public void setMessage(String message)
+    {
+        this.message = message;
     }
 
     @Override
@@ -121,30 +119,22 @@ public class ShelveDifferenceTask
 
         try
         {
-            workspaceData = createWorkspace(progressMonitor.newSubTask(1));
+            progressMonitor.setDetail(Messages.getString("ShelveDifferenceTask.ExaminingRepository")); //$NON-NLS-1$
+
+            CommitDelta deltaToShelve = getOptimalCommitDelta();
+
+            final RevCommit fromCommit = deltaToShelve.getFromCommit();
+            final RevCommit toCommit = deltaToShelve.getToCommit();
+
+            progressMonitor.setDetail(Messages.getString("ShelveDifferenceTask.PreparingWorkspace")); //$NON-NLS-1$
+
+            workspaceData = createWorkspace(progressMonitor.newSubTask(1), false, shelveAgainstVersion);
 
             final WorkspaceService workspace = workspaceData.getWorkspace();
             final File workingFolder = workspaceData.getWorkingFolder();
 
-            final ChangesetCommitMap commitMap = new ChangesetCommitMap(repository);
-            final ChangesetCommitDetails lastBridgedChangeset = ChangesetCommitUtil.getLastBridgedChangeset(commitMap);
-
-            if (lastBridgedChangeset != null && lastBridgedChangeset.getCommitID().equals(shelveCommitID))
-            {
-                return new TaskStatus(TaskStatus.OK, ShelveDifferenceTask.NO_CHANGES);
-            }
-
-            progressMonitor.setDetail(Messages.getString("ShelveDifferenceTask.ExaminingRepository")); //$NON-NLS-1$
-            List<CommitDelta> commitDeltas =
-                CommitWalker.getAutoSquashedCommitList(repository, lastBridgedChangeset.getCommitID(), shelveCommitID);
-            progressMonitor.setDetail(null);
-
-            final RevCommit fromCommit = commitDeltas.get(0).getFromCommit();
-            final RevCommit toCommit = commitDeltas.get(commitDeltas.size() - 1).getToCommit();
-
             final PendDifferenceTask pendTask =
                 new PendDifferenceTask(repository, fromCommit, toCommit, workspace, serverPath, workingFolder);
-
             pendTask.setRenameMode(renameMode);
 
             final TaskStatus pendStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(pendTask);
@@ -157,15 +147,18 @@ public class ShelveDifferenceTask
             final ShelvePendingChangesTask shelveTask =
                 new ShelvePendingChangesTask(
                     repository,
-                    toCommit,
+                    message == null ? toCommit.getFullMessage() : message,
                     workspace,
                     pendTask.getPendingChanges(),
                     shelvesetName);
 
             shelveTask.setReplaceExistingShelveset(replace);
+            shelveTask.setWorkItemCheckinInfo(workItems);
 
             progressMonitor.setDetail(Messages.getString("ShelveDifferenceTask.Shelving")); //$NON-NLS-1$
+
             final TaskStatus shelveStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(shelveTask);
+
             progressMonitor.setDetail(null);
 
             if (!shelveStatus.isOK())
@@ -177,7 +170,6 @@ public class ShelveDifferenceTask
             workspaceData = null;
 
             progressMonitor.endTask();
-
             return TaskStatus.OK_STATUS;
         }
         catch (Exception e)
@@ -193,5 +185,69 @@ public class ShelveDifferenceTask
                 disposeWorkspace(new NullTaskProgressMonitor());
             }
         }
+    }
+
+    private CommitDelta getOptimalCommitDelta()
+        throws Exception
+    {
+        final ChangesetCommitMap commitMap = new ChangesetCommitMap(repository);
+        final int shelvesetChangesetId = commitMap.getChangesetID(shelveCommitID);
+
+        if (shelvesetChangesetId > 0)
+        {
+            // this already maps to an existing changeset;
+            throw new Exception(Messages.formatString("ShelveDifferencesTask.NoChangesToShelveFormat", //$NON-NLS-1$
+                shelvesetChangesetId));
+        }
+
+        List<CommitDelta> commitDeltas = null;
+
+        int currentChangesetId = commitMap.getLastBridgedChangesetID(true);
+        while (currentChangesetId > 0)
+        {
+            ObjectId changesetCommitId = commitMap.getCommitID(currentChangesetId, true);
+
+            try
+            {
+                commitDeltas = CommitWalker.getAutoSquashedCommitList(repository, changesetCommitId, shelveCommitID);
+            }
+            catch (Exception exception)
+            {
+                // eat exception here we do not care if the path does not exist
+            }
+
+            if (commitDeltas == null)
+            {
+                currentChangesetId = commitMap.getPreviousBridgedChangeset(currentChangesetId, true);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (commitDeltas == null)
+        {
+            RevWalk walker = new RevWalk(repository);
+            try
+            {
+                RevCommit toCommit = walker.parseCommit(shelveCommitID);
+                return new CommitDelta(null, toCommit);
+            }
+            finally
+            {
+                if (walker != null)
+                {
+                    walker.release();
+                }
+            }
+        }
+
+        shelveAgainstVersion = new ChangesetVersionSpec(currentChangesetId);
+
+        final RevCommit fromCommit = commitDeltas.get(0).getFromCommit();
+        final RevCommit toCommit = commitDeltas.get(commitDeltas.size() - 1).getToCommit();
+
+        return new CommitDelta(fromCommit, toCommit);
     }
 }

@@ -25,8 +25,8 @@
 package com.microsoft.gittf.client.clc.commands;
 
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
 
-import com.microsoft.gittf.client.clc.Console.Verbosity;
 import com.microsoft.gittf.client.clc.ExitCode;
 import com.microsoft.gittf.client.clc.Messages;
 import com.microsoft.gittf.client.clc.arguments.Argument;
@@ -47,7 +47,9 @@ public class ShelveCommand
 
     private static Argument[] ARGUMENTS = new Argument[]
     {
-        new SwitchArgument("help", Messages.getString("Command.Argument.Help.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+        new SwitchArgument("help", //$NON-NLS-1$
+            Messages.getString("Command.Argument.Help.HelpText"), //$NON-NLS-1$
+            ArgumentOptions.SUPPRESS_REQUIREMENTS),
 
         new ChoiceArgument(Messages.getString("Command.Argument.Display.HelpText"), //$NON-NLS-1$
             new SwitchArgument("quiet", //$NON-NLS-1$
@@ -65,6 +67,12 @@ public class ShelveCommand
             Messages.getString("PendingChangesCommand.Argument.RenameMode.HelpText"), //$NON-NLS-1$
             ArgumentOptions.VALUE_REQUIRED),
 
+        new ValueArgument("message", //$NON-NLS-1$
+            'm',
+            Messages.getString("ShelveCommand.Argument.Message.ValueDescription"), //$NON-NLS-1$
+            Messages.getString("ShelveCommand.Argument.Message.HelpText"), //$NON-NLS-1$
+            ArgumentOptions.VALUE_REQUIRED),
+
         new ValueArgument("resolve", //$NON-NLS-1$
             Messages.getString("PendingChangesCommand.Argument.Resolve.ValueDescription"), //$NON-NLS-1$
             Messages.getString("PendingChangesCommand.Argument.Resolve.HelpText"), //$NON-NLS-1$
@@ -75,8 +83,10 @@ public class ShelveCommand
             Messages.getString("PendingChangesCommand.Argument.Associate.HelpText"), //$NON-NLS-1$
             ArgumentOptions.VALUE_REQUIRED.combine(ArgumentOptions.MULTIPLE)),
 
-        new FreeArgument("name", Messages.getString("ShelveCommand.Argument.Name.HelpText"), ArgumentOptions.REQUIRED) //$NON-NLS-1$ //$NON-NLS-2$
-        };
+        new FreeArgument("name", Messages.getString("ShelveCommand.Argument.Name.HelpText"), ArgumentOptions.REQUIRED), //$NON-NLS-1$ //$NON-NLS-2$
+
+        new FreeArgument("ref-spec", Messages.getString("ShelveCommand.Argument.RefSpec.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+    };
 
     @Override
     protected String getCommandName()
@@ -103,28 +113,42 @@ public class ShelveCommand
         verifyGitTfConfigured();
         verifyRepoSafeState();
 
+        final Repository repository = getRepository();
+
         final String name = ((FreeArgument) getArguments().getArgument("name")).getValue(); //$NON-NLS-1$
 
-        final ObjectId headCommitId = RepositoryUtil.getCurrentBranchHeadCommitID(getRepository());
+        final String message = getArguments().contains("message") ? //$NON-NLS-1$
+            ((ValueArgument) getArguments().getArgument("message")).getValue() : null; //$NON-NLS-1$
+
+        final String refString =
+            getArguments().contains("ref-spec") ? ((FreeArgument) getArguments().getArgument("ref-spec")).getValue() //$NON-NLS-1$ //$NON-NLS-2$
+                : null;
+
+        final ObjectId commitToShelve =
+            refString == null ? RepositoryUtil.getCurrentBranchHeadCommitID(repository)
+                : RepositoryUtil.getRefNameCommitID(repository, refString);
+
+        if (commitToShelve == null
+            || ObjectId.zeroId().equals(commitToShelve)
+            || !RepositoryUtil.isValidCommitId(repository, commitToShelve))
+        {
+            throw new Exception(Messages.formatString("ShelveCommnad.InvalidRefSpecFormat", refString)); //$NON-NLS-1$
+        }
 
         final ShelveDifferenceTask shelveTask =
             new ShelveDifferenceTask(
-                getRepository(),
-                headCommitId,
+                repository,
+                commitToShelve,
                 getVersionControlClient(),
                 getServerConfiguration().getServerPath(),
                 name);
 
+        shelveTask.setMessage(message);
         shelveTask.setWorkItemCheckinInfo(getWorkItemCheckinInfo());
         shelveTask.setReplaceExistingShelveset(getArguments().contains("replace")); //$NON-NLS-1$
         shelveTask.setRenameMode(getRenameModeIfSpecified());
 
         final TaskStatus shelveStatus = new CommandTaskExecutor(getProgressMonitor()).execute(shelveTask);
-
-        if (shelveStatus.isOK() && shelveStatus.getCode() == ShelveDifferenceTask.NO_CHANGES)
-        {
-            getConsole().getOutputStream(Verbosity.NORMAL).println(Messages.getString("ShelveCommand.NoChanges")); //$NON-NLS-1$
-        }
 
         return shelveStatus.isOK() ? ExitCode.SUCCESS : ExitCode.FAILURE;
     }

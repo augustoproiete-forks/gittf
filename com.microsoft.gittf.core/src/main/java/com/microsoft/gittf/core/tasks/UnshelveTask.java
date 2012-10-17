@@ -24,63 +24,59 @@
 
 package com.microsoft.gittf.core.tasks;
 
-import java.util.Set;
-import java.util.TreeSet;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Repository;
 
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.interfaces.VersionControlService;
 import com.microsoft.gittf.core.tasks.framework.Task;
+import com.microsoft.gittf.core.tasks.framework.TaskExecutor;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressDisplay;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
-import com.microsoft.gittf.core.util.ShelvesetCompartor;
-import com.microsoft.gittf.core.util.ShelvesetSortOption;
-import com.microsoft.gittf.core.util.ShelvesetView;
-import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
+import com.microsoft.gittf.core.util.CommitUtil;
+import com.microsoft.gittf.core.util.StashUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
 
-public class ShelvesetsDisplayTask
+public class UnshelveTask
     extends Task
 {
     private final VersionControlService versionControlService;
-    private final ShelvesetView view;
-    private final String shelvesetName;
+    private final Repository repository;
     private final String shelvesetOwnerName;
+    private final String shelvesetName;
 
-    private boolean displayDetails = false;
-    private ShelvesetSortOption sortOption = ShelvesetSortOption.DATE;
+    private boolean apply = false;
 
-    public ShelvesetsDisplayTask(
+    public UnshelveTask(
         final VersionControlService versionControlService,
-        final ShelvesetView view,
+        final Repository repository,
         final String shelvesetName,
         final String shelvesetOwnerName)
     {
         Check.notNull(versionControlService, "versionControlService"); //$NON-NLS-1$
-        Check.notNull(view, "view"); //$NON-NLS-1$
+        Check.notNull(repository, "repository"); //$NON-NLS-1$
+        Check.notNullOrEmpty(shelvesetName, "shelvesetName"); //$NON-NLS-1$
 
         this.versionControlService = versionControlService;
-        this.view = view;
+        this.repository = repository;
         this.shelvesetName = shelvesetName;
         this.shelvesetOwnerName = shelvesetOwnerName;
     }
 
-    public void setDisplayDetails(final boolean displayDetails)
+    public void setApply(boolean apply)
     {
-        this.displayDetails = displayDetails;
-    }
-
-    public void setSortOption(final ShelvesetSortOption sortOption)
-    {
-        this.sortOption = sortOption;
+        this.apply = apply;
     }
 
     @Override
     public TaskStatus run(TaskProgressMonitor progressMonitor)
         throws Exception
     {
-        progressMonitor.beginTask(Messages.getString("ShelvesetsDisplayTask.DownloadingShelvesets"), //$NON-NLS-1$
+        progressMonitor.beginTask(Messages.getString("UnshelveTask.LookingUpShelveset"), //$NON-NLS-1$
             1,
             TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
 
@@ -89,31 +85,63 @@ public class ShelvesetsDisplayTask
         if (results.length == 0)
         {
             progressMonitor.endTask();
-            return new TaskStatus(TaskStatus.ERROR, Messages.getString("ShelvesetsDisplayTask.NoShelvesetsFound")); //$NON-NLS-1$
+            return new TaskStatus(TaskStatus.ERROR, Messages.getString("UnshelveTask.NoShelvesetsFound")); //$NON-NLS-1$
         }
 
-        if (displayDetails && results.length == 1)
-        {
-            // display shelveset details
-            PendingSet[] shelvesetDetails = versionControlService.queryShelvesetChanges(results[0], false);
-            progressMonitor.endTask();
-
-            view.displayShelvesetDetails(results[0], shelvesetDetails);
-        }
-        else
+        if (results.length > 1)
         {
             progressMonitor.endTask();
-
-            // Sort shelvesets
-            Set<Shelveset> shelvesets = new TreeSet<Shelveset>(new ShelvesetCompartor(sortOption));
-            for (Shelveset shelveset : results)
-            {
-                shelvesets.add(shelveset);
-            }
-
-            // display all shelvesets
-            view.displayShelvesets(shelvesets.toArray(new Shelveset[shelvesets.size()]), displayDetails);
+            return new TaskStatus(TaskStatus.ERROR, Messages.getString("UnshelveTask.MultipleShelvesetsFound")); //$NON-NLS-1$
         }
+
+        Shelveset shelveset = results[0];
+
+        CreateCommitForShelvesetTask unshelveTask =
+            new CreateCommitForShelvesetTask(repository, versionControlService, shelveset, null);
+
+        TaskStatus unshelveTaskStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(unshelveTask);
+
+        if (!unshelveTaskStatus.isOK())
+        {
+            return unshelveTaskStatus;
+        }
+
+        ObjectId shelvesetCommitId = unshelveTask.getCommitID();
+
+        String shelvesetTagName = generateValidTagName(shelveset);
+        PersonIdent shelvesetOwner = new PersonIdent(shelveset.getOwnerDisplayName(), shelveset.getOwnerName());
+        boolean tagCreated = CommitUtil.createTag(repository, shelvesetCommitId, shelvesetTagName, shelvesetOwner);
+
+        if (apply)
+        {
+            StashUtil.apply(repository, shelvesetCommitId);
+        }
+
+        progressMonitor.endTask();
+
+        progressMonitor.displayMessage(Messages.formatString("UnshelveTask.SuccessMessageFormat", //$NON-NLS-1$
+            tagCreated ? shelvesetTagName : CommitUtil.abbreviate(repository, shelvesetCommitId),
+            shelveset.getName()));
+
         return TaskStatus.OK_STATUS;
+    }
+
+    private String generateValidTagName(Shelveset shelveset)
+    {
+        String tagName = Messages.formatString("UnshelveTask.ShelvesetTagFormat", shelveset.getName()); //$NON-NLS-1$
+
+        if (Repository.isValidRefName(Constants.R_TAGS + tagName))
+        {
+            return tagName;
+        }
+
+        tagName = tagName.replace(' ', '_');
+
+        if (Repository.isValidRefName(Constants.R_TAGS + tagName))
+        {
+            return tagName;
+        }
+
+        return Messages.formatString("UnshelveTask.ShelvesetTagFormat", Long.toString(System.currentTimeMillis())); //$NON-NLS-1$
     }
 }

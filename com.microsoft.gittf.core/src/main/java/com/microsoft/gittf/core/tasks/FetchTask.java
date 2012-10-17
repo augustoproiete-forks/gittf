@@ -157,6 +157,24 @@ public class FetchTask
                 false,
                 false);
 
+        if (latestChangesets.length == 0 && force)
+        {
+            latestChangesets =
+                versionControlClient.queryHistory(
+                    configuration.getServerPath(),
+                    versionSpec,
+                    0,
+                    RecursionType.FULL,
+                    null,
+                    null,
+                    versionSpec,
+                    deep || force ? Integer.MAX_VALUE : GitTFConstants.GIT_TF_SHALLOW_DEPTH,
+                    false,
+                    false,
+                    false,
+                    false);
+        }
+
         if (latestChangesets.length == 0)
         {
             return new TaskStatus(TaskStatus.ERROR, Messages.formatString(
@@ -204,8 +222,8 @@ public class FetchTask
                 progressMonitor.setDetail(Messages.formatString("FetchTask.ChangesetNumberFormat", //$NON-NLS-1$
                     Integer.toString(changesets[i].getChangesetID())));
 
-                CreateCommitTask createCommitTask =
-                    new CreateCommitTask(repository, versionControlClient, changesets[i].getChangesetID(), lastCommitID);
+                CreateCommitForChangesetVersionSpecTask createCommitTask =
+                    new CreateCommitForChangesetVersionSpecTask(repository, versionControlClient, changesets[i].getChangesetID(), lastCommitID);
                 TaskStatus createCommitTaskStatus =
                     new TaskExecutor(progressMonitor.newSubTask(1)).execute(createCommitTask);
 
@@ -221,7 +239,8 @@ public class FetchTask
 
                 try
                 {
-                    changesetCommitMap.setChangesetCommit(changesets[i].getChangesetID(), lastCommitID);
+                    boolean forceHWMUpdate = i == changesetCounter && force;
+                    changesetCommitMap.setChangesetCommit(changesets[i].getChangesetID(), lastCommitID, forceHWMUpdate);
                 }
                 catch (IOException e)
                 {

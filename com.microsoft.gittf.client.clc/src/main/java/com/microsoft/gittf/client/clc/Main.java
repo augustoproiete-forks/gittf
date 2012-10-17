@@ -49,6 +49,7 @@ import com.microsoft.gittf.client.clc.commands.HelpCommand;
 import com.microsoft.gittf.client.clc.commands.PullCommand;
 import com.microsoft.gittf.client.clc.commands.ShelveCommand;
 import com.microsoft.gittf.client.clc.commands.ShelvesetsCommand;
+import com.microsoft.gittf.client.clc.commands.UnshelveCommand;
 import com.microsoft.gittf.client.clc.commands.framework.Command;
 import com.microsoft.gittf.client.clc.util.HelpFormatter;
 import com.microsoft.gittf.client.clc.util.logging.LoggingConfiguration;
@@ -105,6 +106,11 @@ public class Main
             ShelvesetsCommand.COMMAND_NAME,
             ShelvesetsCommand.class,
             Messages.getString("Main.Command.Shelvesets.HelpText")), //$NON-NLS-1$
+
+        new CommandDefinition(
+            UnshelveCommand.COMMAND_NAME,
+            UnshelveCommand.class,
+            Messages.getString("Main.Command.Unshelve.HelpText")), //$NON-NLS-1$            
     };
 
     /**

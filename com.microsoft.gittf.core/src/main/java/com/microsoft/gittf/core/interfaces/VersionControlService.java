@@ -30,6 +30,7 @@ import com.microsoft.tfs.core.clients.versioncontrol.GetItemsOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.DeletedState;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
@@ -44,6 +45,10 @@ public interface VersionControlService
 
     void downloadFile(Item item, String downloadTo)
         throws IOException;
+
+    void downloadShelvedFile(PendingChange shelvedChange, String downloadTo);
+
+    void downloadBaseFile(PendingChange pendingChange, String downloadTo);
 
     Changeset getChangeset(int changesetID);
 

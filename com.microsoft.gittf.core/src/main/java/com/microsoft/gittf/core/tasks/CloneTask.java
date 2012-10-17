@@ -206,8 +206,8 @@ public class CloneTask
 
             for (int i = numberOfChangesetToDownload; i >= 0; i--)
             {
-                CreateCommitTask commitTask =
-                    new CreateCommitTask(repository, vcClient, changesets[i].getChangesetID(), lastCommitID);
+                CreateCommitForChangesetVersionSpecTask commitTask =
+                    new CreateCommitForChangesetVersionSpecTask(repository, vcClient, changesets[i].getChangesetID(), lastCommitID);
 
                 TaskStatus commitStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(commitTask);
 

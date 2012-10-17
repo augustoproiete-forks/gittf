@@ -131,12 +131,11 @@ public class ShelvesetsCommand
                 throw new Exception(Messages.getString("ShelvesetsCommand.DeleteNotSupportedWithoutName")); //$NON-NLS-1$
             }
 
-            final ShelvesetDeleteTask shelvesetDeleteTask = new ShelvesetDeleteTask(getVersionControlService());
-            shelvesetDeleteTask.setUser(user);
-            shelvesetDeleteTask.setName(name);
-
             final TaskStatus shelvesetsDeleteTaskResult =
-                new CommandTaskExecutor(getProgressMonitor()).execute(shelvesetDeleteTask);
+                new CommandTaskExecutor(getProgressMonitor()).execute(new ShelvesetDeleteTask(
+                    getVersionControlService(),
+                    name,
+                    user));
 
             return shelvesetsDeleteTaskResult.isOK() ? ExitCode.SUCCESS : ExitCode.FAILURE;
         }
@@ -150,11 +149,10 @@ public class ShelvesetsCommand
             ShelvesetConsoleView view = new ShelvesetConsoleView(console);
 
             final ShelvesetsDisplayTask shelvesetsDisplayTask =
-                new ShelvesetsDisplayTask(getVersionControlService(), view);
+                new ShelvesetsDisplayTask(getVersionControlService(), view, name, user);
+
             shelvesetsDisplayTask.setDisplayDetails(displayShelvesetDetails);
             shelvesetsDisplayTask.setSortOption(sortOption);
-            shelvesetsDisplayTask.setUser(user);
-            shelvesetsDisplayTask.setName(name);
 
             final TaskStatus shelvesetsDisplayTaskResult =
                 new CommandTaskExecutor(getProgressMonitor()).execute(shelvesetsDisplayTask);

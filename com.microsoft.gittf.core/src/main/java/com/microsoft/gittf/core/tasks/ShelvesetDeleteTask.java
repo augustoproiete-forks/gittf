@@ -37,25 +37,20 @@ public class ShelvesetDeleteTask
     extends Task
 {
     private final VersionControlService versionControlService;
+    private final String shelvesetName;
+    private final String shelvesetOwnerName;
 
-    private String user = null;
-    private String name = null;
-
-    public ShelvesetDeleteTask(final VersionControlService versionControlService)
+    public ShelvesetDeleteTask(
+        final VersionControlService versionControlService,
+        final String shelvesetName,
+        final String shelvesetOwnerName)
     {
         Check.notNull(versionControlService, "versionControlService"); //$NON-NLS-1$
+        Check.notNullOrEmpty(shelvesetName, "shelvesetName"); //$NON-NLS-1$
 
         this.versionControlService = versionControlService;
-    }
-
-    public void setUser(final String user)
-    {
-        this.user = user;
-    }
-
-    public void setName(final String name)
-    {
-        this.name = name;
+        this.shelvesetName = shelvesetName;
+        this.shelvesetOwnerName = shelvesetOwnerName;
     }
 
     @Override
@@ -66,7 +61,7 @@ public class ShelvesetDeleteTask
             1,
             TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
 
-        Shelveset[] results = versionControlService.queryShelvesets(name, user);
+        Shelveset[] results = versionControlService.queryShelvesets(shelvesetName, shelvesetOwnerName);
 
         if (results.length == 0)
         {

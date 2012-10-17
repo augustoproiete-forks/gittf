@@ -88,28 +88,35 @@ public final class CommitUtil
 
     public static boolean tagCommit(final Repository repository, ObjectId commitID, int changesetID)
     {
+        GitTFConfiguration configuration = GitTFConfiguration.loadFrom(repository);
+
+        if (!configuration.getTag())
+        {
+            return false;
+        }
+
+        String tagName = Messages.formatString("CreateCommitTask.TagNameFormat", //$NON-NLS-1$
+            Integer.toString(changesetID));
+
+        PersonIdent tagOwner = new PersonIdent(GitTFConstants.GIT_TF_NAME, MessageFormat.format("{0} - {1}", //$NON-NLS-1$
+            configuration.getServerURI().toString(),
+            configuration.getServerPath()));
+
+        return createTag(repository, commitID, tagName, tagOwner);
+    }
+
+    public static boolean createTag(final Repository repository, ObjectId commitID, String tagName, PersonIdent tagOwner)
+    {
         final RevWalk walker = new RevWalk(repository);
         try
         {
-            GitTFConfiguration configuration = GitTFConfiguration.loadFrom(repository);
-
-            if (!configuration.getTag())
-            {
-                return false;
-            }
-
-            String tagName = Messages.formatString("CreateCommitTask.TagNameFormat", //$NON-NLS-1$
-                Integer.toString(changesetID));
-
             RevObject objectToTag = walker.lookupCommit(commitID);
 
             TagCommand tagCommand = new Git(repository).tag();
             tagCommand.setName(tagName);
             tagCommand.setObjectId(objectToTag);
             tagCommand.setForceUpdate(true);
-            tagCommand.setTagger(new PersonIdent(GitTFConstants.GIT_TF_NAME, MessageFormat.format("{0} - {1}", //$NON-NLS-1$
-                configuration.getServerURI().toString(),
-                configuration.getServerPath())));
+            tagCommand.setTagger(tagOwner);
 
             Ref tagRef = tagCommand.call();
 
@@ -137,5 +144,4 @@ public final class CommitUtil
             }
         }
     }
-
 }

@@ -60,6 +60,12 @@ public class ChangesetCommitMap
     public void setChangesetCommit(int changesetID, ObjectId commitID)
         throws IOException
     {
+        setChangesetCommit(changesetID, commitID, false);
+    }
+
+    public void setChangesetCommit(int changesetID, ObjectId commitID, boolean forceHWMUpdate)
+        throws IOException
+    {
         Check.isTrue(changesetID >= 0, "changesetID >= 0"); //$NON-NLS-1$
         Check.notNull(commitID, "commitID"); //$NON-NLS-1$
 
@@ -80,7 +86,7 @@ public class ChangesetCommitMap
             changesetID);
 
         /* Update the high water mark automatically */
-        if (changesetID > getLastBridgedChangesetID(false))
+        if ((changesetID > getLastBridgedChangesetID(false)) || forceHWMUpdate)
         {
             configFile.setInt(
                 ConfigurationConstants.CONFIGURATION_SECTION,

@@ -39,6 +39,7 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.DeletedState;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.ItemType;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
@@ -139,6 +140,16 @@ public class MockVersionControlService
         fw.write(generatFileContent(item));
 
         fw.close();
+    }
+
+    public void downloadShelvedFile(PendingChange shelvedChange, String downloadTo)
+    {
+
+    }
+
+    public void downloadBaseFile(PendingChange pendingChange, String downloadTo)
+    {
+
     }
 
     public Changeset getChangeset(int changesetID)

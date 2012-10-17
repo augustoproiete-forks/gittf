@@ -22,11 +22,11 @@
  * SOFTWARE.
  ***********************************************************************************************/
 
-package com.microsoft.gittf.core.util;
+package com.microsoft.gittf.core.config;
 
 import org.eclipse.jgit.lib.ObjectId;
 
-import com.microsoft.gittf.core.config.ChangesetCommitMap;
+import com.microsoft.gittf.core.util.Check;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.path.ServerPath;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
@@ -34,9 +34,9 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionTyp
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 
-public final class ChangesetCommitUtil
+public final class ChangesetCommitMapUtil
 {
-    private ChangesetCommitUtil()
+    private ChangesetCommitMapUtil()
     {
     }
 

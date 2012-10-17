@@ -41,12 +41,23 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
 
+/**
+ * An implementation of the VersionControlService that talks to the real TFS
+ * Server
+ * 
+ */
 public class TfsVersionControlService
     implements VersionControlService
 {
 
     private final VersionControlClient versionControlClient;
 
+    /**
+     * Constructor
+     * 
+     * @param versionControlClient
+     *        the version contol client object to use
+     */
     public TfsVersionControlService(VersionControlClient versionControlClient)
     {
         Check.notNull(versionControlClient, "versionControlClient"); //$NON-NLS-1$

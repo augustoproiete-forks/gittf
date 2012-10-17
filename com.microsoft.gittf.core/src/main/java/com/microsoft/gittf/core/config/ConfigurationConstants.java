@@ -26,6 +26,10 @@ package com.microsoft.gittf.core.config;
 
 import com.microsoft.gittf.core.GitTFConstants;
 
+/**
+ * Constants used by the configuration classes
+ * 
+ */
 public class ConfigurationConstants
 {
     public static final String CONFIGURATION_SECTION = GitTFConstants.GIT_TF_NAME;
@@ -34,7 +38,6 @@ public class ConfigurationConstants
     public static final String DEPTH = "depth"; //$NON-NLS-1$
     public static final String TAG = "tag"; //$NON-NLS-1$
     public static final String FILE_FORMAT_VERSION = "file-format-version"; //$NON-NLS-1$
-
     public static final String SERVER_SUBSECTION = "server"; //$NON-NLS-1$
     public static final String SERVER_COLLECTION_URI = "collection"; //$NON-NLS-1$
     public static final String SERVER_PATH = "serverpath"; //$NON-NLS-1$
@@ -44,10 +47,8 @@ public class ConfigurationConstants
 
     public static final String COMMIT_SUBSECTION = "commits"; //$NON-NLS-1$
     public static final String COMMIT_CHANGESET_FORMAT = "changeset-{0}"; //$NON-NLS-1$
-
     public static final String CHANGESET_SUBSECTION = "changesets"; //$NON-NLS-1$
     public static final String CHANGESET_COMMIT_FORMAT = "commit-{0}"; //$NON-NLS-1$
-
     public static final String CHANGESET_HIGHWATER = "hwm"; //$NON-NLS-1$
 
     private ConfigurationConstants()

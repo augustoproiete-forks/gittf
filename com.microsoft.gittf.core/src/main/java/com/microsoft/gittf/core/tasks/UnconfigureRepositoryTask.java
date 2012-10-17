@@ -33,11 +33,21 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
 
+/**
+ * Removes the git tf configuration parameters from the .git\config file
+ * 
+ * 
+ */
 public class UnconfigureRepositoryTask
     extends Task
 {
     private final Repository repository;
 
+    /**
+     * Constructor
+     * 
+     * @param repository
+     */
     public UnconfigureRepositoryTask(final Repository repository)
     {
         Check.notNull(repository, "repository"); //$NON-NLS-1$

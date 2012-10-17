@@ -39,6 +39,10 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChang
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
 
+/**
+ * Shelves the changes pended in the workspace
+ * 
+ */
 public class ShelvePendingChangesTask
     extends Task
 {
@@ -50,6 +54,20 @@ public class ShelvePendingChangesTask
     private WorkItemCheckinInfo[] workItems;
     private boolean replace = false;
 
+    /**
+     * Constructor
+     * 
+     * @param repository
+     *        the git repository
+     * @param message
+     *        the shelveset comment to use
+     * @param workspace
+     *        the workspace to use
+     * @param changes
+     *        the changes to shelve
+     * @param shelvesetName
+     *        the shelveset name
+     */
     public ShelvePendingChangesTask(
         final Repository repository,
         final String message,
@@ -69,11 +87,22 @@ public class ShelvePendingChangesTask
         this.shelvesetName = shelvesetName;
     }
 
+    /**
+     * Sets the work item info to associate
+     * 
+     * @param workItems
+     */
     public void setWorkItemCheckinInfo(WorkItemCheckinInfo[] workItems)
     {
         this.workItems = workItems;
     }
 
+    /**
+     * Sets the flag to indicate that we could replace a shelveset on the server
+     * with the same name. The default is false.
+     * 
+     * @param replace
+     */
     public void setReplaceExistingShelveset(boolean replace)
     {
         this.replace = replace;
@@ -87,6 +116,7 @@ public class ShelvePendingChangesTask
 
         try
         {
+            /* Create shelveset */
             final Shelveset shelveset =
                 new Shelveset(
                     shelvesetName,

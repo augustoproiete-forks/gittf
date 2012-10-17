@@ -27,6 +27,10 @@ package com.microsoft.gittf.core.tasks.framework;
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.util.Check;
 
+/**
+ * A progress monitor for sub tasks
+ * 
+ */
 public class SubTaskProgressMonitor
     extends BaseTaskProgressMonitor
 {
@@ -42,6 +46,12 @@ public class SubTaskProgressMonitor
     private String detail;
     private TaskProgressDisplay displayOptions = TaskProgressDisplay.NONE;
 
+    /**
+     * Constructor
+     * 
+     * @param parent
+     * @param parentWork
+     */
     public SubTaskProgressMonitor(final TaskProgressMonitor parent, final int parentWork)
     {
         Check.notNull(parent, "parent"); //$NON-NLS-1$

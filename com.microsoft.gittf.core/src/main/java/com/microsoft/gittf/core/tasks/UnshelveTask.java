@@ -37,10 +37,16 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressDisplay;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
-import com.microsoft.gittf.core.util.CommitUtil;
+import com.microsoft.gittf.core.util.ObjectIdUtil;
 import com.microsoft.gittf.core.util.StashUtil;
+import com.microsoft.gittf.core.util.TagUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
 
+/**
+ * Looks up the shelveset specified by shelveset name and shelveset owner and
+ * unshelves this shelveset into the git repository
+ * 
+ */
 public class UnshelveTask
     extends Task
 {
@@ -51,6 +57,18 @@ public class UnshelveTask
 
     private boolean apply = false;
 
+    /**
+     * Constructor
+     * 
+     * @param versionControlService
+     *        the version control service
+     * @param repository
+     *        the git repository to unshelve the changes in
+     * @param shelvesetName
+     *        the shelveset name
+     * @param shelvesetOwnerName
+     *        the shelveset owner name
+     */
     public UnshelveTask(
         final VersionControlService versionControlService,
         final Repository repository,
@@ -67,6 +85,11 @@ public class UnshelveTask
         this.shelvesetOwnerName = shelvesetOwnerName;
     }
 
+    /**
+     * Sets whether or not the shelveset should be applied (Default false)
+     * 
+     * @param apply
+     */
     public void setApply(boolean apply)
     {
         this.apply = apply;
@@ -80,14 +103,17 @@ public class UnshelveTask
             1,
             TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
 
+        /* Look for the shevleset on the server */
         Shelveset[] results = versionControlService.queryShelvesets(shelvesetName, shelvesetOwnerName);
 
+        /* If there is no matching shelveset show an error */
         if (results.length == 0)
         {
             progressMonitor.endTask();
             return new TaskStatus(TaskStatus.ERROR, Messages.getString("UnshelveTask.NoShelvesetsFound")); //$NON-NLS-1$
         }
 
+        /* If there is more than one matching shelveset show an error */
         if (results.length > 1)
         {
             progressMonitor.endTask();
@@ -96,6 +122,7 @@ public class UnshelveTask
 
         Shelveset shelveset = results[0];
 
+        /* Create a stash style commit for the shelveset */
         CreateCommitForShelvesetTask unshelveTask =
             new CreateCommitForShelvesetTask(repository, versionControlService, shelveset, null);
 
@@ -108,10 +135,12 @@ public class UnshelveTask
 
         ObjectId shelvesetCommitId = unshelveTask.getCommitID();
 
+        /* Tag the shelveset commit */
         String shelvesetTagName = generateValidTagName(shelveset);
         PersonIdent shelvesetOwner = new PersonIdent(shelveset.getOwnerDisplayName(), shelveset.getOwnerName());
-        boolean tagCreated = CommitUtil.createTag(repository, shelvesetCommitId, shelvesetTagName, shelvesetOwner);
+        boolean tagCreated = TagUtil.createTag(repository, shelvesetCommitId, shelvesetTagName, shelvesetOwner);
 
+        /* If apply is specified, apply the shelveset */
         if (apply)
         {
             StashUtil.apply(repository, shelvesetCommitId);
@@ -120,12 +149,20 @@ public class UnshelveTask
         progressMonitor.endTask();
 
         progressMonitor.displayMessage(Messages.formatString("UnshelveTask.SuccessMessageFormat", //$NON-NLS-1$
-            tagCreated ? shelvesetTagName : CommitUtil.abbreviate(repository, shelvesetCommitId),
+            tagCreated ? shelvesetTagName : ObjectIdUtil.abbreviate(repository, shelvesetCommitId),
             shelveset.getName()));
 
         return TaskStatus.OK_STATUS;
     }
 
+    /**
+     * Generates a valid tag name for the shelveset, Note that shelveset names
+     * are not always valid ref names becuase of the unsupported characters that
+     * can be in the shelveset name.
+     * 
+     * @param shelveset
+     * @return
+     */
     private String generateValidTagName(Shelveset shelveset)
     {
         String tagName = Messages.formatString("UnshelveTask.ShelvesetTagFormat", shelveset.getName()); //$NON-NLS-1$

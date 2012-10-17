@@ -41,13 +41,26 @@ import org.eclipse.jgit.util.FS;
 
 import com.microsoft.gittf.core.GitTFConstants;
 import com.microsoft.gittf.core.util.Check;
-import com.microsoft.gittf.core.util.CommitUtil;
+import com.microsoft.gittf.core.util.TagUtil;
 
+/**
+ * The ChangesetCommitMap class maintains the mapping between changesets and
+ * commits. It also maintains the HWM which is the latest changeset downloaded
+ * from TFS. All this information is stored in the .git\git-tf file in the
+ * repository. This file uses the same format used by the config files.
+ * 
+ */
 public class ChangesetCommitMap
 {
     private final Repository repository;
     private final FileBasedConfig configFile;
 
+    /**
+     * Constructor
+     * 
+     * @param repository
+     *        the git repository
+     */
     public ChangesetCommitMap(final Repository repository)
     {
         Check.notNull(repository, "repository"); //$NON-NLS-1$
@@ -57,6 +70,15 @@ public class ChangesetCommitMap
             new FileBasedConfig(new File(repository.getDirectory(), GitTFConstants.GIT_TF_NAME), FS.DETECTED);
     }
 
+    /**
+     * Sets the commit id that this changeset refers to
+     * 
+     * @param changesetID
+     *        the changeset id
+     * @param commitID
+     *        the commit id
+     * @throws IOException
+     */
     public void setChangesetCommit(int changesetID, ObjectId commitID)
         throws IOException
     {
@@ -97,9 +119,16 @@ public class ChangesetCommitMap
 
         configFile.save();
 
-        CommitUtil.tagCommit(repository, commitID, changesetID);
+        TagUtil.createTFSChangesetTag(repository, commitID, changesetID);
     }
 
+    /**
+     * Gets the changeset id that this commit refers to
+     * 
+     * @param commitID
+     *        the commit id
+     * @return
+     */
     public int getChangesetID(ObjectId commitID)
     {
         Check.notNull(commitID, "commitID"); //$NON-NLS-1$
@@ -113,6 +142,17 @@ public class ChangesetCommitMap
             -1);
     }
 
+    /**
+     * Gets the commit id that this changeset id refers to. If the caller
+     * specified the validate flag as true, the method also ensures that the
+     * commit id refers to a valid commit. If not NULL is returned.
+     * 
+     * @param changesetID
+     *        the changeset id
+     * @param validate
+     *        whether or not to validate the object id found
+     * @return
+     */
     public ObjectId getCommitID(int changesetID, boolean validate)
     {
         Check.isTrue(changesetID >= 0, "changesetID >= 0"); //$NON-NLS-1$
@@ -167,6 +207,17 @@ public class ChangesetCommitMap
         }
     }
 
+    /**
+     * Gets the last downloaded changeset id. If validate is specified, the
+     * method will test the changeset id / commit id for existence, if the HWM
+     * in the config file does not exist in the repository, the method will loop
+     * through all the downloaded changesets to find the latest valid changeset
+     * downloaded.
+     * 
+     * @param validate
+     *        whether or not to validate the HWM value
+     * @return
+     */
     public int getLastBridgedChangesetID(boolean validate)
     {
         ensureConfigUptoDate();
@@ -188,9 +239,7 @@ public class ChangesetCommitMap
             return changeset;
         }
 
-        boolean lastValidDownloadedChangesetCommitFound = false;
-
-        while (!lastValidDownloadedChangesetCommitFound)
+        while (true)
         {
             if (changeset < 0)
             {
@@ -206,10 +255,15 @@ public class ChangesetCommitMap
 
             changeset = getPreviousBridgedChangeset(changeset, false);
         }
-
-        return changeset;
     }
 
+    /**
+     * Gets the first changeset downloaded before the changeset specified.
+     * 
+     * @param changesetID
+     * @param validate
+     * @return
+     */
     public int getPreviousBridgedChangeset(int changesetID, boolean validate)
     {
         ensureConfigUptoDate();
@@ -258,6 +312,11 @@ public class ChangesetCommitMap
         return -1;
     }
 
+    /**
+     * Cleans the entries for the changeset specified
+     * 
+     * @param changesetID
+     */
     private void cleanupPreviousEntries(int changesetID)
     {
         String commitHash =
@@ -282,6 +341,9 @@ public class ChangesetCommitMap
             MessageFormat.format(ConfigurationConstants.CHANGESET_COMMIT_FORMAT, commitHash));
     }
 
+    /**
+     * Ensures that the config cache is up to date before reading it
+     */
     private void ensureConfigUptoDate()
     {
         try
@@ -297,7 +359,16 @@ public class ChangesetCommitMap
         }
     }
 
-    public static void upgradeExistingConfigurationIfNeeded(File newConfigLocation, Repository repository)
+    /**
+     * Used for upgrade, copoes the entries from repository config to the new
+     * config location
+     * 
+     * @param newConfigLocation
+     * @param repository
+     */
+    public static void copyConfigurationEntriesFromRepositoryConfigToNewConfig(
+        Repository repository,
+        File newConfigLocation)
     {
         if (!newConfigLocation.exists())
         {

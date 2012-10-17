@@ -28,11 +28,23 @@ import org.eclipse.jgit.lib.ObjectId;
 
 import com.microsoft.gittf.core.util.Check;
 
+/**
+ * Represents a change in the git repository that can be pended against TFS
+ * 
+ */
 public class Change
 {
     private final String path;
     protected ObjectId objectID;
 
+    /**
+     * Constructor
+     * 
+     * @param path
+     *        the item path in the git repository
+     * @param objectID
+     *        the object id
+     */
     public Change(final String path, final ObjectId objectID)
     {
         Check.notNullOrEmpty(path, "path"); //$NON-NLS-1$
@@ -42,11 +54,21 @@ public class Change
         this.objectID = objectID;
     }
 
+    /**
+     * Get the item path
+     * 
+     * @return
+     */
     public String getPath()
     {
         return path;
     }
 
+    /**
+     * Get the object id
+     * 
+     * @return
+     */
     public ObjectId getObjectID()
     {
         return objectID;

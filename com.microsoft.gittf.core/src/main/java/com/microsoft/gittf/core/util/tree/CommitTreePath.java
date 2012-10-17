@@ -26,8 +26,10 @@ package com.microsoft.gittf.core.util.tree;
 
 import static org.eclipse.jgit.lib.Constants.OBJ_BLOB;
 
-import java.io.UnsupportedEncodingException;
-
+/**
+ * Represents a path for an object or another tree in a commit tree
+ * 
+ */
 public class CommitTreePath
     implements Comparable<CommitTreePath>
 {
@@ -39,8 +41,15 @@ public class CommitTreePath
 
     private static char FOLDER_SUFFIX = '/';
 
+    /**
+     * Constructor
+     * 
+     * @param name
+     *        the name of the path
+     * @param type
+     *        the object type this path points too can be OBJ_BLOB or OBJ_TREE
+     */
     public CommitTreePath(String name, int type)
-        throws UnsupportedEncodingException
     {
         this.name = name;
         this.type = type;
@@ -57,26 +66,51 @@ public class CommitTreePath
         }
     }
 
+    /**
+     * Get name of the path
+     * 
+     * @return String name of the path
+     */
     public String getName()
     {
         return name;
     }
 
+    /**
+     * Get full name of the path
+     * 
+     * @return
+     */
     public String getFullName()
     {
         return fullName;
     }
 
+    /**
+     * Get type of the path object
+     * 
+     * @return
+     */
     public int getType()
     {
         return type;
     }
 
+    /**
+     * Get the depth of the path object
+     * 
+     * @return OBJ_BLOB objects will return 0, otherwise the depth of the folder
+     */
     public int getDepth()
     {
         return depth;
     }
 
+    /**
+     * Calculates the depth of the folder object
+     * 
+     * @return
+     */
     private int calculateDepth()
     {
         char[] characters = this.getName().toCharArray();

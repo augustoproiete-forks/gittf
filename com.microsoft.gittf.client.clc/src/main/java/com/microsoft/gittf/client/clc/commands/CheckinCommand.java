@@ -195,11 +195,7 @@ public class CheckinCommand
 
         RenameMode renameMode = getRenameModeIfSpecified();
 
-        final CheckinHeadCommitTask checkinTask =
-            new CheckinHeadCommitTask(
-                getRepository(),
-                getVersionControlClient(),
-                getServerConfiguration().getServerPath());
+        final CheckinHeadCommitTask checkinTask = new CheckinHeadCommitTask(getRepository(), getVersionControlClient());
 
         checkinTask.setWorkItemCheckinInfo(getWorkItemCheckinInfo());
         checkinTask.setDeep(deep);
@@ -210,7 +206,7 @@ public class CheckinCommand
         checkinTask.setAutoSquash(autoSquashMultipleParents);
         checkinTask.setComment(message);
         checkinTask.setBuildDefinition(buildDefinition);
-        checkinTask.setIncludeMetaData(includeMetaData);
+        checkinTask.setIncludeMetaDataInComment(includeMetaData);
         checkinTask.setRenameMode(renameMode);
 
         /*

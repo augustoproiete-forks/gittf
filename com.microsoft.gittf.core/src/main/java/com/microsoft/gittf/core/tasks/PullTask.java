@@ -50,7 +50,7 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressDisplay;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
-import com.microsoft.gittf.core.util.CommitUtil;
+import com.microsoft.gittf.core.util.ObjectIdUtil;
 import com.microsoft.gittf.core.util.VersionSpecUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
@@ -186,19 +186,19 @@ public class PullTask
                 case FAST_FORWARD:
                 case MERGED:
                     progressMonitor.displayMessage(Messages.formatString(
-                        "PullTask.Merge.MergeSuccessfulFormat", CommitUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
+                        "PullTask.Merge.MergeSuccessfulFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     break;
 
                 case CONFLICTING:
                     progressMonitor.displayMessage(Messages.formatString(
-                        "PullTask.Merge.MergeSuccessfulWithConflictsFormat", CommitUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
+                        "PullTask.Merge.MergeSuccessfulWithConflictsFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     displayConflicts(progressMonitor, mergeResults.getConflicts());
                     break;
 
                 case FAILED:
                 case NOT_SUPPORTED:
                     progressMonitor.displayMessage(Messages.formatString(
-                        "PullTask.Merge.FailedFormat", CommitUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
+                        "PullTask.Merge.FailedFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     displayFailures(progressMonitor, mergeResults.getFailingPaths());
                     break;
             }
@@ -236,24 +236,24 @@ public class PullTask
                 case ABORTED:
                 case FAILED:
                     progressMonitor.displayMessage(Messages.formatString(
-                        "PullTask.Rebase.FailedFormat", CommitUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
+                        "PullTask.Rebase.FailedFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     displayFailures(progressMonitor, rebaseResults.getFailingPaths());
                     break;
 
                 case FAST_FORWARD:
                 case OK:
                     progressMonitor.displayMessage(Messages.formatString(
-                        "PullTask.Rebase.RebaseSuccessfulFormat", CommitUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
+                        "PullTask.Rebase.RebaseSuccessfulFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     break;
 
                 case NOTHING_TO_COMMIT:
                     progressMonitor.displayMessage(Messages.formatString(
-                        "PullTask.Rebase.NothingToCommitFormat", CommitUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
+                        "PullTask.Rebase.NothingToCommitFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     break;
 
                 case STOPPED:
                     progressMonitor.displayMessage(Messages.formatString(
-                        "PullTask.Rebase.StoppedFormat", CommitUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
+                        "PullTask.Rebase.StoppedFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     break;
             }
         }

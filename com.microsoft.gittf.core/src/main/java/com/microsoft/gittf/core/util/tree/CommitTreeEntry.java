@@ -29,11 +29,23 @@ import org.eclipse.jgit.lib.ObjectId;
 
 import com.microsoft.gittf.core.util.Check;
 
+/**
+ * Represents an entry in the commit tree for a file or a folder
+ * 
+ */
 public class CommitTreeEntry
 {
     private final FileMode mode;
     private final ObjectId objectID;
 
+    /**
+     * Constructor
+     * 
+     * @param mode
+     *        the file mode of the object
+     * @param objectID
+     *        the object id
+     */
     public CommitTreeEntry(FileMode mode, ObjectId objectID)
     {
         Check.notNull(mode, "mode"); //$NON-NLS-1$
@@ -43,11 +55,21 @@ public class CommitTreeEntry
         this.objectID = objectID;
     }
 
+    /**
+     * Get the file mode
+     * 
+     * @return FileMode for the entry
+     */
     public FileMode getFileMode()
     {
         return mode;
     }
 
+    /**
+     * Get the object id
+     * 
+     * @return ObjectId for the entry
+     */
     public ObjectId getObjectID()
     {
         return objectID;

@@ -43,6 +43,8 @@ import com.microsoft.gittf.core.GitTFConstants;
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.OutputConstants;
 import com.microsoft.gittf.core.config.ChangesetCommitMap;
+import com.microsoft.gittf.core.config.ChangesetCommitMapUtil;
+import com.microsoft.gittf.core.config.ChangesetCommitMapUtil.ChangesetCommitDetails;
 import com.microsoft.gittf.core.config.GitTFConfiguration;
 import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.tasks.framework.NullTaskProgressMonitor;
@@ -52,14 +54,12 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.tasks.pendDiff.PendDifferenceTask;
 import com.microsoft.gittf.core.tasks.pendDiff.RenameMode;
-import com.microsoft.gittf.core.util.ChangesetCommitUtil;
-import com.microsoft.gittf.core.util.ChangesetCommitUtil.ChangesetCommitDetails;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.gittf.core.util.CommitUtil;
 import com.microsoft.gittf.core.util.CommitWalker;
 import com.microsoft.gittf.core.util.CommitWalker.CommitDelta;
 import com.microsoft.gittf.core.util.DateUtil;
-import com.microsoft.gittf.core.util.RepositoryUtil;
+import com.microsoft.gittf.core.util.ObjectIdUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.path.ServerPath;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
@@ -71,18 +71,22 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemChec
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 import com.microsoft.tfs.util.FileHelpers;
 
+/**
+ * The CheckinHeadCommitTask checks in all the changes between HEAD in the
+ * specified repository and the last downloaded/checked in changeset to TFS
+ * 
+ */
 public class CheckinHeadCommitTask
     extends WorkspaceTask
 {
+    /**
+     * Return code meaning that there was nothing to checkin
+     */
     public static final int ALREADY_UP_TO_DATE = 1;
 
     private static final Log log = LogFactory.getLog(CheckinHeadCommitTask.class);
 
-    private final Repository repository;
-    private final String serverPath;
-
     private boolean deep = false;
-
     private AbbreviatedObjectId[] squashCommitIDs = new AbbreviatedObjectId[0];
     private WorkItemCheckinInfo[] workItems;
     private boolean lock = true;
@@ -91,123 +95,136 @@ public class CheckinHeadCommitTask
     private boolean preview = false;
     private String comment = null;
     private String buildDefinition = null;
-    private boolean includeMetaData = true;
+    private boolean includeMetaDataInComment = true;
     private RenameMode renameMode = RenameMode.ALL;
 
-    public CheckinHeadCommitTask(
-        final Repository repository,
-        final VersionControlClient versionControlClient,
-        final String serverPath)
+    /**
+     * Constructor
+     * 
+     * @param repository
+     *        the repository to checkin. The repository needs to be configured
+     *        to work with Git tf
+     * @param versionControlClient
+     *        the version client object to use
+     */
+    public CheckinHeadCommitTask(final Repository repository, final VersionControlClient versionControlClient)
     {
-        super(repository, versionControlClient, serverPath);
-
-        Check.notNull(repository, "repository"); //$NON-NLS-1$
-        Check.notNullOrEmpty(serverPath, "serverPath"); //$NON-NLS-1$
-
-        this.repository = repository;
-        this.serverPath = serverPath;
+        super(repository, versionControlClient, GitTFConfiguration.loadFrom(repository).getServerPath());
     }
 
-    public boolean getDeep()
-    {
-        return deep;
-    }
-
+    /**
+     * Sets the deep option. The default is false.
+     * 
+     * @param deep
+     */
     public void setDeep(final boolean deep)
     {
         this.deep = deep;
     }
 
-    public AbbreviatedObjectId[] getSquashCommitIDs()
-    {
-        return squashCommitIDs;
-    }
-
+    /**
+     * Sets the commit ids that should be squashed.
+     * 
+     * @param squashCommitIDs
+     */
     public void setSquashCommitIDs(AbbreviatedObjectId[] squashCommitIDs)
     {
         this.squashCommitIDs = (squashCommitIDs == null) ? new AbbreviatedObjectId[0] : squashCommitIDs;
     }
 
-    public WorkItemCheckinInfo[] getWorkItemCheckinInfo()
-    {
-        return workItems;
-    }
-
+    /**
+     * Sets the work item checkin info to associate/resolve work items
+     * 
+     * @param workItems
+     */
     public void setWorkItemCheckinInfo(WorkItemCheckinInfo[] workItems)
     {
         this.workItems = workItems;
     }
 
-    public boolean getOverrideGatedCheckin()
-    {
-        return this.overrideGatedCheckin;
-    }
-
+    /**
+     * Sets whether gated check in build should be overriden or not
+     * 
+     * @param overrideGatedCheckin
+     */
     public void setOverrideGatedCheckin(boolean overrideGatedCheckin)
     {
         this.overrideGatedCheckin = overrideGatedCheckin;
     }
 
-    public boolean getLock()
-    {
-        return this.lock;
-    }
-
+    /**
+     * Sets whether we should take a lock on the root folder or not when
+     * checking in. This option is only used in deep checkin and is ignored in
+     * shallow checkin. The default is true.
+     * 
+     * @param lock
+     */
     public void setLock(boolean lock)
     {
         this.lock = lock;
     }
 
-    public boolean getAutoSquash()
-    {
-        return this.autoSquashMultipleParents;
-    }
-
+    /**
+     * Sets whether the task should automatically figure out a path between the
+     * HEAD commit and the last downloaded/checked in commit. This option is
+     * ignored when checking in shallow mode. The default is false.
+     * 
+     * @param autoSquashMultipleParents
+     */
     public void setAutoSquash(boolean autoSquashMultipleParents)
     {
         this.autoSquashMultipleParents = autoSquashMultipleParents;
     }
 
-    public boolean getPreview()
-    {
-        return preview;
-    }
-
+    /**
+     * Sets whether the task should run only in preview mode
+     * 
+     * @param preview
+     */
     public void setPreview(boolean preview)
     {
         this.preview = preview;
     }
 
-    public String getComment()
-    {
-        return comment;
-    }
-
+    /**
+     * Sets the checkin comment that should be used when creating the changeset
+     * in TFS
+     * 
+     * @param comment
+     */
     public void setComment(String comment)
     {
         this.comment = comment;
     }
 
-    public String getBuildDefinition()
-    {
-        return buildDefinition;
-    }
-
+    /**
+     * Sets the build definition name that should be used if there are multiple
+     * gated build definitions available.
+     * 
+     * @param buildDefinition
+     */
     public void setBuildDefinition(String buildDefinition)
     {
         this.buildDefinition = buildDefinition;
     }
 
-    public boolean getIncludeMetaData()
+    /**
+     * Sets whether the task should include meta data of the commit in the
+     * checkin comment or not. The default is true.
+     * 
+     * @param includeMetaDataInComment
+     */
+    public void setIncludeMetaDataInComment(boolean includeMetaDataInComment)
     {
-        return includeMetaData;
+        this.includeMetaDataInComment = includeMetaDataInComment;
     }
 
-    public void setIncludeMetaData(boolean includeMetaData)
-    {
-        this.includeMetaData = includeMetaData;
-    }
-
+    /**
+     * Sets the rename mode to use when comparing the commits. The default is
+     * ALL.
+     * 
+     * @param renameMode
+     */
     public void setRenameMode(RenameMode renameMode)
     {
         this.renameMode = renameMode;
@@ -216,20 +233,15 @@ public class CheckinHeadCommitTask
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {
-        GitTFWorkspaceData workspaceData = null;
+        progressMonitor.beginTask(Messages.formatString("CheckinHeadCommitTask.CheckingInToPathFormat", //$NON-NLS-1$
+            preview ? Messages.getString("CheckinHeadCommitTask.Preview") : "", //$NON-NLS-1$ //$NON-NLS-2$
+            serverPath), 1, TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
 
-        progressMonitor.beginTask(
-            Messages.formatString("CheckinHeadCommitTask.CheckingInToPathFormat", //$NON-NLS-1$
-                preview ? Messages.getString("CheckinHeadCommitTask.Preview") : "", //$NON-NLS-1$ //$NON-NLS-2$
-                GitTFConfiguration.loadFrom(repository).getServerPath()),
-            1,
-            TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
+        WorkspaceInfo workspaceData = null;
 
         try
         {
-            /*
-             * Create a temporary workspace
-             */
+            /* Create the temporary workspace */
 
             WorkspaceService workspace = null;
             File workingFolder = null;
@@ -240,9 +252,8 @@ public class CheckinHeadCommitTask
             workingFolder = workspaceData.getWorkingFolder();
 
             int expectedChangesetNumber = -1;
-            boolean otherUserCheckinDetected = false;
 
-            /* in deep mode we should always lock the workspace */
+            /* In deep mode we should always lock the workspace */
             if (lock && deep)
             {
                 final TaskStatus lockStatus =
@@ -254,8 +265,8 @@ public class CheckinHeadCommitTask
                 }
             }
             /*
-             * if we are not locking we should attempt to detect other users
-             * checkin in shallow mode
+             * if we are not locking we should attempt to detect if other users
+             * sneaked in a checkin while this checkin is being processed
              */
             else if (!deep)
             {
@@ -279,16 +290,18 @@ public class CheckinHeadCommitTask
                 expectedChangesetNumber = latestChangesets[0].getChangesetID() + 1;
             }
 
+            /* Get the HEAD commit id */
+            final ObjectId headCommitID = CommitUtil.getMasterHeadCommitID(repository);
+
             /*
-             * Walk the repo
+             * Retrieve the last bridged changeset and the latest changeset on
+             * the server
              */
-            ObjectId headCommitID = RepositoryUtil.getMasterHeadCommitID(repository);
-
             final ChangesetCommitMap commitMap = new ChangesetCommitMap(repository);
-
-            final ChangesetCommitDetails lastBridgedChangeset = ChangesetCommitUtil.getLastBridgedChangeset(commitMap);
+            final ChangesetCommitDetails lastBridgedChangeset =
+                ChangesetCommitMapUtil.getLastBridgedChangeset(commitMap);
             final ChangesetCommitDetails latestChangeset =
-                ChangesetCommitUtil.getLatestChangeset(commitMap, versionControlClient, serverPath);
+                ChangesetCommitMapUtil.getLatestChangeset(commitMap, versionControlClient, serverPath);
 
             /*
              * This is a repository that has been configured and never checked
@@ -349,24 +362,33 @@ public class CheckinHeadCommitTask
             }
 
             progressMonitor.setDetail(Messages.getString("CheckinHeadCommitTask.ExaminingRepository")); //$NON-NLS-1$
+
+            /* Build the list of commit sequence we need to checkin */
             List<CommitDelta> commitsToCheckin =
                 getCommitsToCheckin(latestChangeset != null ? latestChangeset.getCommitID() : null, headCommitID);
+
             progressMonitor.setDetail(null);
 
             int lastChangesetID = -1;
             ObjectId lastCommitID = null;
 
             boolean anyThingCheckedIn = false;
+            boolean otherUserCheckinDetected = false;
 
             progressMonitor.setWork(commitsToCheckin.size() * 2);
 
+            /*
+             * Loop the list of commit sequence and checkin the difference one
+             * by one
+             */
             for (int i = 0; i < commitsToCheckin.size(); i++)
             {
                 CommitDelta commitDelta = commitsToCheckin.get(i);
-                boolean isLastCommit = (i == (commitsToCheckin.size() - 1));
 
                 progressMonitor.setDetail(Messages.formatString("CheckinHeadCommitTask.CommitFormat", //$NON-NLS-1$
-                    CommitUtil.abbreviate(repository, commitDelta.getToCommit())));
+                    ObjectIdUtil.abbreviate(repository, commitDelta.getToCommit())));
+
+                boolean isLastCommit = (i == (commitsToCheckin.size() - 1));
 
                 /* Save space: clean working folder after each checkin */
                 if (i > 0)
@@ -374,6 +396,7 @@ public class CheckinHeadCommitTask
                     cleanWorkingFolder(workingFolder);
                 }
 
+                /* Pend the differences between the two commits */
                 final PendDifferenceTask pendTask =
                     new PendDifferenceTask(
                         repository,
@@ -387,6 +410,7 @@ public class CheckinHeadCommitTask
 
                 pendTask.validate();
 
+                /* If this is preview mode, display the commit details HEADER */
                 if (preview)
                 {
                     if (i == 0)
@@ -403,21 +427,21 @@ public class CheckinHeadCommitTask
                         progressMonitor.displayMessage(Messages.formatString(
                             "CheckinHeadCommitTask.CheckedInPreviewSingleCommitFormat", //$NON-NLS-1$
                             i + 1,
-                            CommitUtil.abbreviate(repository, toCommit)));
+                            ObjectIdUtil.abbreviate(repository, toCommit)));
                     }
                     else
                     {
                         progressMonitor.displayMessage(Messages.formatString(
                             "CheckinHeadCommitTask.CheckedInPreviewDifferenceCommitsFormat", //$NON-NLS-1$
                             i + 1,
-                            CommitUtil.abbreviate(repository, toCommit),
-                            CommitUtil.abbreviate(repository, fromCommit)));
+                            ObjectIdUtil.abbreviate(repository, toCommit),
+                            ObjectIdUtil.abbreviate(repository, fromCommit)));
                     }
 
                     String checkinComment = comment == null ? buildCommitComment(commitDelta) : comment;
 
                     progressMonitor.displayMessage(""); //$NON-NLS-1$
-                    progressMonitor.displayMessage(getCommentDisplayString(checkinComment));
+                    progressMonitor.displayMessage(indentString(checkinComment));
 
                     progressMonitor.displayMessage(Messages.getString("CheckinHeadCommitTask.CheckedInPreviewTableHeader")); //$NON-NLS-1$
                     progressMonitor.displayMessage("---------------------------------------------------------------------"); //$NON-NLS-1$
@@ -437,8 +461,21 @@ public class CheckinHeadCommitTask
 
                 anyThingCheckedIn = true;
 
-                if (!preview)
+                /* If this is preview mode, display the commit details FOOTER */
+                if (preview)
                 {
+                    progressMonitor.displayMessage("---------------------------------------------------------------------"); //$NON-NLS-1$
+                    progressMonitor.displayMessage(""); //$NON-NLS-1$
+                }
+                /* else perform the actual checkin */
+                else
+                {
+                    progressMonitor.setDetail(Messages.getString("CheckinHeadCommitTask.CheckingIn")); //$NON-NLS-1$
+
+                    /*
+                     * Perform the checkin using the checkin pending changes
+                     * task
+                     */
                     final CheckinPendingChangesTask checkinTask =
                         new CheckinPendingChangesTask(
                             repository,
@@ -448,16 +485,10 @@ public class CheckinHeadCommitTask
                             workspace,
                             pendTask.getPendingChanges());
 
-                    if (isLastCommit)
-                    {
-                        checkinTask.setWorkItemCheckinInfo(workItems);
-                    }
-
+                    checkinTask.setWorkItemCheckinInfo(isLastCommit ? workItems : null);
                     checkinTask.setOverrideGatedCheckin(overrideGatedCheckin);
                     checkinTask.setBuildDefinition(buildDefinition);
                     checkinTask.setExpectedChangesetNumber(expectedChangesetNumber);
-
-                    progressMonitor.setDetail(Messages.getString("CheckinHeadCommitTask.CheckingIn")); //$NON-NLS-1$
 
                     final TaskStatus checkinStatus =
                         new TaskExecutor(progressMonitor.newSubTask(1)).execute(checkinTask);
@@ -476,22 +507,19 @@ public class CheckinHeadCommitTask
 
                     progressMonitor.displayVerbose(Messages.formatString(
                         "CheckinHeadCommitTask.CheckedInChangesetFormat", //$NON-NLS-1$
-                        CommitUtil.abbreviate(repository, lastCommitID),
+                        ObjectIdUtil.abbreviate(repository, lastCommitID),
                         Integer.toString(checkinTask.getChangesetID())));
-                }
-                else
-                {
-                    progressMonitor.displayMessage("---------------------------------------------------------------------"); //$NON-NLS-1$
-                    progressMonitor.displayMessage(""); //$NON-NLS-1$
                 }
             }
 
+            /* Clean up the workspace */
             final TaskProgressMonitor cleanupMonitor = progressMonitor.newSubTask(1);
             cleanupWorkspace(cleanupMonitor, workspaceData);
             workspaceData = null;
 
             progressMonitor.endTask();
 
+            /* Display checkin results for the user */
             if (!preview)
             {
                 // There was nothing detected to checkin.
@@ -503,7 +531,7 @@ public class CheckinHeadCommitTask
                 if (commitsToCheckin.size() == 1)
                 {
                     progressMonitor.displayMessage(Messages.formatString(
-                        "CheckinHeadCommitTask.CheckedInFormat", CommitUtil.abbreviate(repository, lastCommitID), Integer.toString(lastChangesetID))); //$NON-NLS-1$
+                        "CheckinHeadCommitTask.CheckedInFormat", ObjectIdUtil.abbreviate(repository, lastCommitID), Integer.toString(lastChangesetID))); //$NON-NLS-1$
                 }
                 else
                 {
@@ -532,22 +560,43 @@ public class CheckinHeadCommitTask
         }
     }
 
+    /**
+     * Builds the commit comment to use when checking in
+     * 
+     * @param commitDelta
+     * @return
+     */
     private String buildCommitComment(CommitDelta commitDelta)
     {
+        /* In deep mode the task will use the ToCommit message */
         if (deep)
         {
-            if (includeMetaData)
+            /*
+             * If the meta data flag was set to true, then build the meta data
+             * string
+             */
+            if (includeMetaDataInComment)
             {
                 return buildCommitComment(commitDelta.getToCommit());
             }
+            /* Otherwise just use the full message */
             else
             {
                 return commitDelta.getToCommit().getFullMessage();
             }
         }
 
+        /*
+         * In Shallow mode use the log command to identify all the commit
+         * included in the delta
+         */
         try
         {
+            /*
+             * TODO: Need to replace this code to use better logic to figure out
+             * the included commits topologically and not chronologically
+             */
+
             LogCommand logCommand = new Git(repository).log();
             logCommand.addRange(commitDelta.getFromCommit().getId(), commitDelta.getToCommit().getId());
             logCommand.setMaxCount(OutputConstants.DEFAULT_MAXCOMMENTROLLUP + 1);
@@ -558,8 +607,8 @@ public class CheckinHeadCommitTask
             StringBuilder comment = new StringBuilder();
 
             comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinRollupFormat", //$NON-NLS-1$
-                CommitUtil.abbreviate(repository, commitDelta.getToCommit().getId()),
-                CommitUtil.abbreviate(repository, commitDelta.getFromCommit().getId())) + OutputConstants.NEW_LINE);
+                ObjectIdUtil.abbreviate(repository, commitDelta.getToCommit().getId()),
+                ObjectIdUtil.abbreviate(repository, commitDelta.getFromCommit().getId())) + OutputConstants.NEW_LINE);
             comment.append(OutputConstants.NEW_LINE);
 
             for (RevCommit commit : commits)
@@ -571,8 +620,8 @@ public class CheckinHeadCommitTask
                     comment.append(Messages.formatString(
                         "CheckinHeadCommitTask.ShallowCheckinCommentDisplayTruncatedFormat", //$NON-NLS-1$
                         OutputConstants.DEFAULT_MAXCOMMENTROLLUP,
-                        CommitUtil.abbreviate(repository, commit.getId()),
-                        CommitUtil.abbreviate(repository, commitDelta.getFromCommit().getId())));
+                        ObjectIdUtil.abbreviate(repository, commit.getId()),
+                        ObjectIdUtil.abbreviate(repository, commitDelta.getFromCommit().getId())));
 
                     break;
                 }
@@ -596,12 +645,18 @@ public class CheckinHeadCommitTask
         }
     }
 
+    /**
+     * Builds the comment for a single commit
+     * 
+     * @param commit
+     * @return
+     */
     private String buildCommitComment(RevCommit commit)
     {
         StringBuilder comment = new StringBuilder();
 
         comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinCommentFormat", //$NON-NLS-1$
-            CommitUtil.abbreviate(repository, commit.getId()),
+            ObjectIdUtil.abbreviate(repository, commit.getId()),
             DateUtil.formatDate(new Date(((long) commit.getCommitTime()) * 1000))) + OutputConstants.NEW_LINE);
         comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinCommentAuthorFormat", //$NON-NLS-1$
             commit.getAuthorIdent().getName(),
@@ -610,15 +665,15 @@ public class CheckinHeadCommitTask
             commit.getCommitterIdent().getName(),
             commit.getCommitterIdent().getEmailAddress()) + OutputConstants.NEW_LINE);
         comment.append("-----------------------------------------------------------------" + OutputConstants.NEW_LINE); //$NON-NLS-1$
-        comment.append(getCommentDisplayString(commit.getFullMessage()));
+        comment.append(indentString(commit.getFullMessage()));
         comment.append(OutputConstants.NEW_LINE);
 
         return comment.toString();
     }
 
-    private String getCommentDisplayString(String checkinComment)
+    private String indentString(String input)
     {
-        String[] lines = checkinComment.split(OutputConstants.NEW_LINE);
+        String[] lines = input.split(OutputConstants.NEW_LINE);
 
         StringBuilder sb = new StringBuilder();
         for (String line : lines)
@@ -629,24 +684,15 @@ public class CheckinHeadCommitTask
         return sb.toString();
     }
 
-    private final void cleanWorkingFolder(final File workingFolder)
-    {
-        try
-        {
-            FileHelpers.deleteDirectory(workingFolder);
-            workingFolder.mkdirs();
-        }
-        catch (Exception e)
-        {
-            /* Not fatal */
-            log.warn(MessageFormat.format("Could not clean up temporary directory {0}", //$NON-NLS-1$
-                workingFolder.getAbsolutePath()), e);
-        }
-    }
-
-    private final List<CommitDelta> getCommitsToCheckin(
-        final ObjectId latestChangesetCommitID,
-        final ObjectId headCommitID)
+    /**
+     * Gets the sequence of commit differences that need to be checked in
+     * 
+     * @param sourceCommitID
+     * @param headCommitID
+     * @return
+     * @throws Exception
+     */
+    private List<CommitDelta> getCommitsToCheckin(final ObjectId sourceCommitID, final ObjectId headCommitID)
         throws Exception
     {
         Check.notNull(headCommitID, "headCommitID"); //$NON-NLS-1$
@@ -660,13 +706,11 @@ public class CheckinHeadCommitTask
          */
         if (autoSquashMultipleParents || !deep)
         {
-            commitsToCheckin =
-                CommitWalker.getAutoSquashedCommitList(repository, latestChangesetCommitID, headCommitID);
+            commitsToCheckin = CommitWalker.getAutoSquashedCommitList(repository, sourceCommitID, headCommitID);
         }
         else
         {
-            commitsToCheckin =
-                CommitWalker.getCommitList(repository, latestChangesetCommitID, headCommitID, squashCommitIDs);
+            commitsToCheckin = CommitWalker.getCommitList(repository, sourceCommitID, headCommitID, squashCommitIDs);
         }
 
         int depth = deep ? Integer.MAX_VALUE : GitTFConstants.GIT_TF_SHALLOW_DEPTH;
@@ -705,18 +749,33 @@ public class CheckinHeadCommitTask
         return commitsToCheckin;
     }
 
-    private void cleanupWorkspace(final TaskProgressMonitor progressMonitor, final GitTFWorkspaceData workspaceData)
+    private void cleanWorkingFolder(final File workingFolder)
+    {
+        try
+        {
+            FileHelpers.deleteDirectory(workingFolder);
+            workingFolder.mkdirs();
+        }
+        catch (Exception e)
+        {
+            /* Not fatal */
+            log.warn(MessageFormat.format("Could not clean up temporary directory {0}", //$NON-NLS-1$
+                workingFolder.getAbsolutePath()), e);
+        }
+    }
+
+    private void cleanupWorkspace(final TaskProgressMonitor progressMonitor, final WorkspaceInfo workspaceData)
     {
         if (workspaceData == null)
         {
             return;
         }
 
-        final WorkspaceService workspace = workspaceData.getWorkspace();
-
         progressMonitor.beginTask(Messages.getString("CheckinHeadCommitTask.DeletingWorkspace"), //$NON-NLS-1$
             TaskProgressMonitor.INDETERMINATE,
             TaskProgressDisplay.DISPLAY_PROGRESS);
+
+        final WorkspaceService workspace = workspaceData.getWorkspace();
 
         if (workspaceData.getWorkspace() != null && lock && deep)
         {

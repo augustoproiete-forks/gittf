@@ -26,9 +26,22 @@ package com.microsoft.gittf.core.tasks.pendDiff;
 
 import org.eclipse.jgit.lib.ObjectId;
 
+/**
+ * Represents an EDIT change in the git repository that can be pended against
+ * TFS
+ * 
+ */
 public class EditChange
     extends Change
 {
+    /**
+     * Constructor
+     * 
+     * @param path
+     *        the item path in the git repository
+     * @param objectID
+     *        the object id of the item
+     */
     public EditChange(String path, ObjectId objectID)
     {
         super(path, objectID);

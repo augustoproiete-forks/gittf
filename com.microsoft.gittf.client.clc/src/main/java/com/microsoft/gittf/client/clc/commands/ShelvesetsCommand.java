@@ -39,7 +39,7 @@ import com.microsoft.gittf.client.clc.commands.framework.ShelvesetConsoleView;
 import com.microsoft.gittf.core.tasks.ShelvesetDeleteTask;
 import com.microsoft.gittf.core.tasks.ShelvesetsDisplayTask;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
-import com.microsoft.gittf.core.util.ShelvesetSortOption;
+import com.microsoft.gittf.core.util.shelveset.ShelvesetSortOption;
 
 public class ShelvesetsCommand
     extends Command

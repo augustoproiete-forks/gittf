@@ -49,6 +49,32 @@ public final class StashUtil
     {
     }
 
+    /**
+     * Creates a stash
+     * 
+     * @param repository
+     *        the git repository
+     * @param repositoryInserter
+     *        the repository inserter object to use
+     * @param rootBaseTree
+     *        the tree id for the base commit of the stash
+     * @param rootStashTree
+     *        the tree id for the commit of the stash
+     * @param rootIndexTree
+     *        the tree id for the index commit of the stash
+     * @param baseParentId
+     *        the parent of the base tree commit
+     * @param ownerDisplayName
+     *        the owner display name of the stash
+     * @param ownerName
+     *        the owner name of the stash
+     * @param stashComment
+     *        the comment used to for the stash
+     * @param stashName
+     *        the stash name
+     * @return
+     * @throws IOException
+     */
     public static final ObjectId create(
         final Repository repository,
         final ObjectInserter repositoryInserter,
@@ -68,12 +94,14 @@ public final class StashUtil
         Check.notNull(rootStashTree, "rootStashTree"); //$NON-NLS-1$
         Check.notNull(rootIndexTree, "rootIndexTree"); //$NON-NLS-1$
 
+        /* identifies the head and the branch we are creating the stash for */
         Ref headReference = repository.getRef(Constants.HEAD);
         RevCommit headCommit = new RevWalk(repository).parseCommit(headReference.getObjectId());
         String currentBranchName = Repository.shortenRefName(headReference.getTarget().getName());
 
         PersonIdent author = new PersonIdent(ownerDisplayName, ownerName);
 
+        /* create the base commit */
         CommitBuilder commitBuilder = new CommitBuilder();
         commitBuilder.setTreeId(rootBaseTree);
         if (baseParentId != null)
@@ -84,9 +112,9 @@ public final class StashUtil
         commitBuilder.setAuthor(author);
         commitBuilder.setCommitter(author);
 
-        // the base commit
         ObjectId baseCommit = repositoryInserter.insert(commitBuilder);
 
+        /* create the index commit */
         commitBuilder.setTreeId(rootIndexTree);
         commitBuilder.setParentId(baseCommit);
         commitBuilder.setMessage(MessageFormat.format(
@@ -97,9 +125,9 @@ public final class StashUtil
         commitBuilder.setAuthor(author);
         commitBuilder.setCommitter(author);
 
-        // the index commit
         ObjectId indexCommit = repositoryInserter.insert(commitBuilder);
 
+        /* create the stash commit */
         commitBuilder.setTreeId(rootStashTree);
         commitBuilder.setParentId(baseCommit);
         commitBuilder.addParentId(indexCommit);
@@ -108,12 +136,11 @@ public final class StashUtil
             MessageFormat.format(STASH_COMMENT, currentBranchName, headCommit.abbreviate(7).name(), stashName);
         commitBuilder.setMessage(stashRefLogComment);
 
-        // the stash commit
         ObjectId stashCommit = repositoryInserter.insert(commitBuilder);
 
         repositoryInserter.flush();
 
-        // Update the stash reference and ref log
+        /* Update the stash reference and ref log */
         RefUpdate stashReferenceUpdate = repository.updateRef(Constants.R_STASH);
         stashReferenceUpdate.setNewObjectId(stashCommit);
         stashReferenceUpdate.setRefLogIdent(author);
@@ -134,6 +161,16 @@ public final class StashUtil
         return stashCommit;
     }
 
+    /**
+     * Applys the stash to the current HEAD
+     * 
+     * @param repository
+     *        the git repository
+     * @param stashCommitId
+     *        the commit it pointing to the stash
+     * @throws WrongRepositoryStateException
+     * @throws GitAPIException
+     */
     public static final void apply(final Repository repository, final ObjectId stashCommitId)
         throws WrongRepositoryStateException,
             GitAPIException
@@ -142,10 +179,8 @@ public final class StashUtil
         Check.notNull(stashCommitId, "stashCommitId"); //$NON-NLS-1$
 
         /*
-         * There is a behavioral difference between git stash apply and jgit
-         * stashApplyCommand.
-         * 
-         * new Git(repository).stashApply().setStashRef("stash@{0}").call();
+         * TODO : Need to add apply code here that behaves similarly to the git
+         * tools
          */
     }
 }

@@ -43,11 +43,20 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.ItemSpec;
 import com.microsoft.tfs.core.util.FileEncoding;
 
+/**
+ * An implementation of the WorkspaceService that talks to a TFS workspace
+ * 
+ */
 public class TfsWorkspace
     implements WorkspaceService
 {
     private final Workspace workspace;
 
+    /**
+     * Constructor
+     * 
+     * @param workspace
+     */
     public TfsWorkspace(Workspace workspace)
     {
         Check.notNull(workspace, "workspace"); //$NON-NLS-1$

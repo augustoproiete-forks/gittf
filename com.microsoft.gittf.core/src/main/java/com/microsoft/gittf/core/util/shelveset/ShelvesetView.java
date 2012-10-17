@@ -22,22 +22,34 @@
  * SOFTWARE.
  ***********************************************************************************************/
 
-package com.microsoft.gittf.core.util;
+package com.microsoft.gittf.core.util.shelveset;
 
-public enum ShelvesetSortOption
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
+
+/**
+ * Defines the interface to display shelvesets
+ * 
+ */
+public interface ShelvesetView
 {
     /**
-     * Shelveset name
+     * Display a list of shelvesets
+     * 
+     * @param shelvesets
+     *        the list of shelvesets to display
+     * @param displayDetails
+     *        display the shelvesets details as well
      */
-    NAME,
+    void displayShelvesets(Shelveset[] shelvesets, boolean displayDetails);
 
     /**
-     * Shelveset owner name
+     * Display a single shelveset
+     * 
+     * @param shelveset
+     *        the shelveset to display
+     * @param shelvesetDetails
+     *        the shelveset details to display (the pending set)
      */
-    OWNER,
-
-    /**
-     * Shelveset date
-     */
-    DATE
+    void displayShelvesetDetails(Shelveset shelveset, PendingSet[] shelvesetDetails);
 }

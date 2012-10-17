@@ -36,6 +36,13 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.ItemSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
 
+/**
+ * Updates the local version information for a workspace to a specific version
+ * 
+ * This task basically fakes the server into believing that we have the
+ * specified version of the file, without having to download all the files from
+ * the server
+ */
 public class UpdateLocalVersionToSpecificVersionsTask
     extends UpdateLocalVersionTask
 {
@@ -44,6 +51,16 @@ public class UpdateLocalVersionToSpecificVersionsTask
 
     private GetOperation[][] tfsGetOperations;
 
+    /**
+     * Constructor
+     * 
+     * @param workspace
+     *        the workspace to set the local version information for
+     * @param repository
+     *        the repository that this workspace is mapped to
+     * @param versionSpec
+     *        the version spec to use
+     */
     public UpdateLocalVersionToSpecificVersionsTask(
         final Workspace workspace,
         final Repository repository,
@@ -69,13 +86,19 @@ public class UpdateLocalVersionToSpecificVersionsTask
         return tfsGetOperations;
     }
 
+    /**
+     * Gets the getOps for the version spec specified
+     * 
+     * @return
+     */
     private GetOperation[][] getVersionSpecGetOps()
     {
-        final Workspace workspace = getWorkspace();
-        Check.notNull(workspace, "workspace"); //$NON-NLS-1$
-
         GitTFConfiguration configuration = GitTFConfiguration.loadFrom(repository);
 
+        /*
+         * Use the web service layer to find out the getOps needed to update
+         * this workspace with local version information
+         */
         GetOperation[][] tfsGetOperations =
             workspace.getClient().getWebServiceLayer().get(
                 workspace.getName(),

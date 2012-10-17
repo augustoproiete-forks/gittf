@@ -150,7 +150,7 @@ public class CreateWorkspaceTask
                     else
                     {
                         updateLocalVersionTask =
-                            new UpdateLocalVersionToLatestDownloadedChangesetTask(tempWorkspace, repository);
+                            new UpdateLocalVersionToLatestBridgedChangesetTask(tempWorkspace, repository);
                     }
 
                     TaskStatus updateStatus =

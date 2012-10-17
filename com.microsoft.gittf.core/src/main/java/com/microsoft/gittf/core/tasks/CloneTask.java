@@ -46,7 +46,7 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressDisplay;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
-import com.microsoft.gittf.core.util.CommitUtil;
+import com.microsoft.gittf.core.util.ObjectIdUtil;
 import com.microsoft.gittf.core.util.TfsBranchUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.GetItemsOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
@@ -228,7 +228,7 @@ public class CloneTask
 
                 progressMonitor.displayVerbose(Messages.formatString("CloneTask.ClonedFormat", //$NON-NLS-1$
                     Integer.toString(changesets[i].getChangesetID()),
-                    CommitUtil.abbreviate(repository, lastCommitID)));
+                    ObjectIdUtil.abbreviate(repository, lastCommitID)));
             }
 
             progressMonitor.setDetail(Messages.getString("CloneTask.Finalizing")); //$NON-NLS-1$
@@ -260,14 +260,14 @@ public class CloneTask
             {
                 progressMonitor.displayMessage(Messages.formatString("CloneTask.ClonedFormat", //$NON-NLS-1$
                     Integer.toString(finalChangesetID),
-                    CommitUtil.abbreviate(repository, lastCommitID)));
+                    ObjectIdUtil.abbreviate(repository, lastCommitID)));
             }
             else
             {
                 progressMonitor.displayMessage(Messages.formatString("CloneTask.ClonedMultipleFormat", //$NON-NLS-1$
                     changesets.length,
                     Integer.toString(finalChangesetID),
-                    CommitUtil.abbreviate(repository, lastCommitID)));
+                    ObjectIdUtil.abbreviate(repository, lastCommitID)));
             }
         }
         else if (changesets.length == 0)

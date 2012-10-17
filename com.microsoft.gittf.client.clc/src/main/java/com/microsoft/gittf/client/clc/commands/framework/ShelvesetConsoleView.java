@@ -28,7 +28,7 @@ import com.microsoft.gittf.client.clc.Console;
 import com.microsoft.gittf.client.clc.Console.Verbosity;
 import com.microsoft.gittf.client.clc.Messages;
 import com.microsoft.gittf.core.OutputConstants;
-import com.microsoft.gittf.core.util.ShelvesetView;
+import com.microsoft.gittf.core.util.shelveset.ShelvesetView;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;

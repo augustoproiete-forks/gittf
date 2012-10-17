@@ -27,11 +27,24 @@ package com.microsoft.gittf.core.tasks.pendDiff;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 
+/**
+ * Represents a DELETE change in the git repository that can be pended against
+ * TFS
+ * 
+ */
 public class DeleteChange
     extends Change
 {
     private final FileMode type;
 
+    /**
+     * Constructor
+     * 
+     * @param path
+     *        the file path
+     * @param type
+     *        the file mode (FileMode.TREE or not)
+     */
     public DeleteChange(final String path, final FileMode type)
     {
         super(path, ObjectId.zeroId());
@@ -39,6 +52,11 @@ public class DeleteChange
         this.type = type;
     }
 
+    /**
+     * Get the FileMode of the object
+     * 
+     * @return
+     */
     public FileMode getType()
     {
         return type;

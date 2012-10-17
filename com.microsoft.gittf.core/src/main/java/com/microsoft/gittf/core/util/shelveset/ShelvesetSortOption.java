@@ -22,36 +22,22 @@
  * SOFTWARE.
  ***********************************************************************************************/
 
-package com.microsoft.gittf.core.util;
+package com.microsoft.gittf.core.util.shelveset;
 
-import java.util.Comparator;
-
-import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
-
-public class ShelvesetCompartor
-    implements Comparator<Shelveset>
+public enum ShelvesetSortOption
 {
-    private final ShelvesetSortOption sortOption;
+    /**
+     * Shelveset name
+     */
+    NAME,
 
-    public ShelvesetCompartor(ShelvesetSortOption sortOption)
-    {
-        Check.notNull(sortOption, "sortOption"); //$NON-NLS-1$
+    /**
+     * Shelveset owner name
+     */
+    OWNER,
 
-        this.sortOption = sortOption;
-    }
-
-    public int compare(Shelveset arg0, Shelveset arg1)
-    {
-        switch (sortOption)
-        {
-            case NAME:
-                return arg0.getName().compareTo(arg1.getName());
-            case OWNER:
-                return arg0.getOwnerName().compareTo(arg1.getOwnerName());
-            case DATE:
-                return arg1.getCreationDate().compareTo(arg0.getCreationDate());
-        }
-
-        return 0;
-    }
+    /**
+     * Shelveset date
+     */
+    DATE
 }

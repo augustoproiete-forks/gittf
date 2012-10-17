@@ -28,17 +28,9 @@ import static org.eclipse.jgit.lib.Constants.DOT_GIT;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 
-import org.eclipse.jgit.lib.AbbreviatedObjectId;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepository;
 
 import com.microsoft.gittf.core.Messages;
@@ -50,6 +42,17 @@ public final class RepositoryUtil
     {
     }
 
+    /**
+     * Creates a new repository
+     * 
+     * @param repositoryPath
+     *        repository path
+     * @param bare
+     *        is bare
+     * 
+     * @return
+     * @throws IOException
+     */
     public static FileRepository createNewRepository(final String repositoryPath, final boolean bare)
         throws IOException
     {
@@ -91,6 +94,13 @@ public final class RepositoryUtil
         return new FileRepository(repositoryDirectory);
     }
 
+    /**
+     * Creates a repository object in the specified directory
+     * 
+     * @param gitDir
+     * @return
+     * @throws IOException
+     */
     public static Repository findRepository(final String gitDir)
         throws IOException
     {
@@ -127,114 +137,5 @@ public final class RepositoryUtil
         }
 
         return repoBuilder.build();
-    }
-
-    public static boolean isValidCommitId(final Repository repository, ObjectId commitId)
-    {
-        final RevWalk walker = new RevWalk(repository);
-
-        try
-        {
-            RevCommit commit = walker.parseCommit(commitId);
-
-            return commit != null;
-        }
-        catch (Exception exception)
-        {
-            return false;
-        }
-        finally
-        {
-            if (walker != null)
-            {
-                walker.release();
-            }
-        }
-    }
-
-    public static ObjectId getRefNameCommitID(final Repository repository, String ref)
-        throws Exception
-    {
-        return getCommitId(repository, ref);
-    }
-
-    public static ObjectId getCurrentBranchHeadCommitID(final Repository repository)
-        throws Exception
-    {
-        return getCommitId(repository, Constants.HEAD);
-    }
-
-    public static ObjectId getMasterHeadCommitID(final Repository repository)
-        throws Exception
-    {
-        return getCommitId(repository, Constants.R_HEADS + Constants.MASTER);
-    }
-
-    public static final ObjectId expandAbbreviatedId(final Repository repository, final AbbreviatedObjectId objectID)
-    {
-        Check.notNull(repository, "repository"); //$NON-NLS-1$
-        Check.notNull(objectID, "objectID"); //$NON-NLS-1$
-
-        if (repository != null)
-        {
-            ObjectReader objReader = repository.getObjectDatabase().newReader();
-
-            try
-            {
-                Collection<ObjectId> objects = objReader.resolve(objectID);
-
-                if (objects.size() == 0)
-                {
-                    return null;
-                }
-                else if (objects.size() == 1)
-                {
-                    return objects.iterator().next();
-                }
-                else
-                {
-                    throw new RuntimeException(Messages.formatString("RepositoryUtil.AmbiguousObjectFormat", objectID)); //$NON-NLS-1$
-                }
-            }
-            catch (IOException exception)
-            {
-                throw new RuntimeException(exception);
-            }
-            finally
-            {
-                if (objReader != null)
-                {
-                    objReader.release();
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private static ObjectId getCommitId(final Repository repository, String name)
-        throws Exception
-    {
-        Check.notNull(repository, "repository"); //$NON-NLS-1$
-
-        /*
-         * Determine the HEAD commit. Ensure that it is parented off the commit
-         * from the latest changeset.
-         */
-        Ref ref = repository.getRef(name);
-
-        if (ref == null)
-        {
-            throw new Exception(Messages.formatString("RepositoryUtil.NoRefFormat", name)); //$NON-NLS-1$
-        }
-
-        ObjectId commitId = ref.getObjectId();
-
-        if (commitId == null)
-        {
-            throw new Exception(Messages.formatString("RepositoryUtil.NoObjectForRefFormat", name)); //$NON-NLS-1$
-        }
-
-        return commitId;
     }
 }

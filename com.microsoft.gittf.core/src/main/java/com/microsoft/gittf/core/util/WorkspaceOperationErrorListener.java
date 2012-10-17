@@ -42,8 +42,16 @@ public class WorkspaceOperationErrorListener
     private Workspace workspace;
     private List<String> errors = new ArrayList<String>();
 
+    /**
+     * Empty error listener - used by the preview workspace
+     */
     public static final WorkspaceOperationErrorListener EMPTY = new WorkspaceOperationErrorListener();
 
+    /**
+     * Constructor
+     * 
+     * @param workspace
+     */
     public WorkspaceOperationErrorListener(Workspace workspace)
     {
         Check.notNull(workspace, "workspace"); //$NON-NLS-1$
@@ -53,6 +61,9 @@ public class WorkspaceOperationErrorListener
         initialize();
     }
 
+    /**
+     * Constructor
+     */
     private WorkspaceOperationErrorListener()
     {
 
@@ -71,6 +82,11 @@ public class WorkspaceOperationErrorListener
         }
     }
 
+    /**
+     * Validates that the error listener have not seen any error
+     * 
+     * @throws Exception
+     */
     public void validate()
         throws Exception
     {
@@ -94,6 +110,9 @@ public class WorkspaceOperationErrorListener
         }
     }
 
+    /**
+     * Disposes the error listener
+     */
     public void dispose()
     {
         if (workspace != null)
@@ -102,6 +121,9 @@ public class WorkspaceOperationErrorListener
         }
     }
 
+    /**
+     * Initializes the error listener
+     */
     private void initialize()
     {
         if (workspace != null)

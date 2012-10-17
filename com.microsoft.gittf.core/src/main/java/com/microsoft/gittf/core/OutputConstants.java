@@ -26,7 +26,15 @@ package com.microsoft.gittf.core;
 
 public final class OutputConstants
 {
+    /**
+     * The new line constant to use
+     */
     public static final String NEW_LINE = "\n"; //$NON-NLS-1$
+
+    /**
+     * The maximum number of comments to rollup when generating the comments for
+     * shallow checkin
+     */
     public static final int DEFAULT_MAXCOMMENTROLLUP = 25;
 
     private OutputConstants()

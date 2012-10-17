@@ -44,11 +44,24 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemChec
 import com.microsoft.tfs.core.clients.versioncontrol.specs.ItemSpec;
 import com.microsoft.tfs.core.util.FileEncoding;
 
+/**
+ * Workspace object used to display the pending changes pended only
+ * 
+ */
 public class PreviewOnlyWorkspace
     implements WorkspaceService
 {
     private final TaskProgressMonitor progressMonitor;
 
+    /**
+     * Constructor
+     * 
+     * TODO : This class needs to call an interface and have the CLC project
+     * display changes on the command line *
+     * 
+     * @param progressMonitor
+     *        the progress monitor used to display the pending change
+     */
     public PreviewOnlyWorkspace(TaskProgressMonitor progressMonitor)
     {
         Check.notNull(progressMonitor, "progressMonitor"); //$NON-NLS-1$

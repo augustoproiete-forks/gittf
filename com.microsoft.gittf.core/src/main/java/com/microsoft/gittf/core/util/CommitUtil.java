@@ -25,41 +25,135 @@
 package com.microsoft.gittf.core.util;
 
 import java.io.IOException;
-import java.text.MessageFormat;
+import java.util.Collection;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.TagCommand;
+import org.eclipse.jgit.lib.AbbreviatedObjectId;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevObject;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 
-import com.microsoft.gittf.core.GitTFConstants;
 import com.microsoft.gittf.core.Messages;
-import com.microsoft.gittf.core.config.GitTFConfiguration;
 
 public final class CommitUtil
 {
-    private static final int ABBREVIATED_LENGTH = 7;
-
-    private static final Log log = LogFactory.getLog(CommitUtil.class);
-
     private CommitUtil()
     {
     }
 
-    public static final String abbreviate(final ObjectId objectID)
+    /**
+     * Determines if the commit id specified is a valid commit in the repository
+     * 
+     * @param repository
+     *        the git repository
+     * @param objectId
+     *        the commit object id
+     * @return
+     */
+    public static boolean isValidCommitId(final Repository repository, ObjectId objectId)
     {
-        return abbreviate(null, objectID);
+        final RevWalk walker = new RevWalk(repository);
+
+        try
+        {
+            RevCommit commit = walker.parseCommit(objectId);
+
+            return commit != null;
+        }
+        catch (Exception exception)
+        {
+            return false;
+        }
+        finally
+        {
+            if (walker != null)
+            {
+                walker.release();
+            }
+        }
     }
 
-    public static final String abbreviate(final Repository repository, final ObjectId objectID)
+    /**
+     * Returns the commit object id that is pointed at by the ref specified
+     * 
+     * @param repository
+     *        the git repository
+     * @param ref
+     *        the reference name
+     * @return
+     * @throws Exception
+     */
+    public static ObjectId getRefNameCommitID(final Repository repository, String ref)
+        throws Exception
     {
+        return getCommitId(repository, ref);
+    }
+
+    /**
+     * Returns the commit id referenced by HEAD
+     * 
+     * @param repository
+     *        the git repository
+     * @return
+     * @throws Exception
+     */
+    public static ObjectId getCurrentBranchHeadCommitID(final Repository repository)
+        throws Exception
+    {
+        return getCommitId(repository, Constants.HEAD);
+    }
+
+    /**
+     * Returns the commit id referenced by refs/heads/master
+     * 
+     * @param repository
+     *        the git repository
+     * @return
+     * @throws Exception
+     */
+    public static ObjectId getMasterHeadCommitID(final Repository repository)
+        throws Exception
+    {
+        return getCommitId(repository, Constants.R_HEADS + Constants.MASTER);
+    }
+
+    private static ObjectId getCommitId(final Repository repository, String refName)
+        throws Exception
+    {
+        Check.notNull(repository, "repository"); //$NON-NLS-1$
+
+        Ref ref = repository.getRef(refName);
+
+        if (ref == null)
+        {
+            throw new Exception(Messages.formatString("RepositoryUtil.NoRefFormat", refName)); //$NON-NLS-1$
+        }
+
+        ObjectId commitId = ref.getObjectId();
+
+        if (commitId == null)
+        {
+            throw new Exception(Messages.formatString("RepositoryUtil.NoObjectForRefFormat", refName)); //$NON-NLS-1$
+        }
+
+        return commitId;
+    }
+
+    /**
+     * Resolves the abbreviated id specified
+     * 
+     * @param repository
+     *        the git repository
+     * @param objectID
+     *        objectid to expand
+     * @return
+     */
+    public static final ObjectId resolveAbbreviatedId(final Repository repository, final AbbreviatedObjectId objectID)
+    {
+        Check.notNull(repository, "repository"); //$NON-NLS-1$
         Check.notNull(objectID, "objectID"); //$NON-NLS-1$
 
         if (repository != null)
@@ -68,11 +162,24 @@ public final class CommitUtil
 
             try
             {
-                return objReader.abbreviate(objectID, ABBREVIATED_LENGTH).name();
+                Collection<ObjectId> objects = objReader.resolve(objectID);
+
+                if (objects.size() == 0)
+                {
+                    return null;
+                }
+                else if (objects.size() == 1)
+                {
+                    return objects.iterator().next();
+                }
+                else
+                {
+                    throw new RuntimeException(Messages.formatString("RepositoryUtil.AmbiguousObjectFormat", objectID)); //$NON-NLS-1$
+                }
             }
-            catch (IOException e)
+            catch (IOException exception)
             {
-                log.warn("Could not read object from object database", e); //$NON-NLS-1$
+                throw new RuntimeException(exception);
             }
             finally
             {
@@ -83,65 +190,6 @@ public final class CommitUtil
             }
         }
 
-        return objectID.getName().substring(0, ABBREVIATED_LENGTH);
-    }
-
-    public static boolean tagCommit(final Repository repository, ObjectId commitID, int changesetID)
-    {
-        GitTFConfiguration configuration = GitTFConfiguration.loadFrom(repository);
-
-        if (!configuration.getTag())
-        {
-            return false;
-        }
-
-        String tagName = Messages.formatString("CreateCommitTask.TagNameFormat", //$NON-NLS-1$
-            Integer.toString(changesetID));
-
-        PersonIdent tagOwner = new PersonIdent(GitTFConstants.GIT_TF_NAME, MessageFormat.format("{0} - {1}", //$NON-NLS-1$
-            configuration.getServerURI().toString(),
-            configuration.getServerPath()));
-
-        return createTag(repository, commitID, tagName, tagOwner);
-    }
-
-    public static boolean createTag(final Repository repository, ObjectId commitID, String tagName, PersonIdent tagOwner)
-    {
-        final RevWalk walker = new RevWalk(repository);
-        try
-        {
-            RevObject objectToTag = walker.lookupCommit(commitID);
-
-            TagCommand tagCommand = new Git(repository).tag();
-            tagCommand.setName(tagName);
-            tagCommand.setObjectId(objectToTag);
-            tagCommand.setForceUpdate(true);
-            tagCommand.setTagger(tagOwner);
-
-            Ref tagRef = tagCommand.call();
-
-            if (tagRef == null || tagRef == ObjectId.zeroId())
-            {
-                log.warn("Failed to tag commit."); //$NON-NLS-1$
-            }
-
-            return true;
-        }
-        catch (Exception e)
-        {
-            // this is not a critical failure so we can still continue with the
-            // operation even if tagging failed.
-
-            log.error(e);
-
-            return false;
-        }
-        finally
-        {
-            if (walker != null)
-            {
-                walker.release();
-            }
-        }
+        return null;
     }
 }

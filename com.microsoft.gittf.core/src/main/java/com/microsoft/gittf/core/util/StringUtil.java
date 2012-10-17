@@ -34,6 +34,12 @@ public final class StringUtil
 
     }
 
+    /**
+     * Converts an object array to a string array
+     * 
+     * @param objectArray
+     * @return
+     */
     public static String[] convertToStringArray(Object[] objectArray)
     {
         Check.notNullOrEmpty(objectArray, "objectArray"); //$NON-NLS-1$

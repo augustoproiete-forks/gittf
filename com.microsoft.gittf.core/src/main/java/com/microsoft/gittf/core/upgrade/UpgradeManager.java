@@ -34,23 +34,41 @@ import com.microsoft.gittf.core.config.ChangesetCommitMap;
 import com.microsoft.gittf.core.config.GitTFConfiguration;
 import com.microsoft.tfs.util.FileHelpers;
 
+/**
+ * Manages any upgrade needed in the config file format
+ */
 public class UpgradeManager
 {
+    /**
+     * Upgrades the repository configuration if the current configuration
+     * version is not the most recent version
+     * 
+     * @param repository
+     *        the git repository
+     * @throws Exception
+     */
     public static void upgradeIfNeccessary(Repository repository)
         throws Exception
     {
+        /* Load the configuration */
         GitTFConfiguration currentConfiguration = GitTFConfiguration.loadFrom(repository);
+
+        /* if this repository is not configured exit */
         if (currentConfiguration == null)
         {
             return;
         }
 
+        /* Load the current file format version */
         int existingFormat = currentConfiguration.getFileFormatVersion();
+
+        /* if the format version is up to date return */
         if (existingFormat == GitTFConstants.GIT_TF_CURRENT_FORMAT_VERSION)
         {
             return;
         }
 
+        /* if the version is zero upgrade to version one */
         if (existingFormat == 0)
         {
             upgradeFromV0ToV1(repository, currentConfiguration);
@@ -60,8 +78,10 @@ public class UpgradeManager
     private static void upgradeFromV0ToV1(Repository repository, GitTFConfiguration currentConfiguration)
         throws Exception
     {
-        // 1. Delete old temp git-tf folder sense we will create a config with
-        // the same name. Newly created temp git-tf folder will be named "tf".
+        /*
+         * Delete old temp git-tf folder sense we will create a config with the
+         * same name. Newly created temp git-tf folder will be named "tf".
+         */
         File currentTempFileLocation = new File(repository.getDirectory(), GitTFConstants.GIT_TF_NAME);
         if (currentTempFileLocation.exists() && currentTempFileLocation.isDirectory())
         {
@@ -74,12 +94,16 @@ public class UpgradeManager
             }
         }
 
-        // 2. Move the existing "changesets" and "commits" sections to the new
-        // "git-tf" config file
+        /*
+         * Move the existing "changesets" and "commits" sections to the new
+         * "git-tf" config file
+         */
         File newConfigFileLocation = new File(repository.getDirectory(), GitTFConstants.GIT_TF_NAME);
         if (!newConfigFileLocation.exists())
         {
-            ChangesetCommitMap.upgradeExistingConfigurationIfNeeded(newConfigFileLocation, repository);
+            ChangesetCommitMap.copyConfigurationEntriesFromRepositoryConfigToNewConfig(
+                repository,
+                newConfigFileLocation);
         }
 
         GitTFConfiguration newConfiguration =

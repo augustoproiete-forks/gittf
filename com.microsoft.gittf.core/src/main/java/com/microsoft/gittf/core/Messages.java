@@ -29,6 +29,10 @@ import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
+/**
+ * Handles extracting and formatting messages from the messages bundle file
+ * 
+ */
 public class Messages
 {
     private static final String BUNDLE_NAME = "com.microsoft.gittf.core.messages"; //$NON-NLS-1$
@@ -39,6 +43,12 @@ public class Messages
     {
     }
 
+    /**
+     * Gets a string from the bundle
+     * 
+     * @param key
+     * @return
+     */
     public static String getString(String key)
     {
         try
@@ -51,12 +61,26 @@ public class Messages
         }
     }
 
+    /**
+     * Gets a string from the bundle and formats the results
+     * 
+     * @param key
+     * @param arguments
+     * @return
+     */
     public static String formatString(String key, Object... arguments)
     {
         MessageFormat formatter = new MessageFormat(getString(key));
         return formatter.format(arguments);
     }
 
+    /**
+     * Gets a localized string from the bundle
+     * 
+     * @param key
+     * @param locale
+     * @return
+     */
     public static String getString(final String key, Locale locale)
     {
         if (locale == null)

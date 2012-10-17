@@ -52,7 +52,7 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressDisplay;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
-import com.microsoft.gittf.core.util.CommitUtil;
+import com.microsoft.gittf.core.util.ObjectIdUtil;
 import com.microsoft.gittf.core.util.TfsBranchUtil;
 import com.microsoft.gittf.core.util.VersionSpecUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
@@ -249,7 +249,7 @@ public class FetchTask
 
                 progressMonitor.displayVerbose(Messages.formatString("FetchTask.FetchedChangesetFormat", //$NON-NLS-1$
                     Integer.toString(changesets[i].getChangesetID()),
-                    CommitUtil.abbreviate(repository, lastCommitID)));
+                    ObjectIdUtil.abbreviate(repository, lastCommitID)));
             }
 
             finalCommitID = lastCommitID;
@@ -281,7 +281,7 @@ public class FetchTask
                     progressMonitor.displayMessage(Messages.formatString(
                         "FetchTask.AlreadyFetchedUpdateFetchHeadFormat", //$NON-NLS-1$
                         Integer.toString(finalChangesetID),
-                        CommitUtil.abbreviate(repository, finalCommitID)));
+                        ObjectIdUtil.abbreviate(repository, finalCommitID)));
                 }
                 else
                 {
@@ -294,14 +294,14 @@ public class FetchTask
                 {
                     progressMonitor.displayMessage(Messages.formatString("FetchTask.FetchedFormat", //$NON-NLS-1$
                         Integer.toString(finalChangesetID),
-                        CommitUtil.abbreviate(repository, finalCommitID)));
+                        ObjectIdUtil.abbreviate(repository, finalCommitID)));
                 }
                 else
                 {
                     progressMonitor.displayMessage(Messages.formatString("FetchTask.FetchedMultipleFormat", //$NON-NLS-1$
                         changesetCounter,
                         Integer.toString(finalChangesetID),
-                        CommitUtil.abbreviate(repository, finalCommitID)));
+                        ObjectIdUtil.abbreviate(repository, finalCommitID)));
                 }
             }
         }

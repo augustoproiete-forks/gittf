@@ -27,6 +27,10 @@ package com.microsoft.gittf.core.tasks.framework;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.tfs.util.BitField;
 
+/**
+ * Task options
+ * 
+ */
 public class TaskOptions
     extends BitField
 {
@@ -34,11 +38,22 @@ public class TaskOptions
 
     public static final TaskOptions NONE = new TaskOptions(0);
 
+    /**
+     * Constructor
+     * 
+     * @param value
+     */
     private TaskOptions(int value)
     {
         super(value);
     }
 
+    /**
+     * Tests whether the otions contain the specified option or not
+     * 
+     * @param other
+     * @return
+     */
     public boolean contains(TaskOptions other)
     {
         Check.notNull(other, "other"); //$NON-NLS-1$
@@ -46,6 +61,12 @@ public class TaskOptions
         return super.containsInternal(other);
     }
 
+    /**
+     * Combines multiple task options together
+     * 
+     * @param other
+     * @return
+     */
     public TaskOptions combine(TaskOptions other)
     {
         Check.notNull(other, "other"); //$NON-NLS-1$

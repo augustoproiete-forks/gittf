@@ -24,6 +24,10 @@
 
 package com.microsoft.gittf.core.tasks.framework;
 
+/**
+ * Base task ProgressMonitor
+ * 
+ */
 public abstract class BaseTaskProgressMonitor
     implements TaskProgressMonitor
 {

@@ -40,23 +40,34 @@ import com.microsoft.tfs.core.clients.versioncontrol.UpdateLocalVersionQueueOpti
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.GetOperation;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 
+/**
+ * Updates the local version information for a workspace to a specific version
+ * 
+ * This task basically fakes the server into believing that we have the
+ * specified version of the file, without having to download all the files from
+ * the server
+ * 
+ * Sub classes need to implement the methods required to build the GetOps needed
+ * to update the server local version information
+ */
 public abstract class UpdateLocalVersionTask
     extends Task
 {
     private static final Log log = LogFactory.getLog(UpdateLocalVersionTask.class);
 
-    private final Workspace workspace;
+    protected final Workspace workspace;
 
+    /**
+     * Constructor
+     * 
+     * @param workspace
+     *        workspace to update
+     */
     public UpdateLocalVersionTask(final Workspace workspace)
     {
         Check.notNull(workspace, "workspace"); //$NON-NLS-1$
 
         this.workspace = workspace;
-    }
-
-    protected final Workspace getWorkspace()
-    {
-        return workspace;
     }
 
     protected abstract GetOperation[][] getGetOperations();
@@ -67,6 +78,7 @@ public abstract class UpdateLocalVersionTask
         progressMonitor.beginTask(Messages.getString("UpdateLocalVersionTask.UpdatingLocalVersions"), //$NON-NLS-1$
             TaskProgressMonitor.INDETERMINATE);
 
+        /* Retrieves the GetOps */
         GetOperation[][] tfsGetOperations = getGetOperations();
 
         if (tfsGetOperations == null)
@@ -76,6 +88,10 @@ public abstract class UpdateLocalVersionTask
             return TaskStatus.OK_STATUS;
         }
 
+        /*
+         * Build the local version updates array to queue all the updates using
+         * a single server call
+         */
         ArrayList<ClientLocalVersionUpdate> localVersionUpdates = new ArrayList<ClientLocalVersionUpdate>();
 
         for (int i = 0; i < tfsGetOperations.length; i++)
@@ -93,6 +109,7 @@ public abstract class UpdateLocalVersionTask
             }
         }
 
+        /* Update the local version information using the Update queue */
         UpdateLocalVersionQueue queue = null;
 
         try

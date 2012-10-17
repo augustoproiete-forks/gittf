@@ -37,14 +37,28 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Workspace;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.ItemSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVersionSpec;
 
-public class UpdateLocalVersionToLatestDownloadedChangesetTask
+/**
+ * Updates the local version information for a workspace to the latest bridged
+ * changeset on the server
+ * 
+ * This task basically fakes the server into believing that we have the
+ * specified version of the file, without having to download all the files from
+ * the server
+ */
+public class UpdateLocalVersionToLatestBridgedChangesetTask
     extends UpdateLocalVersionTask
 {
     private final Repository repository;
 
     private GetOperation[][] tfsGetOperations;
 
-    public UpdateLocalVersionToLatestDownloadedChangesetTask(final Workspace workspace, final Repository repository)
+    /**
+     * Constructor
+     * 
+     * @param workspace
+     * @param repository
+     */
+    public UpdateLocalVersionToLatestBridgedChangesetTask(final Workspace workspace, final Repository repository)
     {
         super(workspace);
 
@@ -65,11 +79,6 @@ public class UpdateLocalVersionToLatestDownloadedChangesetTask
 
     private GetOperation[][] getLatestDownloadedChangesetGetOps()
     {
-        Check.notNull(repository, "repository"); //$NON-NLS-1$
-
-        final Workspace workspace = getWorkspace();
-        Check.notNull(workspace, "workspace"); //$NON-NLS-1$
-
         GitTFConfiguration configuration = GitTFConfiguration.loadFrom(repository);
         ChangesetCommitMap commitMap = new ChangesetCommitMap(repository);
         int lastDownloadedChangeset = commitMap.getLastBridgedChangesetID(true);

@@ -38,7 +38,7 @@ import com.microsoft.gittf.client.clc.arguments.ValueArgument;
 import com.microsoft.gittf.client.clc.commands.framework.CommandTaskExecutor;
 import com.microsoft.gittf.core.tasks.ShelveDifferenceTask;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
-import com.microsoft.gittf.core.util.RepositoryUtil;
+import com.microsoft.gittf.core.util.CommitUtil;
 
 public class ShelveCommand
     extends PendingChangesCommand
@@ -125,23 +125,19 @@ public class ShelveCommand
                 : null;
 
         final ObjectId commitToShelve =
-            refString == null ? RepositoryUtil.getCurrentBranchHeadCommitID(repository)
-                : RepositoryUtil.getRefNameCommitID(repository, refString);
+            refString == null ? CommitUtil.getCurrentBranchHeadCommitID(repository) : CommitUtil.getRefNameCommitID(
+                repository,
+                refString);
 
         if (commitToShelve == null
             || ObjectId.zeroId().equals(commitToShelve)
-            || !RepositoryUtil.isValidCommitId(repository, commitToShelve))
+            || !CommitUtil.isValidCommitId(repository, commitToShelve))
         {
             throw new Exception(Messages.formatString("ShelveCommnad.InvalidRefSpecFormat", refString)); //$NON-NLS-1$
         }
 
         final ShelveDifferenceTask shelveTask =
-            new ShelveDifferenceTask(
-                repository,
-                commitToShelve,
-                getVersionControlClient(),
-                getServerConfiguration().getServerPath(),
-                name);
+            new ShelveDifferenceTask(repository, commitToShelve, getVersionControlClient(), name);
 
         shelveTask.setMessage(message);
         shelveTask.setWorkItemCheckinInfo(getWorkItemCheckinInfo());

@@ -40,17 +40,28 @@ import com.microsoft.gittf.core.util.Check;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
 
+/**
+ * Base task for the tasks that need to create and maintain a workspace object.
+ * 
+ */
 public abstract class WorkspaceTask
     extends Task
 {
     private final Log log = LogFactory.getLog(this.getClass());
 
-    private GitTFWorkspaceData workspaceData;
+    private WorkspaceInfo workspaceData;
 
-    protected final VersionControlClient versionControlClient;
     protected final Repository repository;
+    protected final VersionControlClient versionControlClient;
     protected final String serverPath;
 
+    /**
+     * Constructor
+     * 
+     * @param repository
+     * @param versionControlClient
+     * @param serverPath
+     */
     protected WorkspaceTask(
         final Repository repository,
         final VersionControlClient versionControlClient,
@@ -65,19 +76,44 @@ public abstract class WorkspaceTask
         this.serverPath = serverPath;
     }
 
-    protected GitTFWorkspaceData createWorkspace(final TaskProgressMonitor progressMonitor)
+    /**
+     * Creates a workspace
+     * 
+     * @param progressMonitor
+     * @return
+     * @throws Exception
+     */
+    protected WorkspaceInfo createWorkspace(final TaskProgressMonitor progressMonitor)
         throws Exception
     {
         return createWorkspace(progressMonitor, false);
     }
 
-    protected GitTFWorkspaceData createWorkspace(final TaskProgressMonitor progressMonitor, boolean previewOnly)
+    /**
+     * Creates a workspace
+     * 
+     * @param progressMonitor
+     * @param previewOnly
+     * @return
+     * @throws Exception
+     */
+    protected WorkspaceInfo createWorkspace(final TaskProgressMonitor progressMonitor, boolean previewOnly)
         throws Exception
     {
         return createWorkspace(progressMonitor, previewOnly, null);
     }
 
-    protected GitTFWorkspaceData createWorkspace(
+    /**
+     * Creates a workspace and sets the version of the items in the workspace to
+     * the versionSpec specified
+     * 
+     * @param progressMonitor
+     * @param previewOnly
+     * @param versionSpec
+     * @return
+     * @throws Exception
+     */
+    protected WorkspaceInfo createWorkspace(
         final TaskProgressMonitor progressMonitor,
         boolean previewOnly,
         VersionSpec versionSpec)
@@ -85,10 +121,16 @@ public abstract class WorkspaceTask
     {
         Check.notNull(progressMonitor, "progressMonitor"); //$NON-NLS-1$
 
+        /*
+         * If the workspace has already been created return that workspace
+         * object
+         */
         if (workspaceData == null)
         {
+            /* Create workspace task */
             final CreateWorkspaceTask createTask =
                 new CreateWorkspaceTask(versionControlClient, serverPath, repository);
+
             createTask.setPreview(previewOnly);
             createTask.setVersionSpec(versionSpec);
 
@@ -103,12 +145,17 @@ public abstract class WorkspaceTask
                 throw new Exception(createStatus.getMessage());
             }
 
-            workspaceData = new GitTFWorkspaceData(createTask.getWorkspace(), createTask.getWorkingFolder());
+            workspaceData = new WorkspaceInfo(createTask.getWorkspace(), createTask.getWorkingFolder());
         }
 
         return workspaceData;
     }
 
+    /**
+     * Clean up the workspace object
+     * 
+     * @param progressMonitor
+     */
     protected void disposeWorkspace(final TaskProgressMonitor progressMonitor)
     {
         TaskStatus deleteWorkspaceStatus = TaskStatus.OK_STATUS;
@@ -117,6 +164,7 @@ public abstract class WorkspaceTask
         {
             try
             {
+                /* Delete the workspace task */
                 deleteWorkspaceStatus =
                     new TaskExecutor(progressMonitor).execute(new DeleteWorkspaceTask(
                         workspaceData.getWorkspace(),
@@ -134,12 +182,12 @@ public abstract class WorkspaceTask
         }
     }
 
-    protected static final class GitTFWorkspaceData
+    protected static final class WorkspaceInfo
     {
         private final WorkspaceService workspace;
         private final File workingFolder;
 
-        private GitTFWorkspaceData(final WorkspaceService workspace, final File workingFolder)
+        private WorkspaceInfo(final WorkspaceService workspace, final File workingFolder)
         {
             Check.notNull(workspace, "workspace"); //$NON-NLS-1$
             Check.notNull(workingFolder, "workingFolder"); //$NON-NLS-1$

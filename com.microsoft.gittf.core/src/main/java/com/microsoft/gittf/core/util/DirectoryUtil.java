@@ -45,6 +45,13 @@ public final class DirectoryUtil
     {
     }
 
+    /**
+     * Get the Git-tf directory in the git repository
+     * 
+     * @param repository
+     *        the git repository
+     * @return
+     */
     public static File getGitTFDir(final Repository repository)
     {
         Check.notNull(repository, "repository"); //$NON-NLS-1$
@@ -63,6 +70,13 @@ public final class DirectoryUtil
         return new File(rootDirectory, GitTFConstants.GIT_TF_DIRNAME);
     }
 
+    /**
+     * Get the temp directory that should be used in the git repository
+     * 
+     * @param repository
+     *        the git repository
+     * @return
+     */
     public static File getTempDir(final Repository repository)
     {
         return getTempDir(repository, GUID.newGUID());
@@ -94,7 +108,7 @@ public final class DirectoryUtil
         {
             objIns = repository.newObjectInserter();
 
-            return CommitUtil.abbreviate(repository, objIns.idFor(OBJ_BLOB, guid.getGUIDBytes()));
+            return ObjectIdUtil.abbreviate(repository, objIns.idFor(OBJ_BLOB, guid.getGUIDBytes()));
         }
         catch (Exception e)
         {
@@ -110,6 +124,13 @@ public final class DirectoryUtil
 
     }
 
+    /**
+     * Creates a directory and returns the File object of the first created
+     * parent
+     * 
+     * @param location
+     * @return
+     */
     public static File createDirectory(File location)
     {
         boolean canCreateDirectory = true;

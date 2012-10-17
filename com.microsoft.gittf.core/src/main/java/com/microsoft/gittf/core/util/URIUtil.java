@@ -44,12 +44,22 @@ public final class URIUtil
     {
     }
 
-    public static URI getServerURI(final String input)
+    /**
+     * Converts the specified string into a valid server URI. The method will
+     * update the URI if needed when connecting to the hosted service, to make
+     * sure that the connection is HTTPS and is to the default collection
+     * 
+     * @param serverURIString
+     *        the uri string to convert
+     * @return
+     * @throws Exception
+     */
+    public static URI getServerURI(final String serverURIString)
         throws Exception
     {
         try
         {
-            URI uri = new URI(input);
+            URI uri = new URI(serverURIString);
 
             if (!uri.isAbsolute() || uri.isOpaque())
             {
@@ -63,7 +73,7 @@ public final class URIUtil
 
             if (uri == null)
             {
-                throw new Exception(Messages.formatString("URIUtil.InvalidURIFormat", input)); //$NON-NLS-1$
+                throw new Exception(Messages.formatString("URIUtil.InvalidURIFormat", serverURIString)); //$NON-NLS-1$
             }
 
             return uri;
@@ -73,9 +83,17 @@ public final class URIUtil
             log.warn("Could not parse URI", e); //$NON-NLS-1$
         }
 
-        throw new Exception(Messages.formatString("URIUtil.InvalidURIFormat", input)); //$NON-NLS-1$
+        throw new Exception(Messages.formatString("URIUtil.InvalidURIFormat", serverURIString)); //$NON-NLS-1$
     }
 
+    /**
+     * Ensures that git tf is connecting to the right hosted server scheme and
+     * path.
+     * 
+     * @param uri
+     * @return
+     * @throws URISyntaxException
+     */
     private static URI updateIfNeededForHostedService(URI uri)
         throws URISyntaxException
     {

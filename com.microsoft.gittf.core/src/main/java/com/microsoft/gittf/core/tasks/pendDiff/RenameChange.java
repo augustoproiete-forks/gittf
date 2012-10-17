@@ -28,12 +28,29 @@ import org.eclipse.jgit.lib.ObjectId;
 
 import com.microsoft.gittf.core.util.Check;
 
+/**
+ * Represents a RENAME change in the git repository that can be pended against
+ * TFS
+ * 
+ */
 public class RenameChange
     extends Change
 {
     private final String oldPath;
     private boolean isEdit;
 
+    /**
+     * Constructor
+     * 
+     * @param oldPath
+     *        the old path of the item
+     * @param newPath
+     *        the new path of the item
+     * @param objectID
+     *        the object id of the item in the git repository
+     * @param isEdit
+     *        is this a pure rename or is a rename edit
+     */
     public RenameChange(final String oldPath, final String newPath, final ObjectId objectID, boolean isEdit)
     {
         super(newPath, objectID);
@@ -45,21 +62,42 @@ public class RenameChange
         this.isEdit = isEdit;
     }
 
+    /**
+     * Gets the old path of the item
+     * 
+     * @return
+     */
     public String getOldPath()
     {
         return oldPath;
     }
 
+    /**
+     * Gets the new path of the item
+     * 
+     * @return
+     */
     public String getNewPath()
     {
         return getPath();
     }
 
+    /**
+     * Returns true if this change is a rename, edit
+     * 
+     * @return
+     */
     public boolean isEdit()
     {
         return isEdit;
     }
 
+    /**
+     * Updates the edit information if needed
+     * 
+     * @param objectID
+     *        the new object Id
+     */
     public void updateEditInformation(ObjectId objectID)
     {
         isEdit = !ObjectId.zeroId().equals(objectID);

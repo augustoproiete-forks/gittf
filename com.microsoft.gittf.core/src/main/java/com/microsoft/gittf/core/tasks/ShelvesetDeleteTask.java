@@ -33,6 +33,10 @@ import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
 
+/**
+ * Deletes a shelveset
+ * 
+ */
 public class ShelvesetDeleteTask
     extends Task
 {
@@ -40,6 +44,13 @@ public class ShelvesetDeleteTask
     private final String shelvesetName;
     private final String shelvesetOwnerName;
 
+    /**
+     * Constructor
+     * 
+     * @param versionControlService
+     * @param shelvesetName
+     * @param shelvesetOwnerName
+     */
     public ShelvesetDeleteTask(
         final VersionControlService versionControlService,
         final String shelvesetName,
@@ -61,20 +72,24 @@ public class ShelvesetDeleteTask
             1,
             TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
 
+        /* Queries the server for matching shelvesets */
         Shelveset[] results = versionControlService.queryShelvesets(shelvesetName, shelvesetOwnerName);
 
+        /* If there are no matching shelvesets error out */
         if (results.length == 0)
         {
             progressMonitor.endTask();
             return new TaskStatus(TaskStatus.ERROR, Messages.getString("ShelvesetDeleteTask.NoShelvesetsFound")); //$NON-NLS-1$
         }
 
+        /* If there are more than one matching shelveset error out */
         if (results.length > 1)
         {
             progressMonitor.endTask();
             return new TaskStatus(TaskStatus.ERROR, Messages.getString("ShelvesetDeleteTask.MultipleShelvesetsFound")); //$NON-NLS-1$
         }
 
+        /* Delete shelveset */
         versionControlService.deleteShelveset(results[0]);
 
         progressMonitor.endTask();

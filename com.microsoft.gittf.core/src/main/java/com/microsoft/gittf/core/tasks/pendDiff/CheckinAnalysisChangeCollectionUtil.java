@@ -7,6 +7,10 @@ import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 
+/**
+ * Utilities to work with the CheckinAnalysisChangeCollection class *
+ * 
+ */
 public final class CheckinAnalysisChangeCollectionUtil
 {
     private CheckinAnalysisChangeCollectionUtil()
@@ -14,6 +18,19 @@ public final class CheckinAnalysisChangeCollectionUtil
 
     }
 
+    /**
+     * Determines if the collection contains the path specified
+     * 
+     * @param analysis
+     *        the analysis object
+     * @param path
+     *        the path to lookup
+     * @return
+     * @throws MissingObjectException
+     * @throws IncorrectObjectTypeException
+     * @throws CorruptObjectException
+     * @throws IOException
+     */
     public static boolean contains(CheckinAnalysisChangeCollection analysis, String path)
         throws MissingObjectException,
             IncorrectObjectTypeException,

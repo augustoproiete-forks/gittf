@@ -26,14 +26,23 @@ package com.microsoft.gittf.core.util.tree;
 
 import java.util.Comparator;
 
+/**
+ * Compares two CommitTreePath objects to sort them correctly when building a
+ * commit tree
+ * 
+ */
 public class CommitTreePathComparator
     implements Comparator<CommitTreePath>
 {
+    /**
+     * Compares two CommitTreePath objects
+     */
     public int compare(CommitTreePath x, CommitTreePath y)
     {
         int xDepth = x.getDepth();
         int yDepth = y.getDepth();
 
+        // compare the items only if the depth is the same
         if (xDepth == yDepth)
         {
             return x.getFullName().toLowerCase().compareTo(y.getFullName().toLowerCase());

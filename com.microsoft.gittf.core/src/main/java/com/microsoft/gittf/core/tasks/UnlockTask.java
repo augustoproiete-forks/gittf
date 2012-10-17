@@ -34,12 +34,24 @@ import com.microsoft.tfs.core.clients.versioncontrol.GetOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.ItemSpec;
 
+/**
+ * Clears the lock on a workspace
+ * 
+ */
 public class UnlockTask
     extends Task
 {
     private final WorkspaceService workspace;
     private final String serverPath;
 
+    /**
+     * Constructor
+     * 
+     * @param workspace
+     *        the workspace to clear the lock in
+     * @param serverPath
+     *        the server path to unlock
+     */
     public UnlockTask(final WorkspaceService workspace, final String serverPath)
     {
         Check.notNull(workspace, "workspace"); //$NON-NLS-1$
@@ -55,6 +67,7 @@ public class UnlockTask
         progressMonitor.beginTask(
             Messages.formatString("UnlockTask.UnlockingFormat", serverPath), TaskProgressMonitor.INDETERMINATE); //$NON-NLS-1$
 
+        /* Undo all changes in the workspace */
         workspace.undo(new ItemSpec[]
         {
             new ItemSpec(serverPath, RecursionType.FULL)

@@ -26,27 +26,62 @@ package com.microsoft.gittf.core.tasks.framework;
 
 import com.microsoft.tfs.util.BitField;
 
+/**
+ * Task display progress options
+ * 
+ */
 public final class TaskProgressDisplay
     extends BitField
 {
     private static final long serialVersionUID = -179375741555801765L;
 
+    /**
+     * Display no progress
+     */
     public static final TaskProgressDisplay NONE = new TaskProgressDisplay(0);
+
+    /**
+     * Display task progress only
+     */
     public static final TaskProgressDisplay DISPLAY_PROGRESS = new TaskProgressDisplay(1);
+
+    /**
+     * Display task and sub task progress
+     */
     public static final TaskProgressDisplay DISPLAY_SUBTASK_DETAIL = new TaskProgressDisplay(2);
 
+    /**
+     * Default is to display task and sub task progress
+     */
     public static final TaskProgressDisplay DEFAULT = DISPLAY_SUBTASK_DETAIL;
 
+    /**
+     * Constructor
+     * 
+     * @param flags
+     */
     private TaskProgressDisplay(int flags)
     {
         super(flags);
     }
 
+    /**
+     * Tests whether the option is contained or not
+     * 
+     * @param other
+     * @return
+     */
     public boolean contains(TaskProgressDisplay other)
     {
         return super.containsInternal(other);
     }
 
+    /**
+     * Combines multiple options
+     * 
+     * @param other
+     * @return
+     */
     public TaskProgressDisplay combine(final TaskProgressDisplay other)
     {
         return new TaskProgressDisplay(super.combineInternal(other));

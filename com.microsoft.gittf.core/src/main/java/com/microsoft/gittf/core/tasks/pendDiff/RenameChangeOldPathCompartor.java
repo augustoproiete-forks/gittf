@@ -26,6 +26,10 @@ package com.microsoft.gittf.core.tasks.pendDiff;
 
 import java.util.Comparator;
 
+/**
+ * Compares two Rename Objects using their old path
+ * 
+ */
 public class RenameChangeOldPathCompartor
     implements Comparator<RenameChange>
 {

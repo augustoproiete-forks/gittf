@@ -24,14 +24,46 @@
 
 package com.microsoft.gittf.core;
 
+/**
+ * Constants used by the Git TF Library
+ * 
+ */
 public final class GitTFConstants
 {
-    public static final int GIT_TF_CURRENT_FORMAT_VERSION = 1;
+    /**
+     * The Application Name
+     */
     public static final String GIT_TF_NAME = "git-tf"; //$NON-NLS-1$
+
+    /**
+     * The latest format version of the git tf configuration file
+     */
+    public static final int GIT_TF_CURRENT_FORMAT_VERSION = 1;
+
+    /**
+     * The root of the temporary directory to use
+     */
     public static final String GIT_TF_DIRNAME = "tf"; //$NON-NLS-1$
+
+    /**
+     * The default depth option
+     */
     public static final boolean GIT_TF_DEFAULT_DEEP = false;
+
+    /**
+     * The default shallow depth option
+     */
     public static final int GIT_TF_SHALLOW_DEPTH = 1;
+
+    /**
+     * The name of the remote branch that maps to TFS
+     */
     public static final String GIT_TF_REMOTE = "origin_tfs/"; //$NON-NLS-1$
+
+    /**
+     * The name of the branch to use that maps to TFS (Used only in bare
+     * repository)
+     */
     public static final String GIT_TF_BRANCHNAME = "tfs"; //$NON-NLS-1$
 
     private GitTFConstants()

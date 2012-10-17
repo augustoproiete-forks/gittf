@@ -53,6 +53,11 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemChec
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
 
+/**
+ * Pends the difference between the Commit Id specified and the latest bridged
+ * commit to TFS, then shelves the differences in a shelveset on the TFS server.
+ * 
+ */
 public class ShelveDifferenceTask
     extends WorkspaceTask
 {
@@ -68,40 +73,69 @@ public class ShelveDifferenceTask
 
     private VersionSpec shelveAgainstVersion = null;
 
+    /**
+     * Constructor
+     * 
+     * @param repository
+     *        the git repository
+     * @param shelveCommitID
+     *        the commit id to shelve
+     * @param versionControlClient
+     *        the version control client object
+     * @param shelvesetName
+     *        the shelveset name
+     */
     public ShelveDifferenceTask(
         final Repository repository,
         final ObjectId shelveCommitID,
         final VersionControlClient versionControlClient,
-        final String serverPath,
         final String shelvesetName)
     {
-        super(repository, versionControlClient, serverPath);
+        super(repository, versionControlClient, GitTFConfiguration.loadFrom(repository).getServerPath());
 
-        Check.notNull(repository, "repository"); //$NON-NLS-1$
         Check.notNull(shelveCommitID, "shelveCommitID"); //$NON-NLS-1$
-        Check.notNull(versionControlClient, "versionControlClient"); //$NON-NLS-1$
-        Check.notNullOrEmpty(serverPath, "serverPath"); //$NON-NLS-1$
         Check.notNullOrEmpty(shelvesetName, "shelvesetName"); //$NON-NLS-1$
 
         this.shelveCommitID = shelveCommitID;
         this.shelvesetName = shelvesetName;
     }
 
+    /**
+     * Sets the work item info for the work items to associate
+     * 
+     * @param workItems
+     */
     public void setWorkItemCheckinInfo(WorkItemCheckinInfo[] workItems)
     {
         this.workItems = workItems;
     }
 
+    /**
+     * Sets the flag that indicates the ability to replace an existing shelveset
+     * with the same name on the server
+     * 
+     * @param replace
+     */
     public void setReplaceExistingShelveset(boolean replace)
     {
         this.replace = replace;
     }
 
+    /**
+     * Sets the rename mode to use when shelving the changes
+     * 
+     * @param renameMode
+     */
     public void setRenameMode(RenameMode renameMode)
     {
         this.renameMode = renameMode;
     }
 
+    /**
+     * Sets the shelveset comment
+     * 
+     * @param message
+     */
     public void setMessage(String message)
     {
         this.message = message;
@@ -110,17 +144,22 @@ public class ShelveDifferenceTask
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {
-        GitTFWorkspaceData workspaceData = null;
-
         progressMonitor.beginTask(
             Messages.formatString(
                 "ShelveDifferenceTask.ShelvingDifferencesFormat", GitTFConfiguration.loadFrom(repository).getServerPath()), 1, //$NON-NLS-1$ 
             TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
 
+        WorkspaceInfo workspaceData = null;
+
         try
         {
             progressMonitor.setDetail(Messages.getString("ShelveDifferenceTask.ExaminingRepository")); //$NON-NLS-1$
 
+            /*
+             * Gets the best delta to use when creating the shelveset. The delta
+             * should be from any commit that maps to a changeset that is
+             * bridged to the shelveset commit
+             */
             CommitDelta deltaToShelve = getOptimalCommitDelta();
 
             final RevCommit fromCommit = deltaToShelve.getFromCommit();
@@ -128,11 +167,13 @@ public class ShelveDifferenceTask
 
             progressMonitor.setDetail(Messages.getString("ShelveDifferenceTask.PreparingWorkspace")); //$NON-NLS-1$
 
+            /* Create the workspace */
             workspaceData = createWorkspace(progressMonitor.newSubTask(1), false, shelveAgainstVersion);
 
             final WorkspaceService workspace = workspaceData.getWorkspace();
             final File workingFolder = workspaceData.getWorkingFolder();
 
+            /* Pend the changes in the workspace */
             final PendDifferenceTask pendTask =
                 new PendDifferenceTask(repository, fromCommit, toCommit, workspace, serverPath, workingFolder);
             pendTask.setRenameMode(renameMode);
@@ -144,6 +185,7 @@ public class ShelveDifferenceTask
                 return pendStatus;
             }
 
+            /* Shelve the pended changes */
             final ShelvePendingChangesTask shelveTask =
                 new ShelvePendingChangesTask(
                     repository,
@@ -166,6 +208,7 @@ public class ShelveDifferenceTask
                 return shelveStatus;
             }
 
+            /* Clean up the workspace */
             disposeWorkspace(progressMonitor.newSubTask(1));
             workspaceData = null;
 

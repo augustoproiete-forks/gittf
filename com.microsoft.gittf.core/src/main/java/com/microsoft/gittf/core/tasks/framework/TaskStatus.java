@@ -27,14 +27,40 @@ package com.microsoft.gittf.core.tasks.framework;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.tfs.util.TypesafeEnum;
 
+/**
+ * Represents the task execution status
+ * 
+ */
 public class TaskStatus
 {
+    /**
+     * Task executed successfully
+     */
     public static final TaskStatusSeverity OK = new TaskStatusSeverity(0);
+
+    /**
+     * Task executed successfully with some info
+     */
     public static final TaskStatusSeverity INFO = new TaskStatusSeverity(1);
+
+    /**
+     * Task executed successfully with some warnings
+     */
     public static final TaskStatusSeverity WARNING = new TaskStatusSeverity(2);
+
+    /**
+     * Task failed
+     */
     public static final TaskStatusSeverity ERROR = new TaskStatusSeverity(3);
+
+    /**
+     * The task was cancelled
+     */
     public static final TaskStatusSeverity CANCEL = new TaskStatusSeverity(4);
 
+    /**
+     * An OK Status
+     */
     public static final TaskStatus OK_STATUS = new TaskStatus(OK);
 
     private final TaskStatusSeverity severity;
@@ -42,36 +68,81 @@ public class TaskStatus
     private final String message;
     private final Exception exception;
 
+    /**
+     * Constructor
+     * 
+     * @param severity
+     */
     public TaskStatus(final TaskStatusSeverity severity)
     {
         this(severity, 0, null, null);
     }
 
+    /**
+     * Constructor
+     * 
+     * @param severity
+     * @param code
+     */
     public TaskStatus(final TaskStatusSeverity severity, int code)
     {
         this(severity, code, null, null);
     }
 
+    /**
+     * Constructor
+     * 
+     * @param severity
+     * @param message
+     */
     public TaskStatus(final TaskStatusSeverity severity, final String message)
     {
         this(severity, 0, message, null);
     }
 
+    /**
+     * Constructor
+     * 
+     * @param severity
+     * @param code
+     * @param message
+     */
     public TaskStatus(final TaskStatusSeverity severity, int code, final String message)
     {
         this(severity, code, message, null);
     }
 
+    /**
+     * Constructor
+     * 
+     * @param severity
+     * @param exception
+     */
     public TaskStatus(final TaskStatusSeverity severity, final Exception exception)
     {
         this(severity, 0, null, exception);
     }
 
+    /**
+     * Constructor
+     * 
+     * @param severity
+     * @param code
+     * @param exception
+     */
     public TaskStatus(final TaskStatusSeverity severity, int code, final Exception exception)
     {
         this(severity, code, null, exception);
     }
 
+    /**
+     * Constructor
+     * 
+     * @param severity
+     * @param code
+     * @param message
+     * @param exception
+     */
     public TaskStatus(final TaskStatusSeverity severity, final int code, final String message, final Exception exception)
     {
         Check.notNull(severity, "severity"); //$NON-NLS-1$
@@ -82,31 +153,60 @@ public class TaskStatus
         this.exception = exception;
     }
 
+    /**
+     * Gets the severity
+     * 
+     * @return
+     */
     public TaskStatusSeverity getSeverity()
     {
         return severity;
     }
 
+    /**
+     * Gets the code
+     * 
+     * @return
+     */
     public int getCode()
     {
         return code;
     }
 
+    /**
+     * Gets the Message
+     * 
+     * @return
+     */
     public String getMessage()
     {
         return message;
     }
 
+    /**
+     * Gets the Exception
+     * 
+     * @return
+     */
     public Exception getException()
     {
         return exception;
     }
 
+    /**
+     * Returns true if the task execution was OK
+     * 
+     * @return
+     */
     public boolean isOK()
     {
         return TaskStatus.OK.equals(severity);
     }
 
+    /**
+     * The task severity enum
+     * 
+     */
     public static class TaskStatusSeverity
         extends TypesafeEnum
     {

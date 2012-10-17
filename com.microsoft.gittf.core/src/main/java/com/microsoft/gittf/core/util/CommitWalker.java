@@ -42,6 +42,23 @@ public final class CommitWalker
     {
     }
 
+    /**
+     * Get the list of commit deltas that represents the commits between a
+     * source commit and a target commit. The method skips walking parents that
+     * are ignored.
+     * 
+     * @param repository
+     *        the git repository
+     * @param sourceCommitID
+     *        the source commit id
+     * @param targetCommitID
+     *        the target commit
+     * @param ignoreCommitIDs
+     *        the list of commits to ignore
+     * @return
+     * @throws Exception
+     *         throws an exception if the path between to commits is ambigous
+     */
     public static List<CommitDelta> getCommitList(
         final Repository repository,
         final ObjectId sourceCommitID,
@@ -83,7 +100,7 @@ public final class CommitWalker
                     if (sourceCommitID != null)
                     {
                         throw new Exception(Messages.formatString("CheckinHeadCommitTask.LatestNotInTreeFormat", //$NON-NLS-1$
-                            CommitUtil.abbreviate(repository, sourceCommitID)));
+                            ObjectIdUtil.abbreviate(repository, sourceCommitID)));
                     }
 
                     fromCommit = null;
@@ -96,8 +113,8 @@ public final class CommitWalker
                         {
                             throw new Exception(Messages.formatString(
                                 "CheckinHeadCommitTask.CommitHasOneParentThatIsSquashedFormat", //$NON-NLS-1$
-                                CommitUtil.abbreviate(repository, currentCommit),
-                                CommitUtil.abbreviate(repository, parents[0].getId())));
+                                ObjectIdUtil.abbreviate(repository, currentCommit),
+                                ObjectIdUtil.abbreviate(repository, parents[0].getId())));
                         }
                     }
 
@@ -167,7 +184,7 @@ public final class CommitWalker
                             {
                                 throw new Exception(Messages.formatString(
                                     "CheckinHeadCommitTask.NonLinearHistoryFormat", //$NON-NLS-1$
-                                    CommitUtil.abbreviate(repository, currentCommit.getId())));
+                                    ObjectIdUtil.abbreviate(repository, currentCommit.getId())));
                             }
                         }
                     }
@@ -177,7 +194,7 @@ public final class CommitWalker
                     {
                         throw new Exception(
                             Messages.formatString(
-                                "CheckinHeadCommitTask.AllParentsSquashedFormat", CommitUtil.abbreviate(repository, currentCommit.getId()))); //$NON-NLS-1$
+                                "CheckinHeadCommitTask.AllParentsSquashedFormat", ObjectIdUtil.abbreviate(repository, currentCommit.getId()))); //$NON-NLS-1$
                     }
                     /* We only had one non-squashed parent */
                     else
@@ -205,6 +222,20 @@ public final class CommitWalker
         return commitList;
     }
 
+    /**
+     * Get the list of commit deltas that represent the commits between a source
+     * commit and a target commit. If there are multiple paths available the
+     * method will select the first valid path found.
+     * 
+     * @param repository
+     *        the git repository
+     * @param sourceCommitID
+     *        the source commit id
+     * @param targetCommitID
+     *        the target commit id
+     * @return
+     * @throws Exception
+     */
     public static List<CommitDelta> getAutoSquashedCommitList(
         final Repository repository,
         final ObjectId sourceCommitID,
@@ -232,7 +263,7 @@ public final class CommitWalker
             if (commitPath == null || commitPath.size() < 2)
             {
                 throw new Exception(Messages.formatString("CheckinHeadCommitTask.LatestNotInTreeFormat", //$NON-NLS-1$
-                    CommitUtil.abbreviate(repository, end.getId())));
+                    ObjectIdUtil.abbreviate(repository, end.getId())));
             }
 
             List<CommitDelta> deltas = new ArrayList<CommitDelta>();
@@ -310,11 +341,23 @@ public final class CommitWalker
         return path;
     }
 
+    /**
+     * Represents the link between two commits
+     * 
+     */
     public static class CommitDelta
     {
         private final RevCommit fromCommit;
         private final RevCommit toCommit;
 
+        /**
+         * Constructor
+         * 
+         * @param fromCommit
+         *        source commit
+         * @param toCommit
+         *        destination commit
+         */
         public CommitDelta(final RevCommit fromCommit, final RevCommit toCommit)
         {
             Check.notNull(toCommit, "toCommit"); //$NON-NLS-1$
@@ -323,11 +366,21 @@ public final class CommitWalker
             this.toCommit = toCommit;
         }
 
+        /**
+         * Get the source from Commit
+         * 
+         * @return
+         */
         public RevCommit getFromCommit()
         {
             return fromCommit;
         }
 
+        /**
+         * Get the destination to Commit
+         * 
+         * @return
+         */
         public RevCommit getToCommit()
         {
             return toCommit;

@@ -33,6 +33,10 @@ import org.apache.commons.logging.LogFactory;
 
 import com.microsoft.gittf.core.util.Check;
 
+/**
+ * The task executor class that is responsible for executing any Task
+ * 
+ */
 public class TaskExecutor
 {
     private static final Log log = LogFactory.getLog(TaskExecutor.class);
@@ -42,6 +46,12 @@ public class TaskExecutor
     private final List<TaskStartedHandler> taskStartedHandlers = new ArrayList<TaskStartedHandler>();
     private final List<TaskCompletedHandler> taskCompletedHandlers = new ArrayList<TaskCompletedHandler>();
 
+    /**
+     * Constructor
+     * 
+     * @param progressMonitor
+     *        the progress monitor to use to report progress
+     */
     public TaskExecutor(final TaskProgressMonitor progressMonitor)
     {
         Check.notNull(progressMonitor, "progressMonitor"); //$NON-NLS-1$
@@ -49,6 +59,12 @@ public class TaskExecutor
         this.progressMonitor = progressMonitor;
     }
 
+    /**
+     * Adds a TaskStartedHandler
+     * 
+     * @param handler
+     * @return
+     */
     public final boolean addTaskStartedHandler(TaskStartedHandler handler)
     {
         Check.notNull(handler, "handler"); //$NON-NLS-1$
@@ -56,6 +72,12 @@ public class TaskExecutor
         return taskStartedHandlers.add(handler);
     }
 
+    /**
+     * Removes a TaskStartedHandler
+     * 
+     * @param handler
+     * @return
+     */
     public final boolean removeTaskStartedHandler(TaskStartedHandler handler)
     {
         Check.notNull(handler, "handler"); //$NON-NLS-1$
@@ -63,6 +85,12 @@ public class TaskExecutor
         return taskStartedHandlers.remove(handler);
     }
 
+    /**
+     * Adds a TaskCompletedHandler
+     * 
+     * @param handler
+     * @return
+     */
     public final boolean addTaskCompletedHandler(TaskCompletedHandler handler)
     {
         Check.notNull(handler, "handler"); //$NON-NLS-1$
@@ -70,6 +98,12 @@ public class TaskExecutor
         return taskCompletedHandlers.add(handler);
     }
 
+    /**
+     * Removes a TaskCompletedHandler
+     * 
+     * @param handler
+     * @return
+     */
     public final boolean removeTaskCompletedHandler(TaskCompletedHandler handler)
     {
         Check.notNull(handler, "handler"); //$NON-NLS-1$
@@ -77,12 +111,20 @@ public class TaskExecutor
         return taskCompletedHandlers.remove(handler);
     }
 
+    /**
+     * Executes the specified task
+     * 
+     * @param task
+     *        to execute
+     * @return
+     */
     public TaskStatus execute(final Task task)
     {
         Check.notNull(task, "task"); //$NON-NLS-1$
 
         TaskStatus status;
 
+        /* Calls the task started handlers */
         for (TaskStartedHandler handler : taskStartedHandlers)
         {
             try
@@ -97,6 +139,7 @@ public class TaskExecutor
             }
         }
 
+        /* Runs the task */
         try
         {
             status = task.run(progressMonitor);
@@ -110,6 +153,7 @@ public class TaskExecutor
             progressMonitor.dispose();
         }
 
+        /* Calls the task completed handlers */
         for (TaskCompletedHandler handler : taskCompletedHandlers)
         {
             try

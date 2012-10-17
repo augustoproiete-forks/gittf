@@ -22,14 +22,46 @@
  * SOFTWARE.
  ***********************************************************************************************/
 
-package com.microsoft.gittf.core.util;
+package com.microsoft.gittf.core.util.shelveset;
 
-import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
+import java.util.Comparator;
+
+import com.microsoft.gittf.core.util.Check;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
 
-public interface ShelvesetView
+/**
+ * Compares two shelvesets based on the sort options specified
+ * 
+ */
+public class ShelvesetCompartor
+    implements Comparator<Shelveset>
 {
-    void displayShelvesets(Shelveset[] shelvesets, boolean displayDetails);
+    private final ShelvesetSortOption sortOption;
 
-    void displayShelvesetDetails(Shelveset shelveset, PendingSet[] shelvesetDetails);
+    /**
+     * Constructor
+     * 
+     * @param sortOption
+     */
+    public ShelvesetCompartor(ShelvesetSortOption sortOption)
+    {
+        Check.notNull(sortOption, "sortOption"); //$NON-NLS-1$
+
+        this.sortOption = sortOption;
+    }
+
+    public int compare(Shelveset arg0, Shelveset arg1)
+    {
+        switch (sortOption)
+        {
+            case NAME:
+                return arg0.getName().compareTo(arg1.getName());
+            case OWNER:
+                return arg0.getOwnerName().compareTo(arg1.getOwnerName());
+            case DATE:
+                return arg1.getCreationDate().compareTo(arg0.getCreationDate());
+        }
+
+        return 0;
+    }
 }

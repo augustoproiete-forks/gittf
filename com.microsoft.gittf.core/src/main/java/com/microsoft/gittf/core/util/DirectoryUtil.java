@@ -34,6 +34,7 @@ import org.eclipse.jgit.lib.ObjectInserter;
 import org.eclipse.jgit.lib.Repository;
 
 import com.microsoft.gittf.core.GitTFConstants;
+import com.microsoft.gittf.core.config.GitTFConfiguration;
 import com.microsoft.tfs.util.FileHelpers;
 import com.microsoft.tfs.util.GUID;
 
@@ -46,15 +47,21 @@ public final class DirectoryUtil
     }
 
     /**
-     * Get the Git-tf directory in the git repository
+     * Get the directory to use for staging changes to TFS.
      * 
      * @param repository
      *        the git repository
      * @return
      */
-    public static File getGitTFDir(final Repository repository)
+    public static File getTempDirRoot(final Repository repository)
     {
         Check.notNull(repository, "repository"); //$NON-NLS-1$
+
+        GitTFConfiguration config = GitTFConfiguration.loadFrom(repository);
+        if (config.getTempDirectory() != null)
+        {
+            return new File(config.getTempDirectory());
+        }
 
         File rootDirectory = repository.getDirectory().getAbsoluteFile();
 
@@ -64,7 +71,7 @@ public final class DirectoryUtil
         }
         catch (IOException e)
         {
-
+            /* suppress */
         }
 
         return new File(rootDirectory, GitTFConstants.GIT_TF_DIRNAME);
@@ -91,14 +98,14 @@ public final class DirectoryUtil
         while (count < 5)
         {
             File possibleTempFolder =
-                new File(getGitTFDir(repository), getUniqueAbbreviatedFolderName(repository, GUID.newGUID()));
+                new File(getTempDirRoot(repository), getUniqueAbbreviatedFolderName(repository, GUID.newGUID()));
             if (!possibleTempFolder.exists())
             {
                 return possibleTempFolder;
             }
         }
 
-        return new File(getGitTFDir(repository), MessageFormat.format("{0}-{1}", TEMP_DIR_NAME, id.getGUIDString())); //$NON-NLS-1$
+        return new File(getTempDirRoot(repository), MessageFormat.format("{0}-{1}", TEMP_DIR_NAME, id.getGUIDString())); //$NON-NLS-1$
     }
 
     private static String getUniqueAbbreviatedFolderName(final Repository repository, GUID guid)

@@ -47,6 +47,7 @@ public class ConfigureRepositoryTask
     private boolean deep;
     private boolean tag = true;
     private String buildDefinition;
+    private String tempDirectory;
 
     public ConfigureRepositoryTask(final Repository repository, final URI projectCollectionURI, final String tfsPath)
     {
@@ -91,6 +92,11 @@ public class ConfigureRepositoryTask
         this.buildDefinition = buildDefinition;
     }
 
+    public void setTempDirectory(String tempDirectory)
+    {
+        this.tempDirectory = tempDirectory;
+    }
+
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {
@@ -112,7 +118,8 @@ public class ConfigureRepositoryTask
             deep,
             tag,
             GitTFConstants.GIT_TF_CURRENT_FORMAT_VERSION,
-            buildDefinition).saveTo(repository);
+            buildDefinition,
+            tempDirectory).saveTo(repository);
 
         progressMonitor.endTask();
 

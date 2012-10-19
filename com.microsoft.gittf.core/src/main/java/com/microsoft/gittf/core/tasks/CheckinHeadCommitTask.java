@@ -626,7 +626,7 @@ public class CheckinHeadCommitTask
                     break;
                 }
 
-                comment.append(buildCommitComment(commit));
+                comment.append(buildCommitComment(commit) + OutputConstants.NEW_LINE);
             }
 
             if (commitCounter == 1)
@@ -653,22 +653,29 @@ public class CheckinHeadCommitTask
      */
     private String buildCommitComment(RevCommit commit)
     {
-        StringBuilder comment = new StringBuilder();
+        if (includeMetaDataInComment)
+        {
+            StringBuilder comment = new StringBuilder();
 
-        comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinCommentFormat", //$NON-NLS-1$
-            ObjectIdUtil.abbreviate(repository, commit.getId()),
-            DateUtil.formatDate(new Date(((long) commit.getCommitTime()) * 1000))) + OutputConstants.NEW_LINE);
-        comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinCommentAuthorFormat", //$NON-NLS-1$
-            commit.getAuthorIdent().getName(),
-            commit.getAuthorIdent().getEmailAddress()) + OutputConstants.NEW_LINE);
-        comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinCommentCommitterFormat", //$NON-NLS-1$
-            commit.getCommitterIdent().getName(),
-            commit.getCommitterIdent().getEmailAddress()) + OutputConstants.NEW_LINE);
-        comment.append("-----------------------------------------------------------------" + OutputConstants.NEW_LINE); //$NON-NLS-1$
-        comment.append(indentString(commit.getFullMessage()));
-        comment.append(OutputConstants.NEW_LINE);
+            comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinCommentFormat", //$NON-NLS-1$
+                ObjectIdUtil.abbreviate(repository, commit.getId()),
+                DateUtil.formatDate(new Date(((long) commit.getCommitTime()) * 1000))) + OutputConstants.NEW_LINE);
+            comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinCommentAuthorFormat", //$NON-NLS-1$
+                commit.getAuthorIdent().getName(),
+                commit.getAuthorIdent().getEmailAddress()) + OutputConstants.NEW_LINE);
+            comment.append(Messages.formatString("CheckinHeadCommitTask.ShallowCheckinCommentCommitterFormat", //$NON-NLS-1$
+                commit.getCommitterIdent().getName(),
+                commit.getCommitterIdent().getEmailAddress()) + OutputConstants.NEW_LINE);
+            comment.append("-----------------------------------------------------------------" + OutputConstants.NEW_LINE); //$NON-NLS-1$
+            comment.append(indentString(commit.getFullMessage()));
+            comment.append(OutputConstants.NEW_LINE);
 
-        return comment.toString();
+            return comment.toString();
+        }
+        else
+        {
+            return commit.getFullMessage();
+        }
     }
 
     private String indentString(String input)

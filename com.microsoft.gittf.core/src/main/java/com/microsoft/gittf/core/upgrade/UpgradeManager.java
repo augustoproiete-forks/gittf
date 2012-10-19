@@ -115,6 +115,7 @@ public class UpgradeManager
                 currentConfiguration.getDeep(),
                 true,
                 1,
+                null,
                 null);
 
         newConfiguration.saveTo(repository);

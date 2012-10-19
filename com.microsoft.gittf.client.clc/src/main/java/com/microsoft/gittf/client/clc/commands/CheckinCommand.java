@@ -185,11 +185,6 @@ public class CheckinCommand
             message = null;
         }
 
-        if (!deep && !includeMetaData)
-        {
-            Main.printWarning(Messages.getString("CheckinCommand.NoMetaDataWillBeIgnoreBecauseShallowSpecified")); //$NON-NLS-1$
-        }
-
         String buildDefinition = getArguments().contains("gated") ? //$NON-NLS-1$
             ((ValueArgument) getArguments().getArgument("gated")).getValue() : null; //$NON-NLS-1$
 

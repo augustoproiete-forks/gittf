@@ -44,6 +44,7 @@ public class ConfigurationConstants
     public static final String USERNAME = "username"; //$NON-NLS-1$
     public static final String PASSWORD = "password"; //$NON-NLS-1$
     public static final String GATED_BUILD_DEFINITION = "gated"; //$NON-NLS-1$
+    public static final String TEMP_DIRECTORY = "tempdir"; //$NON-NLS-1$
 
     public static final String COMMIT_SUBSECTION = "commits"; //$NON-NLS-1$
     public static final String COMMIT_CHANGESET_FORMAT = "changeset-{0}"; //$NON-NLS-1$

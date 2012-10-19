@@ -239,6 +239,7 @@ public class ConfigureCommand
         configureTask.setDeep(deep);
         configureTask.setTag(tag);
         configureTask.setBuildDefinition(buildDefinition);
+        configureTask.setTempDirectory(currentConfiguration.getTempDirectory());
 
         TaskStatus configureStatus = new CommandTaskExecutor(getProgressMonitor()).execute(configureTask);
 

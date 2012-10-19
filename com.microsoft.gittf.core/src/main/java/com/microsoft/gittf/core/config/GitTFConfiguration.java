@@ -63,6 +63,7 @@ public class GitTFConfiguration
     private final boolean tag;
     private final int fileFormatVersion;
     private final String buildDefinition;
+    private final String tempDirectory;
 
     /**
      * Creates a new git-tf configuration, suitable for use by the command or
@@ -81,6 +82,8 @@ public class GitTFConfiguration
      *        password should be saved
      * @param depth
      *        The default "depth" for operations
+     * @param tempDirectory
+     *        The temporary directory to use
      */
     public GitTFConfiguration(
         final URI serverURI,
@@ -90,7 +93,8 @@ public class GitTFConfiguration
         final boolean deep,
         final boolean tag,
         final int fileFormatVersion,
-        final String buildDefinition)
+        final String buildDefinition,
+        final String tempDirectory)
     {
         Check.notNull(serverURI, "serverURI"); //$NON-NLS-1$
         Check.notNullOrEmpty(tfsPath, "tfsPath"); //$NON-NLS-1$
@@ -103,6 +107,7 @@ public class GitTFConfiguration
         this.tag = tag;
         this.fileFormatVersion = fileFormatVersion;
         this.buildDefinition = buildDefinition;
+        this.tempDirectory = tempDirectory;
     }
 
     /**
@@ -181,6 +186,19 @@ public class GitTFConfiguration
     }
 
     /**
+     * Overrides the temp directory used for staging workspace changes. This may
+     * be useful if you have git-tf fetched something inside an existing
+     * workspace mapping.
+     * 
+     * @return The temp directory to use for staging changes, or
+     *         <code>null</code> to use the default
+     */
+    public String getTempDirectory()
+    {
+        return tempDirectory;
+    }
+
+    /**
      * Saves this configuration to the given git repository's configuration.
      * 
      * @param repository
@@ -231,6 +249,15 @@ public class GitTFConfiguration
                 buildDefinition);
         }
 
+        if (tempDirectory != null && tempDirectory.length() > 0)
+        {
+            repository.getConfig().setString(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.GENERAL_SUBSECTION,
+                ConfigurationConstants.TEMP_DIRECTORY,
+                tempDirectory);
+        }
+
         repository.getConfig().setEnum(
             ConfigConstants.CONFIG_CORE_SECTION,
             null,
@@ -260,6 +287,11 @@ public class GitTFConfiguration
         if (buildDefinition != null && buildDefinition.length() > 0)
         {
             result.append(Messages.formatString("GitTFConfiguration.ToString.GatedBuildFormat", this.buildDefinition) + OutputConstants.NEW_LINE); //$NON-NLS-1$
+        }
+
+        if (tempDirectory != null && tempDirectory.length() > 0)
+        {
+            result.append(Messages.formatString("GitTFConfiguration.ToString.TempDirectoryFormat", this.tempDirectory) + OutputConstants.NEW_LINE); //$NON-NLS-1$
         }
 
         result.append(Messages.formatString("GitTFConfiguration.ToString.DepthFormat", getDepthString()) + OutputConstants.NEW_LINE); //$NON-NLS-1$
@@ -344,6 +376,12 @@ public class GitTFConfiguration
                 ConfigurationConstants.SERVER_SUBSECTION,
                 ConfigurationConstants.GATED_BUILD_DEFINITION);
 
+        final String tempDirectory =
+            repository.getConfig().getString(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.GENERAL_SUBSECTION,
+                ConfigurationConstants.TEMP_DIRECTORY);
+
         if (projectCollection == null)
         {
             log.error("No project collection configuration in repository"); //$NON-NLS-1$
@@ -376,7 +414,8 @@ public class GitTFConfiguration
             depth > GitTFConstants.GIT_TF_SHALLOW_DEPTH,
             tag,
             fileFormatVersion,
-            buildDefinition);
+            buildDefinition,
+            tempDirectory);
     }
 
     /**

@@ -49,6 +49,7 @@ import com.microsoft.gittf.core.util.Check;
 import com.microsoft.gittf.core.util.CommitWalker;
 import com.microsoft.gittf.core.util.CommitWalker.CommitDelta;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
@@ -185,13 +186,25 @@ public class ShelveDifferenceTask
                 return pendStatus;
             }
 
+            /*
+             * if there are no differences between the HEAD commit and the
+             * parent tfs bridged commit, the changes list can be empty. In this
+             * case bail out early and notify the user that there are no changes
+             * to shelve.
+             */
+            PendingChange[] changes = pendTask.getPendingChanges();
+            if (changes == null || changes.length == 0)
+            {
+                throw new Exception(Messages.getString("ShelveDifferencesTask.NoChangesToShelve")); //$NON-NLS-1$
+            }
+
             /* Shelve the pended changes */
             final ShelvePendingChangesTask shelveTask =
                 new ShelvePendingChangesTask(
                     repository,
                     message == null ? toCommit.getFullMessage() : message,
                     workspace,
-                    pendTask.getPendingChanges(),
+                    changes,
                     shelvesetName);
 
             shelveTask.setReplaceExistingShelveset(replace);
@@ -240,7 +253,7 @@ public class ShelveDifferenceTask
         {
             // this already maps to an existing changeset;
             throw new Exception(Messages.formatString("ShelveDifferencesTask.NoChangesToShelveFormat", //$NON-NLS-1$
-                shelvesetChangesetId));
+                Integer.toString(shelvesetChangesetId)));
         }
 
         List<CommitDelta> commitDeltas = null;

@@ -159,6 +159,7 @@ public class ConfigureCommand
         boolean deep = false;
         boolean tag = true;
         String buildDefinition = null;
+        String tempDir = null;
 
         if (currentConfiguration == null || getArguments().contains("force")) //$NON-NLS-1$
         {
@@ -235,11 +236,16 @@ public class ConfigureCommand
             buildDefinition = currentConfiguration.getBuildDefinition();
         }
 
+        if (currentConfiguration != null)
+        {
+            tempDir = currentConfiguration.getTempDirectory();
+        }
+
         ConfigureRepositoryTask configureTask = new ConfigureRepositoryTask(repository, serverURI, tfsPath);
         configureTask.setDeep(deep);
         configureTask.setTag(tag);
         configureTask.setBuildDefinition(buildDefinition);
-        configureTask.setTempDirectory(currentConfiguration.getTempDirectory());
+        configureTask.setTempDirectory(tempDir);
 
         TaskStatus configureStatus = new CommandTaskExecutor(getProgressMonitor()).execute(configureTask);
 

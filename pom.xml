@@ -38,10 +38,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <version.major>1</version.major>
+        <version.major>2</version.major>
         <version.minor>0</version.minor>
-        <version.service>1</version.service>
-	    <version.build>SNAPSHOT</version.build>
+        <version.service>0</version.service>
+        <version.build>SNAPSHOT</version.build>
         <maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
         <buildNumber>${version.major}.${version.minor}.${version.service}.${maven.build.timestamp}</buildNumber>
     </properties>

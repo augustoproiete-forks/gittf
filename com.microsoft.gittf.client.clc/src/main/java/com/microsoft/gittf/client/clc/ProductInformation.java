@@ -42,10 +42,14 @@ public class ProductInformation
     private static final String VERSION_PROPERTIES_RESOURCE = "/git-tf-version.properties"; //$NON-NLS-1$
     private static final String productName = "git-tf"; //$NON-NLS-1$
 
+    private static final String developVersion = "DEVELOP"; //$NON-NLS-1$
+    private static final String snapshotVersion = "SNAPSHOT"; //$NON-NLS-1$
+
     private static String major = ""; //$NON-NLS-1$
     private static String minor = ""; //$NON-NLS-1$
     private static String service = ""; //$NON-NLS-1$
     private static String build = ""; //$NON-NLS-1$
+    private static String buildNumber = ""; //$NON-NLS-1$
 
     private static Throwable loadException;
 
@@ -61,10 +65,16 @@ public class ProductInformation
                 try
                 {
                     props.load(in);
+                    buildNumber = props.getProperty("buildNumber"); //$NON-NLS-1$
                     major = props.getProperty("version.major"); //$NON-NLS-1$
                     minor = props.getProperty("version.minor"); //$NON-NLS-1$
                     service = props.getProperty("version.service"); //$NON-NLS-1$
-                    build = props.containsKey("version.build") ? props.getProperty("version.build") : "DEVELOP"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                    build = props.containsKey("version.build") ? props.getProperty("version.build") : developVersion; //$NON-NLS-1$ //$NON-NLS-2$ 
+
+                    if (build.equals(snapshotVersion) || build.equals(developVersion))
+                    {
+                        buildNumber = MessageFormat.format("{0}.{1}.{2}.{3}", major, minor, service, developVersion); //$NON-NLS-1$ 
+                    }
                 }
                 catch (IOException e)
                 {
@@ -138,5 +148,14 @@ public class ProductInformation
             throw new RuntimeException(loadException);
         }
         return build;
+    }
+
+    public static String getBuildNumber()
+    {
+        if (loadException != null)
+        {
+            throw new RuntimeException(loadException);
+        }
+        return buildNumber;
     }
 }

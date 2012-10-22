@@ -169,10 +169,7 @@ public class Main
             {
                 console.getOutputStream().println(Messages.formatString("Main.ApplicationVersionFormat", //$NON-NLS-1$
                     ProductInformation.getProductName(),
-                    ProductInformation.getMajorVersion(),
-                    ProductInformation.getMinorVersion(),
-                    ProductInformation.getServiceVersion(),
-                    ProductInformation.getBuildVersion()));
+                    ProductInformation.getBuildNumber()));
 
                 return;
             }

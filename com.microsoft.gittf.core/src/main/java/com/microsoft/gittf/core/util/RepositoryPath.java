@@ -55,7 +55,7 @@ public final class RepositoryPath
 
     /**
      * Gets just the folder part of the given repository path, which is all of
-     * the string up to the last component (the file part). If the given path
+     * the string up to the last part (the file part). If the given path
      * describes a folder but does not end in a separator, the last folder is
      * discarded.
      * 
@@ -114,7 +114,7 @@ public final class RepositoryPath
 
     /**
      * Gets just the file part of the given server path, which is all of the
-     * string after the last path component. If there are no separators, the
+     * string after the last path part. If there are no separators, the
      * entire string is returned. If the string ends in a separator, an empty
      * string is returned.
      * 
@@ -142,7 +142,7 @@ public final class RepositoryPath
 
         /*
          * Add 1 to return the part after the sep, unless that would be longer
-         * than the string ("$/foo/bar/" would be that case).
+         * than the string ("$/Project/folder/" would be that case).
          */
         if (largestIndex + 1 < repositoryPath.length())
         {
@@ -169,7 +169,7 @@ public final class RepositoryPath
 
     /**
      * Returns the depth of the item described by path, where the root folder is
-     * depth 0, team projects are at depth 1, "$/Foo/Bar" is 2, and so on.
+     * depth 0, team projects are at depth 1, "$/Project/File" is 2, and so on.
      * 
      * @param repositoryPath
      *        the repository path to test (must not be <code>null</code>)

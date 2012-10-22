@@ -1,0 +1,100 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <style type="text/css">
+        body {
+            font-family: sans-serif;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        h1, h2, h3, h4, p, li, div {
+            padding-left: 2px;
+        }
+        h2 {
+            color: white;
+            background-color: grey;
+        }
+        .code {
+            font-family: monospace;
+            font-size: 100%;
+        }
+        .comment {
+            font-style: italic;
+            color: grey;
+        }
+        .important {
+            color: red;
+            background-color: white;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+            
+    </style>
+</head>
+<body>
+    <h1>Git-TF: Release Notes</h1>
+
+    <h2>Git-TF V2.0.0</h2>
+    <p>
+        <h3>New Features:</h3>
+        <ul>
+            <li>Shelve command - shelves any <span class="code">RefSpec</span> in TFS using Git-TF</li>
+            <li>Shelvesets command - views and delete shelvesets that are on the TFS server</li>
+            <li>Unshelve command - creates a stash from a TFS shelveset</li>
+            <li>File and folder rename support when shelving and checking in. Users can also specify the rename mode to use when performing a check-in or a shelve <span class="code">[--renamemode=all|justFiles|none]</span></li>
+            <li>Gated build support and ability to configure a default gated build definition</li>
+            <li>Chocolatey package</li>
+            <li>Include git commit meta data in the changeset comments when checking in for Git-TF in both <span class="code">--shallow</span> and <span class="code">--deep</span> modes</li>
+            <li>Fetch and Pull <span class="code">--force</span> option to enable scenarios where there are user permission changes in TFS</li>
+        </ul>
+    </p>
+    <p>
+        <h3>Major Bug Fixes:</h3>
+        <ul>
+            <li>Performance improvement when checking in</li>
+            <li>Disable locking during shallow check in to avoid issues around failing to lock the server directory when checking in</li>
+            <li>Issues around clone leaving untracked files in the repository</li>
+            <li>Multiple other bug fixes</li>
+        </ul>
+    </p>
+
+    
+    <h2>Git-TF V1.0.1</h2>
+    <p>
+        <h3>New Features:</h3>
+        <ul>
+            <li>The ability to specify a check-in comment using <span class="code">--message|-m=Message</span></li>
+            <li>Checkin <span class="code">--preview|-p</span> option to the check in command</li>
+            <li>All commits that map to a TFS changeset are tagged with <span class="code">TFS_C[ChangesetNumber]</span> tag in git</li>
+            <li>Creates a remote tracking branch to track changesets bridged with TFS</li>
+            <li>Enabled Git-TF to work with bare repositories</li>
+        </ul>
+    </p>
+    <p>
+        <h3>Major Bug Fixes:</h3>
+        <ul>
+            <li>Issues with configure / check in scenario when <span class="code">--shallow</span> is specified </li>
+            <li>Issues with git-tf launcher script when cmd.exe is not in the path</li>
+            <li>Multiple other bug fixes</li>
+        </ul>
+    </p>
+
+    <h2>Git-TF V1.0.0</h2>
+    <p>
+        <h3>Initial Git-TF release:</h3>
+        <ul>
+            <li>Clone command</li>
+            <li>Configure command</li>
+            <li>Pull command</li>
+            <li>Fetch command</li>
+            <li>Check in command</li>
+        </ul>
+    </p>
+
+</body>
+</html>

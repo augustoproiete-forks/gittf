@@ -236,17 +236,26 @@
         is used by default when pulling, but the <span class="code">--rebase</span> option may be used to perform a rebase instead.
     </p>
     
-    <h3>Shelve <span class="comment">(in development)</span></h3>
+    <h3>Shelve</h3>
     <div class="code">git tf shelve myshelveset</div>
     <p>
         Shelve the changes made in the Git repo into TFS.  Shelve operates similarly to the <span class="code">git tf checkin --shallow</span> option in that all aggregate 
         changes since the last checkin will be created as a single shelveset.  
     </p>
+
+    <h3>Unshelve</h3>
+    <div class="code">git tf unshelve shelvesetName [--user|-u=shelvesetOwner]</div>
     <p>
-        <span class="important">Note:</span>  This command is still in development and may have significant bugs.  Use in a production environment is not recommended at this time.
+        Unshelve the changes from the TFS shelveset into a stash in the git repository. To apply the shelveset content in the repository
+        execute <span class="code">git stash apply</span>. When the stash is applied in the repository, the changes downloaded by the unshelve command will be merged with
+        the current <span class="code">HEAD</span>.
     </p>
-
-
+    <h3>Shelvesets</h3>
+    <div class="code">git tf shelvesets [shelvesetName] [--user|-u=shelvesetOwner] [--details] [--delete]</div>
+    <p>
+        Lists the shelvesets available on the server that match the name and owner specified. If the <span class="code">--details</span> flag is specified, more shelveset details
+        will be listed. This command can also be used to delete shelvesets from the server.
+    </p>
     <h2>Working with Teams</h2>
     <p>
         The Git-TF tool is most easily used by a single developer or multiple developers working independently with their own isolated 

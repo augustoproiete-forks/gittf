@@ -55,11 +55,11 @@ public class ShelvesetCompartor
         switch (sortOption)
         {
             case NAME:
-                return arg0.getName().compareTo(arg1.getName());
+                return arg0.getName().compareToIgnoreCase(arg1.getName());
             case OWNER:
-                return arg0.getOwnerName().compareTo(arg1.getOwnerName());
+                return arg0.getOwnerName().compareToIgnoreCase(arg1.getOwnerName());
             case DATE:
-                return arg1.getCreationDate().compareTo(arg0.getCreationDate());
+                return arg0.getCreationDate().compareTo(arg1.getCreationDate());
         }
 
         return 0;

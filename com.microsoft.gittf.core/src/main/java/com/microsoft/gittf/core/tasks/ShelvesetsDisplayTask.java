@@ -24,8 +24,9 @@
 
 package com.microsoft.gittf.core.tasks;
 
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.interfaces.VersionControlService;
@@ -138,11 +139,13 @@ public class ShelvesetsDisplayTask
             progressMonitor.endTask();
 
             // Sort shelvesets
-            Set<Shelveset> shelvesets = new TreeSet<Shelveset>(new ShelvesetCompartor(sortOption));
+            List<Shelveset> shelvesets = new ArrayList<Shelveset>(results.length);
             for (Shelveset shelveset : results)
             {
                 shelvesets.add(shelveset);
             }
+
+            Collections.sort(shelvesets, new ShelvesetCompartor(sortOption));
 
             // display all shelvesets
             view.displayShelvesets(shelvesets.toArray(new Shelveset[shelvesets.size()]), displayDetails);

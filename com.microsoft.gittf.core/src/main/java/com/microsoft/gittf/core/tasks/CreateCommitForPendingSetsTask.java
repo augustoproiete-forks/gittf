@@ -137,11 +137,17 @@ public abstract class CreateCommitForPendingSetsTask
             Set<String> foldersRenamedInPendingSet = new TreeSet<String>(Collections.reverseOrder());
             Set<String> foldersDeletedInPendingSet = new TreeSet<String>();
 
+            progressMonitor.displayVerbose(Messages.getString("CreateCommitForPendingSetsTask.VerboseItemsProcessedFromPendingSets")); //$NON-NLS-1$
+
             for (PendingSet set : pendingSets)
             {
                 for (PendingChange change : set.getPendingChanges())
                 {
-                    String pathToUse = change.getServerItem();
+                    String serverItem = change.getServerItem().toLowerCase();
+                    String sourceServerItem =
+                        change.getSourceServerItem() != null ? change.getSourceServerItem().toLowerCase() : null;
+
+                    String pathToUse = serverItem;
 
                     ChangeType changeType = change.getChangeType();
 
@@ -151,18 +157,18 @@ public abstract class CreateCommitForPendingSetsTask
                             || changeType.contains(ChangeType.BRANCH)
                             || changeType.contains(ChangeType.UNDELETE))
                         {
-                            itemsAddedInPendingSet.add(change.getServerItem());
+                            itemsAddedInPendingSet.add(serverItem);
                         }
                         else if (changeType.contains(ChangeType.RENAME))
                         {
-                            itemsAddedInPendingSet.add(change.getSourceServerItem());
-                            itemsDeletedInPendingSet.add(change.getSourceServerItem());
+                            itemsAddedInPendingSet.add(sourceServerItem);
+                            itemsDeletedInPendingSet.add(sourceServerItem);
 
-                            pathToUse = change.getSourceServerItem();
+                            pathToUse = sourceServerItem;
                         }
                         else if (changeType.contains(ChangeType.DELETE))
                         {
-                            itemsDeletedInPendingSet.add(change.getServerItem());
+                            itemsDeletedInPendingSet.add(serverItem);
                         }
                         else
                         {
@@ -173,7 +179,7 @@ public abstract class CreateCommitForPendingSetsTask
                              */
                             if (change.getSourceServerItem() != null)
                             {
-                                pathToUse = change.getSourceServerItem();
+                                pathToUse = sourceServerItem;
                             }
                         }
                     }
@@ -181,20 +187,24 @@ public abstract class CreateCommitForPendingSetsTask
                     {
                         if (changeType.contains(ChangeType.RENAME))
                         {
-                            foldersRenamedInPendingSet.add(change.getSourceServerItem());
+                            foldersRenamedInPendingSet.add(sourceServerItem);
 
-                            pathToUse = change.getSourceServerItem();
+                            pathToUse = sourceServerItem;
                         }
                         else if (changeType.contains(ChangeType.DELETE))
                         {
-                            foldersDeletedInPendingSet.add(change.getServerItem());
+                            foldersDeletedInPendingSet.add(serverItem);
                         }
                     }
+
+                    progressMonitor.displayVerbose(pathToUse);
 
                     pendingSetItemPath.add(pathToUse);
                     pendingSetMap.put(pathToUse, change);
                 }
             }
+
+            progressMonitor.displayVerbose(""); //$NON-NLS-1$
 
             progressMonitor.setWork(pendingSetItemPath.size());
 
@@ -237,13 +247,18 @@ public abstract class CreateCommitForPendingSetsTask
              * Phase one: build the pending set commit tree by copying the
              * parent tree
              */
+
+            progressMonitor.displayVerbose(Messages.getString("CreateCommitForPendingSetsTask.VerboseItemsDownloadedFromPendingSets")); //$NON-NLS-1$
+
             while (treeWalker.next())
             {
-                String itemServerPath = ServerPath.combine(serverPath, treeWalker.getPathString());
+                String itemServerPath = ServerPath.combine(serverPath, treeWalker.getPathString()).toLowerCase();
 
                 /* if the item has a pending change apply the pending change */
                 if (pendingSetItemPath.contains(itemServerPath))
                 {
+                    progressMonitor.displayVerbose(itemServerPath);
+
                     if (createStashCommit)
                     {
                         createBlob(
@@ -319,18 +334,27 @@ public abstract class CreateCommitForPendingSetsTask
                 }
             }
 
+            progressMonitor.displayVerbose(""); //$NON-NLS-1$
+
             /* for items that were added in the shelveset add those here */
+
+            progressMonitor.displayVerbose(Messages.getString("CreateCommitForPendingSetsTask.VerboseItemsDownloadedFromPendingSetsAdds")); //$NON-NLS-1$
+
             for (String newItem : itemsAddedInPendingSet)
             {
+                progressMonitor.displayVerbose(newItem);
+
                 createBlob(
                     repositoryInserter,
                     pendingSetTreeHeirarchy,
-                    pendingSetMap.get(newItem),
+                    pendingSetMap.get(newItem.toLowerCase()),
                     false,
                     progressMonitor);
 
                 progressMonitor.worked(1);
             }
+
+            progressMonitor.displayVerbose(""); //$NON-NLS-1$
 
             /* Phase two: add child trees to their parents. */
             progressMonitor.setDetail(Messages.getString("CreateCommitTask.CreatingTrees")); //$NON-NLS-1$

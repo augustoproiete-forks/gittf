@@ -355,6 +355,13 @@ public abstract class CreateCommitForPendingSetsTask
 
             for (String newItem : itemsAddedInPendingSet)
             {
+                if (!ServerPath.isChild(serverPathToUse, newItem))
+                {
+                    // Ignore files that are added that are not mapped in the
+                    // repository
+                    continue;
+                }
+
                 progressMonitor.displayVerbose(newItem);
 
                 createBlob(
@@ -369,14 +376,18 @@ public abstract class CreateCommitForPendingSetsTask
 
             for (String renamedItem : itemsRenamedInPendingSet)
             {
+                PendingChange change = pendingSetMap.get(renamedItem);
+
+                if (!ServerPath.isChild(serverPathToUse, change.getServerItem()))
+                {
+                    // Ignore files that are renamed to server items that are
+                    // outside the repository
+                    continue;
+                }
+
                 progressMonitor.displayVerbose(renamedItem);
 
-                createBlob(
-                    repositoryInserter,
-                    pendingSetTreeHeirarchy,
-                    pendingSetMap.get(renamedItem),
-                    false,
-                    progressMonitor);
+                createBlob(repositoryInserter, pendingSetTreeHeirarchy, change, false, progressMonitor);
 
                 progressMonitor.worked(1);
             }

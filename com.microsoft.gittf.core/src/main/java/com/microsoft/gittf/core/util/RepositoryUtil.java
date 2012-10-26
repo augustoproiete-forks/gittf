@@ -29,6 +29,10 @@ import static org.eclipse.jgit.lib.Constants.DOT_GIT;
 import java.io.File;
 import java.io.IOException;
 
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.Status;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.errors.NoWorkTreeException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.storage.file.FileRepository;
@@ -137,5 +141,28 @@ public final class RepositoryUtil
         }
 
         return repoBuilder.build();
+    }
+
+    /**
+     * Determines if there are uncommitted changes in the working directory or
+     * not.
+     * 
+     * @param repository
+     * @return
+     * @throws GitAPIException
+     * @throws NoWorkTreeException
+     */
+    public static boolean hasUncommittedChanges(Repository repository)
+        throws NoWorkTreeException,
+            GitAPIException
+    {
+        Status currentStatus = new Git(repository).status().call();
+
+        if (!currentStatus.isClean())
+        {
+            return true;
+        }
+
+        return false;
     }
 }

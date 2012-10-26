@@ -27,6 +27,7 @@ package com.microsoft.gittf.core.util;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -89,6 +90,11 @@ public final class CommitUtil
     public static ObjectId getRefNameCommitID(final Repository repository, String ref)
         throws Exception
     {
+        if (AbbreviatedObjectId.isId(ref) || ObjectId.isId(ref))
+        {
+            return peelRef(repository, repository.resolve(ref));
+        }
+
         return getCommitId(repository, ref);
     }
 
@@ -132,7 +138,7 @@ public final class CommitUtil
             throw new Exception(Messages.formatString("RepositoryUtil.NoRefFormat", refName)); //$NON-NLS-1$
         }
 
-        ObjectId commitId = ref.getObjectId();
+        ObjectId commitId = peelRef(repository, ref.getObjectId());
 
         if (commitId == null)
         {
@@ -140,6 +146,25 @@ public final class CommitUtil
         }
 
         return commitId;
+
+    }
+
+    private static ObjectId peelRef(final Repository repository, ObjectId refId)
+        throws MissingObjectException,
+            IOException
+    {
+        RevWalk walker = new RevWalk(repository);
+        try
+        {
+            return walker.peel(walker.parseAny(refId));
+        }
+        finally
+        {
+            if (walker != null)
+            {
+                walker.release();
+            }
+        }
     }
 
     /**

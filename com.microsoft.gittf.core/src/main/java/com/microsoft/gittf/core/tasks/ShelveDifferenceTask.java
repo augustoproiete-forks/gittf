@@ -48,6 +48,7 @@ import com.microsoft.gittf.core.tasks.pendDiff.RenameMode;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.gittf.core.util.CommitWalker;
 import com.microsoft.gittf.core.util.CommitWalker.CommitDelta;
+import com.microsoft.gittf.core.util.RepositoryUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.VersionControlClient;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
@@ -195,7 +196,7 @@ public class ShelveDifferenceTask
             PendingChange[] changes = pendTask.getPendingChanges();
             if (changes == null || changes.length == 0)
             {
-                throw new Exception(Messages.getString("ShelveDifferencesTask.NoChangesToShelve")); //$NON-NLS-1$
+                throw new Exception(Messages.getString("ShelveDifferenceTask.NoChangesToShelve")); //$NON-NLS-1$
             }
 
             /* Shelve the pended changes */
@@ -226,6 +227,12 @@ public class ShelveDifferenceTask
             workspaceData = null;
 
             progressMonitor.endTask();
+
+            if (RepositoryUtil.hasUncommittedChanges(repository))
+            {
+                progressMonitor.displayWarning(Messages.getString("ShelveDifferenceTask.UnCommittedChangesDetected")); //$NON-NLS-1$
+            }
+
             return TaskStatus.OK_STATUS;
         }
         catch (Exception e)
@@ -252,7 +259,7 @@ public class ShelveDifferenceTask
         if (shelvesetChangesetId > 0)
         {
             // this already maps to an existing changeset;
-            throw new Exception(Messages.formatString("ShelveDifferencesTask.NoChangesToShelveFormat", //$NON-NLS-1$
+            throw new Exception(Messages.formatString("ShelveDifferenceTask.NoChangesToShelveFormat", //$NON-NLS-1$
                 Integer.toString(shelvesetChangesetId)));
         }
 

@@ -224,7 +224,7 @@ public class ConsoleTaskProgressMonitor
     public void displayWarning(final String message)
     {
         clearProgressLine();
-        console.getErrorStream().println(message);
+        console.getErrorStream().println(Messages.formatString("Main.WarningFormat", message)); //$NON-NLS-1$
         updateProgress();
     }
 

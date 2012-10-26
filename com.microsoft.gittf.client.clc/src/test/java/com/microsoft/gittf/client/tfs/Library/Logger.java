@@ -24,7 +24,7 @@
 
 package com.microsoft.gittf.client.tfs.Library;
 
-import java.io.Console;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.DecimalFormat;
@@ -49,7 +49,7 @@ public class Logger
 
     public static void log(String message)
     {
-        Console console = System.console();
+        PrintStream console = System.out;
 
         // update message with current time
         Calendar cal = Calendar.getInstance();

@@ -62,13 +62,17 @@ import com.microsoft.gittf.core.util.StashUtil;
 import com.microsoft.gittf.core.util.tree.CommitTreeEntry;
 import com.microsoft.gittf.core.util.tree.CommitTreePath;
 import com.microsoft.gittf.core.util.tree.CommitTreePathComparator;
+import com.microsoft.tfs.core.clients.versioncontrol.GetItemsOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.PropertyConstants;
 import com.microsoft.tfs.core.clients.versioncontrol.PropertyUtils;
 import com.microsoft.tfs.core.clients.versioncontrol.path.ServerPath;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.ChangeType;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.DeletedState;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.ItemType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
+import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 import com.microsoft.tfs.util.FileHelpers;
 
 public abstract class CreateCommitForPendingSetsTask
@@ -122,6 +126,15 @@ public abstract class CreateCommitForPendingSetsTask
         {
             validateTempDirectory();
 
+            Item rootServerItem =
+                versionControlService.getItem(
+                    serverPath,
+                    LatestVersionSpec.INSTANCE,
+                    DeletedState.NON_DELETED,
+                    GetItemsOptions.NONE);
+
+            String serverPathToUse = rootServerItem.getServerItem();
+
             Set<String> pendingSetItemPath = new TreeSet<String>();
             Map<String, PendingChange> pendingSetMap = new HashMap<String, PendingChange>();
 
@@ -132,6 +145,7 @@ public abstract class CreateCommitForPendingSetsTask
              * special handling later
              */
             Set<String> itemsAddedInPendingSet = new TreeSet<String>();
+            Set<String> itemsRenamedInPendingSet = new TreeSet<String>();
             Set<String> itemsDeletedInPendingSet = new TreeSet<String>();
 
             Set<String> foldersRenamedInPendingSet = new TreeSet<String>(Collections.reverseOrder());
@@ -143,9 +157,9 @@ public abstract class CreateCommitForPendingSetsTask
             {
                 for (PendingChange change : set.getPendingChanges())
                 {
-                    String serverItem = change.getServerItem().toLowerCase();
+                    String serverItem = change.getServerItem();
                     String sourceServerItem =
-                        change.getSourceServerItem() != null ? change.getSourceServerItem().toLowerCase() : null;
+                        change.getSourceServerItem() != null ? change.getSourceServerItem() : null;
 
                     String pathToUse = serverItem;
 
@@ -161,8 +175,7 @@ public abstract class CreateCommitForPendingSetsTask
                         }
                         else if (changeType.contains(ChangeType.RENAME))
                         {
-                            itemsAddedInPendingSet.add(sourceServerItem);
-                            itemsDeletedInPendingSet.add(sourceServerItem);
+                            itemsRenamedInPendingSet.add(sourceServerItem);
 
                             pathToUse = sourceServerItem;
                         }
@@ -252,7 +265,7 @@ public abstract class CreateCommitForPendingSetsTask
 
             while (treeWalker.next())
             {
-                String itemServerPath = ServerPath.combine(serverPath, treeWalker.getPathString()).toLowerCase();
+                String itemServerPath = ServerPath.combine(serverPathToUse, treeWalker.getPathString());
 
                 /* if the item has a pending change apply the pending change */
                 if (pendingSetItemPath.contains(itemServerPath))
@@ -269,7 +282,8 @@ public abstract class CreateCommitForPendingSetsTask
                             progressMonitor);
                     }
 
-                    if (!itemsDeletedInPendingSet.contains(itemServerPath))
+                    if (!itemsDeletedInPendingSet.contains(itemServerPath)
+                        && !itemsRenamedInPendingSet.contains(itemServerPath))
                     {
                         createBlob(
                             repositoryInserter,
@@ -279,7 +293,6 @@ public abstract class CreateCommitForPendingSetsTask
                             progressMonitor);
                     }
 
-                    pendingSetMap.remove(itemServerPath);
                     progressMonitor.worked(1);
                 }
                 /* if the item parent is renamed handle this case */
@@ -347,7 +360,21 @@ public abstract class CreateCommitForPendingSetsTask
                 createBlob(
                     repositoryInserter,
                     pendingSetTreeHeirarchy,
-                    pendingSetMap.get(newItem.toLowerCase()),
+                    pendingSetMap.get(newItem),
+                    false,
+                    progressMonitor);
+
+                progressMonitor.worked(1);
+            }
+
+            for (String renamedItem : itemsRenamedInPendingSet)
+            {
+                progressMonitor.displayVerbose(renamedItem);
+
+                createBlob(
+                    repositoryInserter,
+                    pendingSetTreeHeirarchy,
+                    pendingSetMap.get(renamedItem),
                     false,
                     progressMonitor);
 
@@ -509,14 +536,11 @@ public abstract class CreateCommitForPendingSetsTask
                 fileMode = FileMode.REGULAR_FILE;
             }
 
-            createBlob(
-                repositoryInserter,
-                treeHierarchy,
+            String serverItem =
                 pendingChange.getSourceServerItem() != null && addBaseContent ? pendingChange.getSourceServerItem()
-                    : pendingChange.getServerItem(),
-                blobID,
-                fileMode,
-                progressMonitor);
+                    : pendingChange.getServerItem();
+
+            createBlob(repositoryInserter, treeHierarchy, serverItem, blobID, fileMode, progressMonitor);
         }
         finally
         {

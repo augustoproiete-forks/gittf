@@ -309,13 +309,18 @@ public abstract class CreateCommitForPendingSetsTask
                             progressMonitor);
                     }
 
-                    createBlob(
-                        repositoryInserter,
-                        pendingSetTreeHeirarchy,
-                        updateServerItemWithParentRename(foldersRenamedInPendingSet, itemServerPath, pendingSetMap),
-                        treeWalker.getObjectId(0),
-                        treeWalker.getFileMode(0),
-                        progressMonitor);
+                    String destinationServerItem =
+                        updateServerItemWithParentRename(foldersRenamedInPendingSet, itemServerPath, pendingSetMap);
+                    if (ServerPath.isChild(serverPathToUse, destinationServerItem))
+                    {
+                        createBlob(
+                            repositoryInserter,
+                            pendingSetTreeHeirarchy,
+                            destinationServerItem,
+                            treeWalker.getObjectId(0),
+                            treeWalker.getFileMode(0),
+                            progressMonitor);
+                    }
                 }
                 /*
                  * add all other items to the tree unless their parent was

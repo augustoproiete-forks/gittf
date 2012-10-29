@@ -98,10 +98,8 @@ public class CreateCommitForChangesetVersionSpecTask
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {
-        progressMonitor.beginTask(
-            Messages.formatString("CreateCommitForChangesetTask.CreatingCommitFormat", Integer.toString(changesetID)), //$NON-NLS-1$
-            1,
-            TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL);
+        progressMonitor.beginTask(Messages.formatString("CreateCommitForChangesetVersionSpecTask.CreatingCommitFormat", //$NON-NLS-1$
+            Integer.toString(changesetID)), 1, TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL);
 
         ObjectInserter repositoryInserter = null;
 
@@ -113,7 +111,8 @@ public class CreateCommitForChangesetVersionSpecTask
             final Changeset changeset = versionControlService.getChangeset(changesetID);
             if (changeset == null)
             {
-                throw new Exception(Messages.formatString("CreateCommitForChangesetTask.ChangesetNotFoundFormat", //$NON-NLS-1$
+                throw new Exception(Messages.formatString(
+                    "CreateCommitForChangesetVersionSpecTask.ChangesetNotFoundFormat", //$NON-NLS-1$
                     Integer.toString(changesetID)));
             }
 
@@ -242,7 +241,13 @@ public class CreateCommitForChangesetVersionSpecTask
                     // if the user is denied read permissions on the file an
                     // exception will be thrown here.
 
-                    progressMonitor.displayWarning(e.getLocalizedMessage());
+                    String itemName = item.getServerItem() == null ? "" : item.getServerItem(); //$NON-NLS-1$
+
+                    progressMonitor.displayWarning(Messages.formatString(
+                        "CreateCommitForChangesetVersionSpecTask.NoContentDueToPermissionOrDestroyFormat", //$NON-NLS-1$
+                        itemName));
+
+                    log.error(e);
 
                     return;
                 }

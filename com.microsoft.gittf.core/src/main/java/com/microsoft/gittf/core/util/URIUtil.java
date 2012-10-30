@@ -34,7 +34,9 @@ import com.microsoft.gittf.core.Messages;
 
 public final class URIUtil
 {
-    private static final String hostedServerName = "tfspreview.com"; //$NON-NLS-1$
+    private static final String hostedServerName = "visualstudio.com"; //$NON-NLS-1$
+    private static final String hostedServerPreviewName = "tfspreview.com"; //$NON-NLS-1$
+
     private static final String hostedServerScheme = "https"; //$NON-NLS-1$
     private static final String hostedServerPath = "/DefaultCollection"; //$NON-NLS-1$
 
@@ -105,7 +107,8 @@ public final class URIUtil
             hostedServer = hostedServerName;
         }
 
-        if (uri.getHost().toLowerCase().contains(hostedServer))
+        if (uri.getHost().toLowerCase().contains(hostedServer)
+            || uri.getHost().toLowerCase().contains(hostedServerPreviewName))
         {
             String uriPath = uri.getPath().replaceAll("[/]+$", ""); //$NON-NLS-1$ //$NON-NLS-2$
             if (uriPath == null || uriPath.length() == 0)

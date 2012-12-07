@@ -96,7 +96,7 @@ public class CheckinHeadCommitTask
     private String comment = null;
     private String buildDefinition = null;
     private boolean includeMetaDataInComment = true;
-    private RenameMode renameMode = RenameMode.ALL;
+    private RenameMode renameMode = RenameMode.JUSTFILES;
 
     /**
      * Constructor

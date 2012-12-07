@@ -51,7 +51,7 @@ public abstract class PendingChangesCommand
 
         if (renameModeString == null)
         {
-            return RenameMode.ALL;
+            return RenameMode.JUSTFILES;
         }
 
         try

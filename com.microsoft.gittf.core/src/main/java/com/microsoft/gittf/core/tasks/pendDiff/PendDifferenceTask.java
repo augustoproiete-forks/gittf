@@ -94,7 +94,7 @@ public class PendDifferenceTask
 
     private final GitTFConfiguration configuration;
 
-    private RenameMode renameMode = RenameMode.ALL;
+    private RenameMode renameMode = RenameMode.JUSTFILES;
 
     private PendingChange[] pendingChanges;
 

@@ -70,7 +70,7 @@ public class ShelveDifferenceTask
 
     private WorkItemCheckinInfo[] workItems;
     private boolean replace = false;
-    private RenameMode renameMode = RenameMode.ALL;
+    private RenameMode renameMode = RenameMode.JUSTFILES;
     private String message = null;
 
     private VersionSpec shelveAgainstVersion = null;

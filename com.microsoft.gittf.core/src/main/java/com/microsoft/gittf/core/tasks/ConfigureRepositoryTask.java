@@ -46,6 +46,7 @@ public class ConfigureRepositoryTask
 
     private boolean deep;
     private boolean tag = true;
+    private boolean includeMetaData;
     private String buildDefinition;
     private String tempDirectory;
 
@@ -60,6 +61,7 @@ public class ConfigureRepositoryTask
         this.projectCollectionURI = projectCollectionURI;
         this.tfsPath = tfsPath;
         this.deep = GitTFConstants.GIT_TF_DEFAULT_DEEP;
+        this.includeMetaData = GitTFConstants.GIT_TF_DEFAULT_INCLUDE_METADATA;
     }
 
     public void setDeep(boolean deep)
@@ -80,6 +82,16 @@ public class ConfigureRepositoryTask
     public void setTag(boolean tag)
     {
         this.tag = tag;
+    }
+
+    public void setIncludeMetaData(boolean includeMetaData)
+    {
+        this.includeMetaData = includeMetaData;
+    }
+
+    public boolean getIncludeMetaData()
+    {
+        return includeMetaData;
     }
 
     public String getBuildDefinition()
@@ -117,6 +129,7 @@ public class ConfigureRepositoryTask
             null,
             deep,
             tag,
+            includeMetaData,
             GitTFConstants.GIT_TF_CURRENT_FORMAT_VERSION,
             buildDefinition,
             tempDirectory).saveTo(repository);

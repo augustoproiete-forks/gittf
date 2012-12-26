@@ -97,6 +97,15 @@ public class ConfigureCommand
                 Messages.getString("Command.Argument.NoTag.HelpText")) //$NON-NLS-1$
         ),
 
+        new ChoiceArgument(Messages.getString("Command.Argument.MetaDataChoice.HelpText"), //$NON-NLS-1$
+            /* Users can specify one of --metadata or --no-metadata (Default: no-metadata). */
+            new SwitchArgument("metadata", //$NON-NLS-1$
+                Messages.getString("Command.Argument.MetaData.HelpText")), //$NON-NLS-1$
+
+            new SwitchArgument("no-metadata", //$NON-NLS-1$
+                Messages.getString("Command.Argument.NoMetaData.HelpText")) //$NON-NLS-1$
+        ),
+
         new ValueArgument("git-dir", //$NON-NLS-1$
             Messages.getString("CloneCommand.Argument.GitDir.ValueDescription"), //$NON-NLS-1$
             Messages.getString("CloneCommand.Argument.GitDir.HelpText")), //$NON-NLS-1$),
@@ -158,6 +167,7 @@ public class ConfigureCommand
         String tfsPath = null;
         boolean deep = false;
         boolean tag = true;
+        boolean includeMetaData = false;
         String buildDefinition = null;
         String tempDir = null;
 
@@ -195,6 +205,8 @@ public class ConfigureCommand
                 && !getArguments().contains("shallow") //$NON-NLS-1$
                 && !getArguments().contains("tag") //$NON-NLS-1$
                 && !getArguments().contains("no-tag") //$NON-NLS-1$
+                && !getArguments().contains("metadata") //$NON-NLS-1$
+                && !getArguments().contains("no-metadata") //$NON-NLS-1$
                 && !getArguments().contains("gated")) //$NON-NLS-1$ 
             {
                 throw new Exception(Messages.getString("ConfigureCommand.InvalidOptionsSpecified")); //$NON-NLS-1$
@@ -227,6 +239,19 @@ public class ConfigureCommand
             tag = currentConfiguration.getTag();
         }
 
+        if (getArguments().contains("metadata")) //$NON-NLS-1$
+        {
+            includeMetaData = true;
+        }
+        else if (getArguments().contains("no-metadata")) //$NON-NLS-1$
+        {
+            includeMetaData = false;
+        }
+        else if (currentConfiguration != null)
+        {
+            includeMetaData = currentConfiguration.getIncludeMetaData();
+        }
+
         if (getArguments().contains("gated")) //$NON-NLS-1$
         {
             buildDefinition = ((ValueArgument) getArguments().getArgument("gated")).getValue(); //$NON-NLS-1$
@@ -244,6 +269,7 @@ public class ConfigureCommand
         ConfigureRepositoryTask configureTask = new ConfigureRepositoryTask(repository, serverURI, tfsPath);
         configureTask.setDeep(deep);
         configureTask.setTag(tag);
+        configureTask.setIncludeMetaData(includeMetaData);
         configureTask.setBuildDefinition(buildDefinition);
         configureTask.setTempDirectory(tempDir);
 

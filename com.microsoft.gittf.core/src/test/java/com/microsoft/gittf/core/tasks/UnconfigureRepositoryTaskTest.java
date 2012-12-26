@@ -65,6 +65,7 @@ public class UnconfigureRepositoryTaskTest
 
         ConfigureRepositoryTask configTask = new ConfigureRepositoryTask(repository, projectCollectionURI, tfsPath);
         configTask.setDeep(true);
+        configTask.setIncludeMetaData(true);
         TaskStatus configTaskStatus = configTask.run(new NullTaskProgressMonitor());
 
         assertTrue(configTaskStatus.isOK());
@@ -74,6 +75,7 @@ public class UnconfigureRepositoryTaskTest
         assertEquals(gitRepoServerConfig.getServerURI(), projectCollectionURI);
         assertEquals(gitRepoServerConfig.getServerPath(), tfsPath);
         assertEquals(gitRepoServerConfig.getDeep(), true);
+        assertEquals(gitRepoServerConfig.getIncludeMetaData(), true);
 
         UnconfigureRepositoryTask unconfigTask = new UnconfigureRepositoryTask(repository);
         TaskStatus unconfigTaskStatus = unconfigTask.run(new NullTaskProgressMonitor());

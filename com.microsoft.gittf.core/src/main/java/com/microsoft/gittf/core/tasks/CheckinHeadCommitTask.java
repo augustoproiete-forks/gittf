@@ -95,7 +95,7 @@ public class CheckinHeadCommitTask
     private boolean preview = false;
     private String comment = null;
     private String buildDefinition = null;
-    private boolean includeMetaDataInComment = true;
+    private boolean includeMetaDataInComment = false;
     private RenameMode renameMode = RenameMode.JUSTFILES;
 
     /**
@@ -210,7 +210,7 @@ public class CheckinHeadCommitTask
 
     /**
      * Sets whether the task should include meta data of the commit in the
-     * checkin comment or not. The default is true.
+     * checkin comment or not. The default is false.
      * 
      * @param includeMetaDataInComment
      */

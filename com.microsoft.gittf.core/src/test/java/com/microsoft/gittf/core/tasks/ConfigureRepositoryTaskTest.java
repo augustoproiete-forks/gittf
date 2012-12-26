@@ -66,6 +66,7 @@ public class ConfigureRepositoryTaskTest
 
         ConfigureRepositoryTask configTask = new ConfigureRepositoryTask(repository, projectCollectionURI, tfsPath);
         configTask.setDeep(true);
+        configTask.setIncludeMetaData(true);
         TaskStatus configTaskStatus = configTask.run(new NullTaskProgressMonitor());
 
         assertTrue(configTaskStatus.isOK());
@@ -75,6 +76,7 @@ public class ConfigureRepositoryTaskTest
         assertEquals(gitRepoServerConfig.getServerURI(), projectCollectionURI);
         assertEquals(gitRepoServerConfig.getServerPath(), tfsPath);
         assertEquals(gitRepoServerConfig.getDeep(), true);
+        assertEquals(gitRepoServerConfig.getIncludeMetaData(), true);
     }
 
     @Test
@@ -129,6 +131,7 @@ public class ConfigureRepositoryTaskTest
                 assertEquals(gitRepoServerConfig.getServerURI(), projectCollectionURI);
                 assertEquals(gitRepoServerConfig.getServerPath(), tfsPath);
                 assertEquals(gitRepoServerConfig.getDeep(), GitTFConstants.GIT_TF_DEFAULT_DEEP);
+                assertEquals(gitRepoServerConfig.getIncludeMetaData(), GitTFConstants.GIT_TF_DEFAULT_INCLUDE_METADATA);
             }
         }
     }

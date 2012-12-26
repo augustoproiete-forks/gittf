@@ -56,6 +56,11 @@ public final class GitTFConstants
     public static final int GIT_TF_SHALLOW_DEPTH = 1;
 
     /**
+     * The default setting for including metadata in TFS changesets
+     */
+    public static final boolean GIT_TF_DEFAULT_INCLUDE_METADATA = false;
+
+    /**
      * The name of the remote branch that maps to TFS
      */
     public static final String GIT_TF_REMOTE = "origin_tfs/"; //$NON-NLS-1$

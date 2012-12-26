@@ -183,7 +183,7 @@ public class CloneTask
         repository.create(bare);
 
         final ConfigureRepositoryTask configureTask = new ConfigureRepositoryTask(repository, serverURI, tfsPath);
-        configureTask.setDeep(depth > GitTFConstants.GIT_TF_SHALLOW_DEPTH);
+        configureTask.setDeep(GitTFConstants.GIT_TF_DEFAULT_DEEP_AFTER_CLONE);
         configureTask.setTag(tag);
 
         TaskStatus configureStatus = new TaskExecutor(new NullTaskProgressMonitor()).execute(configureTask);

@@ -157,7 +157,7 @@ public class CloneTaskTest
 
         assertEquals(gitRepoServerConfig.getServerURI(), projectCollectionURI);
         assertEquals(gitRepoServerConfig.getServerPath(), tfsPath);
-        assertEquals(gitRepoServerConfig.getDeep(), GitTFConstants.GIT_TF_DEFAULT_DEEP);
+        assertEquals(gitRepoServerConfig.getDeep(), GitTFConstants.GIT_TF_DEFAULT_DEEP_AFTER_CLONE);
 
         // Verify the number of commits
         Iterable<RevCommit> commits = git.log().call();
@@ -303,7 +303,7 @@ public class CloneTaskTest
 
         assertEquals(gitRepoServerConfig.getServerURI(), projectCollectionURI);
         assertEquals(gitRepoServerConfig.getServerPath(), tfsPath);
-        assertEquals(gitRepoServerConfig.getDeep(), true);
+        assertEquals(gitRepoServerConfig.getDeep(), GitTFConstants.GIT_TF_DEFAULT_DEEP_AFTER_CLONE);
 
         // Verify the number of commits
         Iterable<RevCommit> commits = git.log().call();

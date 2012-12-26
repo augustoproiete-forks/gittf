@@ -51,6 +51,11 @@ public final class GitTFConstants
     public static final boolean GIT_TF_DEFAULT_DEEP = false;
 
     /**
+     * The default depth option after cloning a repository
+     */
+    public static final boolean GIT_TF_DEFAULT_DEEP_AFTER_CLONE = true;
+
+    /**
      * The default shallow depth option
      */
     public static final int GIT_TF_SHALLOW_DEPTH = 1;

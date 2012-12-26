@@ -61,6 +61,7 @@ public class GitTFConfiguration
     private final String password;
     private final boolean deep;
     private final boolean tag;
+    private final boolean includeMetaData;
     private final int fileFormatVersion;
     private final String buildDefinition;
     private final String tempDirectory;
@@ -82,6 +83,8 @@ public class GitTFConfiguration
      *        password should be saved
      * @param depth
      *        The default "depth" for operations
+     * @param includeMetaData
+     *        The default setting for including metadata on changesets
      * @param tempDirectory
      *        The temporary directory to use
      */
@@ -92,6 +95,7 @@ public class GitTFConfiguration
         final String password,
         final boolean deep,
         final boolean tag,
+        final boolean includeMetaData,
         final int fileFormatVersion,
         final String buildDefinition,
         final String tempDirectory)
@@ -105,6 +109,7 @@ public class GitTFConfiguration
         this.password = password;
         this.deep = deep;
         this.tag = tag;
+        this.includeMetaData = includeMetaData;
         this.fileFormatVersion = fileFormatVersion;
         this.buildDefinition = buildDefinition;
         this.tempDirectory = tempDirectory;
@@ -175,6 +180,21 @@ public class GitTFConfiguration
         return tag;
     }
 
+    /**
+     * Returns the default setting for including metadata on changesets
+     * when checking-in code to TFS in deep mode - if this value is
+     * <code>true</code>, commit messages in TFS changesets will include
+     * git commit metadata. If this value is <code>false</code>, then commit
+     * messages in TFS changesets will have "clean" comments, i.e. the exact
+     * same messages defined in Git commits.
+     *
+     * @return the default setting for including metadata on changesets
+     */
+    public boolean getIncludeMetaData()
+    {
+        return includeMetaData;
+    }
+
     public int getFileFormatVersion()
     {
         return fileFormatVersion;
@@ -240,6 +260,12 @@ public class GitTFConfiguration
             ConfigurationConstants.TAG,
             tag);
 
+        repository.getConfig().setBoolean(
+            ConfigurationConstants.CONFIGURATION_SECTION,
+            ConfigurationConstants.GENERAL_SUBSECTION,
+            ConfigurationConstants.INCLUDE_METADATA,
+            includeMetaData);
+
         if (buildDefinition != null && buildDefinition.length() > 0)
         {
             repository.getConfig().setString(
@@ -295,7 +321,8 @@ public class GitTFConfiguration
         }
 
         result.append(Messages.formatString("GitTFConfiguration.ToString.DepthFormat", getDepthString()) + OutputConstants.NEW_LINE); //$NON-NLS-1$
-        result.append(Messages.formatString("GitTFConfiguration.ToString.TagFormat", this.tag)); //$NON-NLS-1$
+        result.append(Messages.formatString("GitTFConfiguration.ToString.TagFormat", this.tag) + OutputConstants.NEW_LINE); //$NON-NLS-1$
+        result.append(Messages.formatString("GitTFConfiguration.ToString.IncludeMetaDataFormat", this.includeMetaData)); //$NON-NLS-1$
 
         return result.toString();
     }
@@ -363,6 +390,13 @@ public class GitTFConfiguration
                 ConfigurationConstants.TAG,
                 true);
 
+        final boolean includeMetaData =
+            repository.getConfig().getBoolean(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.GENERAL_SUBSECTION,
+                ConfigurationConstants.INCLUDE_METADATA,
+                GitTFConstants.GIT_TF_DEFAULT_INCLUDE_METADATA);
+
         final int fileFormatVersion =
             repository.getConfig().getInt(
                 ConfigurationConstants.CONFIGURATION_SECTION,
@@ -413,6 +447,7 @@ public class GitTFConfiguration
             password,
             depth > GitTFConstants.GIT_TF_SHALLOW_DEPTH,
             tag,
+            includeMetaData,
             fileFormatVersion,
             buildDefinition,
             tempDirectory);

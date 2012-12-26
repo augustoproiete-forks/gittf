@@ -114,6 +114,7 @@ public class UpgradeManager
                 currentConfiguration.getPassword(),
                 currentConfiguration.getDeep(),
                 true,
+                currentConfiguration.getIncludeMetaData(),
                 1,
                 null,
                 null);

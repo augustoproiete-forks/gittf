@@ -217,6 +217,26 @@ public abstract class Command
         return !getArguments().contains("no-tag"); //$NON-NLS-1$
     }
 
+    public boolean getIncludeMetaDataFromArguments()
+    {
+        if (getArguments().contains("metadata")) //$NON-NLS-1$
+        {
+            return true;
+        }
+        else if (getArguments().contains("no-metadata")) //$NON-NLS-1$
+        {
+            return false;
+        }
+
+        return false;
+    }
+
+    public boolean isIncludeMetaDataSpecified()
+    {
+        return getArguments().contains("metadata") //$NON-NLS-1$
+            || getArguments().contains("no-metadata"); //$NON-NLS-1$
+    }
+
     protected Repository getRepository()
         throws Exception
     {

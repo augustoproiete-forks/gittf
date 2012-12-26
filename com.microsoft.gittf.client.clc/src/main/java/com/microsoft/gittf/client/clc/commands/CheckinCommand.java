@@ -78,7 +78,14 @@ public class CheckinCommand
             Messages.getString("CheckinCommand.Argument.Message.HelpText"), //$NON-NLS-1$
             ArgumentOptions.VALUE_REQUIRED),
 
-        new SwitchArgument("no-metadata", Messages.getString("CheckinCommand.Argument.NoMetaData.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+        new ChoiceArgument(Messages.getString("CheckinCommand.Argument.MetaDataChoice.HelpText"), //$NON-NLS-1$
+            /* Users can specify one of --metadata or --no-metadata. */
+            new SwitchArgument("metadata", //$NON-NLS-1$
+                Messages.getString("CheckinCommand.Argument.MetaData.HelpText")), //$NON-NLS-1$
+
+            new SwitchArgument("no-metadata", //$NON-NLS-1$
+                Messages.getString("CheckinCommand.Argument.NoMetaData.HelpText")) //$NON-NLS-1$
+        ),
 
         new ValueArgument("renamemode", //$NON-NLS-1$
             Messages.getString("PendingChangesCommand.Argument.RenameMode.ValueDescription"), //$NON-NLS-1$
@@ -161,7 +168,9 @@ public class CheckinCommand
         verifyGitTfConfigured();
         verifyRepoSafeState();
 
-        boolean deep = GitTFConfiguration.loadFrom(getRepository()).getDeep();
+        GitTFConfiguration currentConfiguration = GitTFConfiguration.loadFrom(getRepository());
+
+        boolean deep = currentConfiguration.getDeep();
         deep = isDepthSpecified() ? getDeepFromArguments() : deep;
 
         if (getArguments().contains("squash") && !getArguments().contains("deep")) //$NON-NLS-1$ //$NON-NLS-2$
@@ -173,7 +182,9 @@ public class CheckinCommand
         final boolean preview = getArguments().contains("preview"); //$NON-NLS-1$
         final boolean overrideGatedCheckin = getArguments().contains("bypass"); //$NON-NLS-1$
         final boolean autoSquashMultipleParents = getArguments().contains("autosquash"); //$NON-NLS-1$
-        final boolean includeMetaData = !getArguments().contains("no-metadata"); //$NON-NLS-1$ 
+
+        boolean includeMetaData = currentConfiguration.getIncludeMetaData();
+        includeMetaData = isIncludeMetaDataSpecified() ? getIncludeMetaDataFromArguments() : includeMetaData;
 
         String message = getArguments().contains("message") ? //$NON-NLS-1$
             ((ValueArgument) getArguments().getArgument("message")).getValue() : null; //$NON-NLS-1$

@@ -39,7 +39,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.junit.Test;
 
 import com.microsoft.gittf.core.GitTFConstants;
-import com.microsoft.gittf.core.config.ConfigurationConstants;
 import com.microsoft.gittf.core.config.GitTFConfiguration;
 import com.microsoft.gittf.core.mock.MockChangesetProperties;
 import com.microsoft.gittf.core.mock.MockVersionControlService;
@@ -97,12 +96,6 @@ public class CloneTaskTest
         mockVersionControlService.updateChangesetInformation(changesetProperties, 3);
 
         final Repository repository = RepositoryUtil.createNewRepository(gitRepositoryPath, false);
-        final boolean defaultDeep =
-            repository.getConfig().getInt(
-                ConfigurationConstants.CONFIGURATION_SECTION,
-                ConfigurationConstants.GENERAL_SUBSECTION,
-                ConfigurationConstants.DEPTH,
-                GitTFConstants.GIT_TF_SHALLOW_DEPTH) > 1;
 
         CloneTask cloneTask = new CloneTask(projectCollectionURI, mockVersionControlService, tfsPath, repository);
         TaskStatus cloneTaskStatus = cloneTask.run(new NullTaskProgressMonitor());
@@ -164,7 +157,6 @@ public class CloneTaskTest
 
         assertEquals(gitRepoServerConfig.getServerURI(), projectCollectionURI);
         assertEquals(gitRepoServerConfig.getServerPath(), tfsPath);
-        assertEquals(gitRepoServerConfig.getDeep(), defaultDeep);
 
         // Verify the number of commits
         Iterable<RevCommit> commits = git.log().call();
@@ -247,12 +239,6 @@ public class CloneTaskTest
         mockVersionControlService.updateChangesetInformation(changesetProperties, 3);
 
         final Repository repository = RepositoryUtil.createNewRepository(gitRepositoryPath, false);
-        final boolean defaultDeep =
-            repository.getConfig().getInt(
-                ConfigurationConstants.CONFIGURATION_SECTION,
-                ConfigurationConstants.GENERAL_SUBSECTION,
-                ConfigurationConstants.DEPTH,
-                GitTFConstants.GIT_TF_SHALLOW_DEPTH) > 1;
 
         CloneTask cloneTask = new CloneTask(projectCollectionURI, mockVersionControlService, tfsPath, repository);
         cloneTask.setDepth(10);
@@ -316,7 +302,7 @@ public class CloneTaskTest
 
         assertEquals(gitRepoServerConfig.getServerURI(), projectCollectionURI);
         assertEquals(gitRepoServerConfig.getServerPath(), tfsPath);
-        assertEquals(gitRepoServerConfig.getDeep(), defaultDeep);
+        assertEquals(gitRepoServerConfig.getDeep(), true);
 
         // Verify the number of commits
         Iterable<RevCommit> commits = git.log().call();

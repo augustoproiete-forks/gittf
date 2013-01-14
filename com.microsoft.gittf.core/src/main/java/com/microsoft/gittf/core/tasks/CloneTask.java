@@ -201,7 +201,7 @@ public class CloneTask
              */
             final int numberOfChangesetToDownload = changesets.length;
 
-            progressMonitor.setWork(numberOfChangesetToDownload + 1);
+            progressMonitor.setWork(numberOfChangesetToDownload);
 
             for (int i = numberOfChangesetToDownload; i > 0; i--)
             {
@@ -209,7 +209,7 @@ public class CloneTask
                     new CreateCommitForChangesetVersionSpecTask(
                         repository,
                         vcClient,
-                        changesets[i].getChangesetID(),
+                        changesets[i - 1].getChangesetID(),
                         lastCommitID);
 
                 TaskStatus commitStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(commitTask);
@@ -226,11 +226,11 @@ public class CloneTask
                 Check.notNull(lastTreeID, "lastTreeID"); //$NON-NLS-1$
 
                 new ChangesetCommitMap(repository).setChangesetCommit(
-                    changesets[i].getChangesetID(),
+                    changesets[i - 1].getChangesetID(),
                     commitTask.getCommitID());
 
                 progressMonitor.displayVerbose(Messages.formatString("CloneTask.ClonedFormat", //$NON-NLS-1$
-                    Integer.toString(changesets[i].getChangesetID()),
+                    Integer.toString(changesets[i - 1].getChangesetID()),
                     ObjectIdUtil.abbreviate(repository, lastCommitID)));
             }
 

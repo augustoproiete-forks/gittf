@@ -41,6 +41,7 @@ import com.microsoft.gittf.client.clc.commands.framework.CommandTaskExecutor;
 import com.microsoft.gittf.core.config.GitTFConfiguration;
 import com.microsoft.gittf.core.tasks.ConfigureRepositoryTask;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
+import com.microsoft.gittf.core.util.StringUtil;
 import com.microsoft.gittf.core.util.URIUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.path.ServerPath;
 
@@ -98,7 +99,10 @@ public class ConfigureCommand
         ),
 
         new ChoiceArgument(Messages.getString("Command.Argument.MetaDataChoice.HelpText"), //$NON-NLS-1$
-            /* Users can specify one of --metadata or --no-metadata (Default: no-metadata). */
+            /*
+             * Users can specify one of --metadata or --no-metadata (Default:
+             * no-metadata).
+             */
             new SwitchArgument("metadata", //$NON-NLS-1$
                 Messages.getString("Command.Argument.MetaData.HelpText")), //$NON-NLS-1$
 
@@ -140,8 +144,8 @@ public class ConfigureCommand
         throws Exception
     {
         // Determine if there is current configuration that we need to update
-        Repository repository = getRepository();
-        GitTFConfiguration currentConfiguration = GitTFConfiguration.loadFrom(repository);
+        final Repository repository = getRepository();
+        final GitTFConfiguration currentConfiguration = GitTFConfiguration.loadFrom(repository);
 
         /*
          * If the list option is specified we just display the configuration
@@ -163,13 +167,8 @@ public class ConfigureCommand
             return ExitCode.SUCCESS;
         }
 
-        URI serverURI = null;
-        String tfsPath = null;
-        boolean deep = false;
-        boolean tag = true;
-        boolean includeMetaData = false;
-        String buildDefinition = null;
-        String tempDir = null;
+        URI serverURI;
+        String tfsPath;
 
         if (currentConfiguration == null || getArguments().contains("force")) //$NON-NLS-1$
         {
@@ -181,7 +180,7 @@ public class ConfigureCommand
                 ((FreeArgument) getArguments().getArgument("serverpath")).getValue() : null; //$NON-NLS-1$
 
             // Validate arguments
-            if (collection == null || collection.length() == 0 || tfsPath == null || tfsPath.length() == 0)
+            if (StringUtil.isNullOrEmpty(collection) || StringUtil.isNullOrEmpty(tfsPath))
             {
                 throw new Exception(Messages.getString("ConfigureCommand.CollectionAndServerPathRequired")); //$NON-NLS-1$
             }
@@ -201,77 +200,54 @@ public class ConfigureCommand
             serverURI = currentConfiguration.getServerURI();
             tfsPath = currentConfiguration.getServerPath();
 
-            if (!getArguments().contains("deep") //$NON-NLS-1$
-                && !getArguments().contains("shallow") //$NON-NLS-1$
-                && !getArguments().contains("tag") //$NON-NLS-1$
-                && !getArguments().contains("no-tag") //$NON-NLS-1$
-                && !getArguments().contains("metadata") //$NON-NLS-1$
-                && !getArguments().contains("no-metadata") //$NON-NLS-1$
-                && !getArguments().contains("gated")) //$NON-NLS-1$ 
+            if (!getArguments().contains("deep") && //$NON-NLS-1$
+                !getArguments().contains("shallow") && //$NON-NLS-1$
+                !getArguments().contains("tag") && //$NON-NLS-1$
+                !getArguments().contains("no-tag") && //$NON-NLS-1$
+                !getArguments().contains("metadata") && //$NON-NLS-1$
+                !getArguments().contains("no-metadata") && //$NON-NLS-1$
+                !getArguments().contains("gated")) //$NON-NLS-1$ 
             {
                 throw new Exception(Messages.getString("ConfigureCommand.InvalidOptionsSpecified")); //$NON-NLS-1$
             }
         }
 
+        final ConfigureRepositoryTask configureTask = new ConfigureRepositoryTask(repository, serverURI, tfsPath);
+
         if (getArguments().contains("deep")) //$NON-NLS-1$
         {
-            deep = true;
+            configureTask.setDeep(true);
         }
         else if (getArguments().contains("shallow")) //$NON-NLS-1$
         {
-            deep = false;
-        }
-        else if (currentConfiguration != null)
-        {
-            deep = currentConfiguration.getDeep();
+            configureTask.setDeep(false);
         }
 
         if (getArguments().contains("tag")) //$NON-NLS-1$
         {
-            tag = true;
+            configureTask.setTag(true);
         }
         else if (getArguments().contains("no-tag")) //$NON-NLS-1$
         {
-            tag = false;
-        }
-        else if (currentConfiguration != null)
-        {
-            tag = currentConfiguration.getTag();
+            configureTask.setTag(false);
         }
 
         if (getArguments().contains("metadata")) //$NON-NLS-1$
         {
-            includeMetaData = true;
+            configureTask.setIncludeMetaData(true);
         }
         else if (getArguments().contains("no-metadata")) //$NON-NLS-1$
         {
-            includeMetaData = false;
-        }
-        else if (currentConfiguration != null)
-        {
-            includeMetaData = currentConfiguration.getIncludeMetaData();
+            configureTask.setIncludeMetaData(false);
         }
 
         if (getArguments().contains("gated")) //$NON-NLS-1$
         {
-            buildDefinition = ((ValueArgument) getArguments().getArgument("gated")).getValue(); //$NON-NLS-1$
-        }
-        else if (currentConfiguration != null)
-        {
-            buildDefinition = currentConfiguration.getBuildDefinition();
+            final String buildDefinition = ((ValueArgument) getArguments().getArgument("gated")).getValue(); //$NON-NLS-1$
+            configureTask.setBuildDefinition(buildDefinition);
         }
 
-        if (currentConfiguration != null)
-        {
-            tempDir = currentConfiguration.getTempDirectory();
-        }
-
-        ConfigureRepositoryTask configureTask = new ConfigureRepositoryTask(repository, serverURI, tfsPath);
-        configureTask.setDeep(deep);
-        configureTask.setTag(tag);
-        configureTask.setIncludeMetaData(includeMetaData);
-        configureTask.setBuildDefinition(buildDefinition);
-        configureTask.setTempDirectory(tempDir);
+        configureTask.setTempDirectory(null);
 
         TaskStatus configureStatus = new CommandTaskExecutor(getProgressMonitor()).execute(configureTask);
 

@@ -64,7 +64,7 @@ public class CloneCommand
 {
     public static final String COMMAND_NAME = "clone"; //$NON-NLS-1$
 
-    private static Argument[] ARGUMENTS = new Argument[]
+    private static final Argument[] ARGUMENTS = new Argument[]
     {
         new SwitchArgument("help", //$NON-NLS-1$
             Messages.getString("Command.Argument.Help.HelpText"), //$NON-NLS-1$
@@ -145,22 +145,22 @@ public class CloneCommand
         throws Exception
     {
         // Parse arguments
-        String collection = ((FreeArgument) getArguments().getArgument("projectcollection")).getValue(); //$NON-NLS-1$
+        final String collection = ((FreeArgument) getArguments().getArgument("projectcollection")).getValue(); //$NON-NLS-1$
         String tfsPath = ((FreeArgument) getArguments().getArgument("serverpath")).getValue(); //$NON-NLS-1$
 
         String repositoryPath = getArguments().contains("directory") ? //$NON-NLS-1$
             ((FreeArgument) getArguments().getArgument("directory")).getValue() : null; //$NON-NLS-1$
 
-        VersionSpec versionSpec =
+        final VersionSpec versionSpec =
             getArguments().contains("version") ? //$NON-NLS-1$
                 VersionSpecUtil.parseVersionSpec(((ValueArgument) getArguments().getArgument("version")).getValue()) : LatestVersionSpec.INSTANCE; //$NON-NLS-1$
 
         verifyVersionSpec(versionSpec);
 
-        boolean bare = getArguments().contains("bare"); //$NON-NLS-1$
-        int depth = getDepthFromArguments();
+        final boolean bare = getArguments().contains("bare"); //$NON-NLS-1$
+        final int depth = getDepthFromArguments();
 
-        boolean tag = getTagFromArguments();
+        final boolean tag = getTagFromArguments();
 
         final URI serverURI = URIUtil.getServerURI(collection);
         tfsPath = ServerPath.canonicalize(tfsPath);
@@ -174,7 +174,7 @@ public class CloneCommand
         }
         repositoryPath = LocalPath.canonicalize(repositoryPath);
 
-        File repositoryLocation = new File(repositoryPath);
+        final File repositoryLocation = new File(repositoryPath);
         File parentLocationCreated = null;
 
         if (!repositoryLocation.exists())
@@ -199,7 +199,7 @@ public class CloneCommand
 
             Check.notNull(connection, "connection"); //$NON-NLS-1$
 
-            CloneTask cloneTask = new CloneTask(serverURI, getVersionControlService(), tfsPath, repository);
+            final CloneTask cloneTask = new CloneTask(serverURI, getVersionControlService(), tfsPath, repository);
             cloneTask.setBare(bare);
             cloneTask.setDepth(depth);
             cloneTask.setVersionSpec(versionSpec);

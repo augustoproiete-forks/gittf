@@ -35,7 +35,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 
-import com.microsoft.gittf.core.GitTFConstants;
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.config.ChangesetCommitMap;
 import com.microsoft.gittf.core.interfaces.VersionControlService;
@@ -90,7 +89,7 @@ public class CloneTask
         this.repository = repository;
     }
 
-    public void setBare(boolean bare)
+    public void setBare(final boolean bare)
     {
         this.bare = bare;
     }
@@ -112,7 +111,7 @@ public class CloneTask
         return versionSpec;
     }
 
-    public void setDepth(int depth)
+    public void setDepth(final int depth)
     {
         Check.isTrue(depth >= 1, "depth >= 1"); //$NON-NLS-1$
 
@@ -129,7 +128,7 @@ public class CloneTask
         return tag;
     }
 
-    public void setTag(boolean tag)
+    public void setTag(final boolean tag)
     {
         this.tag = tag;
     }
@@ -152,7 +151,7 @@ public class CloneTask
          */
 
         /* See if this is an actual server path. */
-        Item item = vcClient.getItem(tfsPath, versionSpec, DeletedState.NON_DELETED, GetItemsOptions.NONE);
+        final Item item = vcClient.getItem(tfsPath, versionSpec, DeletedState.NON_DELETED, GetItemsOptions.NONE);
         Check.notNull(item, "item"); //$NON-NLS-1$
 
         if (item.getItemType() != ItemType.FOLDER)
@@ -183,10 +182,9 @@ public class CloneTask
         repository.create(bare);
 
         final ConfigureRepositoryTask configureTask = new ConfigureRepositoryTask(repository, serverURI, tfsPath);
-        configureTask.setDeep(depth > GitTFConstants.GIT_TF_SHALLOW_DEPTH);
         configureTask.setTag(tag);
 
-        TaskStatus configureStatus = new TaskExecutor(new NullTaskProgressMonitor()).execute(configureTask);
+        final TaskStatus configureStatus = new TaskExecutor(new NullTaskProgressMonitor()).execute(configureTask);
 
         if (!configureStatus.isOK())
         {
@@ -195,19 +193,24 @@ public class CloneTask
 
         if (changesets.length > 0)
         {
-            ObjectId lastCommitID = null, lastTreeID = null;
+            ObjectId lastCommitID = null;
+            ObjectId lastTreeID = null;
 
             /*
              * Download changesets.
              */
-            int numberOfChangesetToDownload = changesets.length - 1;
+            final int numberOfChangesetToDownload = changesets.length;
 
-            progressMonitor.setWork(numberOfChangesetToDownload + 1);
+            progressMonitor.setWork(numberOfChangesetToDownload);
 
-            for (int i = numberOfChangesetToDownload; i >= 0; i--)
+            for (int i = numberOfChangesetToDownload; i > 0; i--)
             {
                 CreateCommitForChangesetVersionSpecTask commitTask =
-                    new CreateCommitForChangesetVersionSpecTask(repository, vcClient, changesets[i].getChangesetID(), lastCommitID);
+                    new CreateCommitForChangesetVersionSpecTask(
+                        repository,
+                        vcClient,
+                        changesets[i - 1].getChangesetID(),
+                        lastCommitID);
 
                 TaskStatus commitStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(commitTask);
 
@@ -223,11 +226,11 @@ public class CloneTask
                 Check.notNull(lastTreeID, "lastTreeID"); //$NON-NLS-1$
 
                 new ChangesetCommitMap(repository).setChangesetCommit(
-                    changesets[i].getChangesetID(),
+                    changesets[i - 1].getChangesetID(),
                     commitTask.getCommitID());
 
                 progressMonitor.displayVerbose(Messages.formatString("CloneTask.ClonedFormat", //$NON-NLS-1$
-                    Integer.toString(changesets[i].getChangesetID()),
+                    Integer.toString(changesets[i - 1].getChangesetID()),
                     ObjectIdUtil.abbreviate(repository, lastCommitID)));
             }
 
@@ -254,9 +257,9 @@ public class CloneTask
 
             progressMonitor.endTask();
 
-            int finalChangesetID = changesets[0].getChangesetID();
+            final int finalChangesetID = changesets[0].getChangesetID();
 
-            if (numberOfChangesetToDownload <= 1)
+            if (numberOfChangesetToDownload == 1)
             {
                 progressMonitor.displayMessage(Messages.formatString("CloneTask.ClonedFormat", //$NON-NLS-1$
                     Integer.toString(finalChangesetID),
@@ -270,7 +273,7 @@ public class CloneTask
                     ObjectIdUtil.abbreviate(repository, lastCommitID)));
             }
         }
-        else if (changesets.length == 0)
+        else
         {
             // the folder exists on the server but is empty
 

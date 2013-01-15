@@ -28,7 +28,6 @@ import java.net.URI;
 
 import org.eclipse.jgit.lib.Repository;
 
-import com.microsoft.gittf.core.GitTFConstants;
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.config.GitTFConfiguration;
 import com.microsoft.gittf.core.tasks.framework.Task;
@@ -41,14 +40,7 @@ public class ConfigureRepositoryTask
     extends Task
 {
     private final Repository repository;
-    private final URI projectCollectionURI;
-    private final String tfsPath;
-
-    private boolean deep;
-    private boolean tag = true;
-    private boolean includeMetaData;
-    private String buildDefinition;
-    private String tempDirectory;
+    private final GitTFConfiguration config;
 
     public ConfigureRepositoryTask(final Repository repository, final URI projectCollectionURI, final String tfsPath)
     {
@@ -58,55 +50,57 @@ public class ConfigureRepositoryTask
         Check.notNullOrEmpty(tfsPath, "tfsPath"); //$NON-NLS-1$
 
         this.repository = repository;
-        this.projectCollectionURI = projectCollectionURI;
-        this.tfsPath = tfsPath;
-        this.deep = GitTFConstants.GIT_TF_DEFAULT_DEEP;
-        this.includeMetaData = GitTFConstants.GIT_TF_DEFAULT_INCLUDE_METADATA;
+        this.config = new GitTFConfiguration(projectCollectionURI, tfsPath);
     }
 
-    public void setDeep(boolean deep)
+    public void setDeep(final boolean deep)
     {
-        this.deep = deep;
+        config.setDeep(deep);
     }
 
     public boolean getDeep()
     {
-        return deep;
+        return config.getDeep();
     }
 
     public boolean getTag()
     {
-        return tag;
+        return config.getTag();
     }
 
-    public void setTag(boolean tag)
+    public void setTag(final boolean tag)
     {
-        this.tag = tag;
+        config.setTag(tag);
     }
 
-    public void setIncludeMetaData(boolean includeMetaData)
+    public void setIncludeMetaData(final boolean includeMetaData)
     {
-        this.includeMetaData = includeMetaData;
+        config.setIncludeMetaData(includeMetaData);
     }
 
     public boolean getIncludeMetaData()
     {
-        return includeMetaData;
+        return config.getIncludeMetaData();
     }
 
     public String getBuildDefinition()
     {
-        return buildDefinition;
+        return config.getBuildDefinition();
     }
 
-    public void setBuildDefinition(String buildDefinition)
+    public void setBuildDefinition(final String buildDefinition)
     {
-        this.buildDefinition = buildDefinition;
+        config.setBuildDefinition(buildDefinition);
     }
 
-    public void setTempDirectory(String tempDirectory)
+    public void setTempDirectory(final String tempDirectory)
     {
-        this.tempDirectory = tempDirectory;
+        config.setTempDirectory(tempDirectory);
+    }
+
+    public String getTempDirectory()
+    {
+        return config.getTempDirectory();
     }
 
     @Override
@@ -115,24 +109,14 @@ public class ConfigureRepositoryTask
         progressMonitor.beginTask(Messages.getString("ConfigureRepositoryTask.ConfiguringRepository"), //$NON-NLS-1$
             TaskProgressMonitor.INDETERMINATE);
 
-        if (!ServerPath.isServerPath(tfsPath))
+        if (!ServerPath.isServerPath(config.getServerPath()))
         {
             return new TaskStatus(TaskStatus.ERROR, Messages.formatString(
                 "ConfigureRepositoryTask.TFSPathNotValidFormat", //$NON-NLS-1$
-                tfsPath));
+                config.getServerPath()));
         }
 
-        new GitTFConfiguration(
-            projectCollectionURI,
-            tfsPath,
-            null,
-            null,
-            deep,
-            tag,
-            includeMetaData,
-            GitTFConstants.GIT_TF_CURRENT_FORMAT_VERSION,
-            buildDefinition,
-            tempDirectory).saveTo(repository);
+        config.saveTo(repository);
 
         progressMonitor.endTask();
 

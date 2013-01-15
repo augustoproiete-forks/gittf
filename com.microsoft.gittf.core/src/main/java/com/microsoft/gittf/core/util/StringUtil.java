@@ -52,4 +52,9 @@ public final class StringUtil
 
         return toReturn;
     }
+
+    public static boolean isNullOrEmpty(final String s)
+    {
+        return s == null || s.length() == 0;
+    }
 }

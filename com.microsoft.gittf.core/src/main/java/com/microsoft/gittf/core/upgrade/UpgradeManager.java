@@ -47,11 +47,11 @@ public class UpgradeManager
      *        the git repository
      * @throws Exception
      */
-    public static void upgradeIfNeccessary(Repository repository)
+    public static void upgradeIfNeccessary(final Repository repository)
         throws Exception
     {
         /* Load the configuration */
-        GitTFConfiguration currentConfiguration = GitTFConfiguration.loadFrom(repository);
+        final GitTFConfiguration currentConfiguration = GitTFConfiguration.loadFrom(repository);
 
         /* if this repository is not configured exit */
         if (currentConfiguration == null)
@@ -60,7 +60,7 @@ public class UpgradeManager
         }
 
         /* Load the current file format version */
-        int existingFormat = currentConfiguration.getFileFormatVersion();
+        final int existingFormat = currentConfiguration.getFileFormatVersion();
 
         /* if the format version is up to date return */
         if (existingFormat == GitTFConstants.GIT_TF_CURRENT_FORMAT_VERSION)
@@ -75,17 +75,17 @@ public class UpgradeManager
         }
     }
 
-    private static void upgradeFromV0ToV1(Repository repository, GitTFConfiguration currentConfiguration)
+    private static void upgradeFromV0ToV1(final Repository repository, final GitTFConfiguration currentConfiguration)
         throws Exception
     {
         /*
          * Delete old temp git-tf folder sense we will create a config with the
          * same name. Newly created temp git-tf folder will be named "tf".
          */
-        File currentTempFileLocation = new File(repository.getDirectory(), GitTFConstants.GIT_TF_NAME);
+        final File currentTempFileLocation = new File(repository.getDirectory(), GitTFConstants.GIT_TF_NAME);
         if (currentTempFileLocation.exists() && currentTempFileLocation.isDirectory())
         {
-            boolean cleanupTempDir = FileHelpers.deleteDirectory(currentTempFileLocation);
+            final boolean cleanupTempDir = FileHelpers.deleteDirectory(currentTempFileLocation);
             if (!cleanupTempDir)
             {
                 throw new Exception(
@@ -98,7 +98,7 @@ public class UpgradeManager
          * Move the existing "changesets" and "commits" sections to the new
          * "git-tf" config file
          */
-        File newConfigFileLocation = new File(repository.getDirectory(), GitTFConstants.GIT_TF_NAME);
+        final File newConfigFileLocation = new File(repository.getDirectory(), GitTFConstants.GIT_TF_NAME);
         if (!newConfigFileLocation.exists())
         {
             ChangesetCommitMap.copyConfigurationEntriesFromRepositoryConfigToNewConfig(
@@ -106,19 +106,7 @@ public class UpgradeManager
                 newConfigFileLocation);
         }
 
-        GitTFConfiguration newConfiguration =
-            new GitTFConfiguration(
-                currentConfiguration.getServerURI(),
-                currentConfiguration.getServerPath(),
-                currentConfiguration.getUsername(),
-                currentConfiguration.getPassword(),
-                currentConfiguration.getDeep(),
-                true,
-                currentConfiguration.getIncludeMetaData(),
-                1,
-                null,
-                null);
-
-        newConfiguration.saveTo(repository);
+        currentConfiguration.setFileFormatVersion(1);
+        currentConfiguration.saveTo(repository);
     }
 }

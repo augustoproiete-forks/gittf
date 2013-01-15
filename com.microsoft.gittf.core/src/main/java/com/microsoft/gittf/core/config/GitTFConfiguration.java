@@ -27,6 +27,9 @@ package com.microsoft.gittf.core.config;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,6 +41,7 @@ import com.microsoft.gittf.core.GitTFConstants;
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.OutputConstants;
 import com.microsoft.gittf.core.util.Check;
+import com.microsoft.gittf.core.util.StringUtil;
 
 /**
  * Configuration data for the git-tf command, read from the .git/config file.
@@ -55,20 +59,25 @@ public class GitTFConfiguration
 {
     private static final Log log = LogFactory.getLog(GitTFConfiguration.class);
 
+    /* Server section parameters */
     private final URI serverURI;
     private final String tfsPath;
-    private final String username;
-    private final String password;
-    private final boolean deep;
-    private final boolean tag;
-    private final boolean includeMetaData;
-    private final int fileFormatVersion;
-    private final String buildDefinition;
-    private final String tempDirectory;
+    private String username;
+    private String password;
+    private String buildDefinition;
+
+    /* General section parameters */
+    private boolean deep;
+    private boolean tag;
+    private boolean includeMetaData;
+    private int fileFormatVersion;
+    private String tempDirectory;
+
+    /* Parameter names defined in the local repository config file */
+    private final Map<String, Boolean> locallyDefinedNames;
 
     /**
-     * Creates a new git-tf configuration, suitable for use by the command or
-     * for writing to the repository's git configuration.
+     * Creates a new git-tf configuration, suitable for use by the command.
      * 
      * @param serverURI
      *        The URI of the TFS server (must not be <code>null</code>)
@@ -87,6 +96,9 @@ public class GitTFConfiguration
      *        The default setting for including metadata on changesets
      * @param tempDirectory
      *        The temporary directory to use
+     * @param locallyDefinedNames
+     *        Parameter names defined in the local repository config file (must
+     *        not be <code>null</code>)
      */
     public GitTFConfiguration(
         final URI serverURI,
@@ -98,10 +110,12 @@ public class GitTFConfiguration
         final boolean includeMetaData,
         final int fileFormatVersion,
         final String buildDefinition,
-        final String tempDirectory)
+        final String tempDirectory,
+        final Map<String, Boolean> locallyDefinedNames)
     {
         Check.notNull(serverURI, "serverURI"); //$NON-NLS-1$
         Check.notNullOrEmpty(tfsPath, "tfsPath"); //$NON-NLS-1$
+        Check.notNull(locallyDefinedNames, "definedNames"); //$NON-NLS-1$
 
         this.serverURI = serverURI;
         this.tfsPath = tfsPath;
@@ -113,6 +127,30 @@ public class GitTFConfiguration
         this.fileFormatVersion = fileFormatVersion;
         this.buildDefinition = buildDefinition;
         this.tempDirectory = tempDirectory;
+        this.locallyDefinedNames = locallyDefinedNames;
+    }
+
+    /**
+     * Creates a new git-tf configuration, suitable for writing to the
+     * repository's git configuration.
+     * 
+     * @param serverURI
+     *        The URI of the TFS server (must not be <code>null</code>)
+     * @param tfsPath
+     *        The server path that will be bridged to the git repository (must
+     *        not be <code>null</code>)
+     */
+    public GitTFConfiguration(final URI serverURI, final String tfsPath)
+    {
+        Check.notNull(serverURI, "serverURI"); //$NON-NLS-1$
+        Check.notNullOrEmpty(tfsPath, "tfsPath"); //$NON-NLS-1$
+
+        this.serverURI = serverURI;
+        this.tfsPath = tfsPath;
+
+        this.locallyDefinedNames = new HashMap<String, Boolean>();
+        locallyDefinedNames.put(ConfigurationConstants.SERVER_COLLECTION_URI, true);
+        locallyDefinedNames.put(ConfigurationConstants.SERVER_PATH, true);
     }
 
     /**
@@ -181,13 +219,13 @@ public class GitTFConfiguration
     }
 
     /**
-     * Returns the default setting for including metadata on changesets
-     * when checking-in code to TFS in deep mode - if this value is
-     * <code>true</code>, commit messages in TFS changesets will include
-     * git commit metadata. If this value is <code>false</code>, then commit
-     * messages in TFS changesets will have "clean" comments, i.e. the exact
-     * same messages defined in Git commits.
-     *
+     * Returns the default setting for including metadata on changesets when
+     * checking-in code to TFS in deep mode - if this value is <code>true</code>
+     * , commit messages in TFS changesets will include git commit metadata. If
+     * this value is <code>false</code>, then commit messages in TFS changesets
+     * will have "clean" comments, i.e. the exact same messages defined in Git
+     * commits.
+     * 
      * @return the default setting for including metadata on changesets
      */
     public boolean getIncludeMetaData()
@@ -218,6 +256,75 @@ public class GitTFConfiguration
         return tempDirectory;
     }
 
+    /*
+     * Configuration field setters. Each setter keeps track that the field has
+     * changed along with changig the fields value
+     */
+    public void setUsername(final String username)
+    {
+        this.username = username;
+        locallyDefinedNames.put(ConfigurationConstants.USERNAME, true);
+    }
+
+    public void setPassword(final String password)
+    {
+        this.password = password;
+        locallyDefinedNames.put(ConfigurationConstants.PASSWORD, true);
+    }
+
+    public void setDeep(final boolean deep)
+    {
+        this.deep = deep;
+        locallyDefinedNames.put(ConfigurationConstants.DEPTH, true);
+    }
+
+    public void setTag(final boolean tag)
+    {
+        this.tag = tag;
+        locallyDefinedNames.put(ConfigurationConstants.TAG, true);
+    }
+
+    public void setIncludeMetaData(final boolean includeMetaData)
+    {
+        this.includeMetaData = includeMetaData;
+        locallyDefinedNames.put(ConfigurationConstants.INCLUDE_METADATA, true);
+    }
+
+    public void setFileFormatVersion(final int fileFormatVersion)
+    {
+        this.fileFormatVersion = fileFormatVersion;
+        locallyDefinedNames.put(ConfigurationConstants.FILE_FORMAT_VERSION, true);
+    }
+
+    public void setBuildDefinition(final String buildDefinition)
+    {
+        this.buildDefinition = buildDefinition;
+        locallyDefinedNames.put(ConfigurationConstants.GATED_BUILD_DEFINITION, true);
+    }
+
+    public void setTempDirectory(final String tempDirectory)
+    {
+        this.tempDirectory = tempDirectory;
+        locallyDefinedNames.put(ConfigurationConstants.TEMP_DIRECTORY, true);
+    }
+
+    /**
+     * Checks if the specified parameter has been explicitly defined in the
+     * local config file or has to be saved in that config file.
+     * 
+     * @param name
+     *        The name of the configuration parameter (must not be
+     *        <code>null</code>)
+     * 
+     * @return <code>true</code> if the named parameter has been or has to be
+     *         explicitly specified in the local config file
+     */
+    private boolean isLocallyDefined(final String name)
+    {
+        Check.notNull(name, "name"); //$NON-NLS-1$
+        return locallyDefinedNames.containsKey(name);
+    }
+
     /**
      * Saves this configuration to the given git repository's configuration.
      * 
@@ -226,7 +333,7 @@ public class GitTFConfiguration
      *        <code>null</code>)
      * @return <code>true</code> if the configuration was saved successfully
      */
-    public boolean saveTo(Repository repository)
+    public boolean saveTo(final Repository repository)
     {
         Check.notNull(repository, "repository"); //$NON-NLS-1$
 
@@ -242,31 +349,44 @@ public class GitTFConfiguration
             ConfigurationConstants.SERVER_PATH,
             tfsPath);
 
-        repository.getConfig().setInt(
-            ConfigurationConstants.CONFIGURATION_SECTION,
-            ConfigurationConstants.GENERAL_SUBSECTION,
-            ConfigurationConstants.DEPTH,
-            deep ? Integer.MAX_VALUE : 1);
+        if (isLocallyDefined(ConfigurationConstants.DEPTH))
+        {
+            repository.getConfig().setInt(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.GENERAL_SUBSECTION,
+                ConfigurationConstants.DEPTH,
+                deep ? Integer.MAX_VALUE : 1);
+        }
 
-        repository.getConfig().setInt(
-            ConfigurationConstants.CONFIGURATION_SECTION,
-            ConfigurationConstants.GENERAL_SUBSECTION,
-            ConfigurationConstants.FILE_FORMAT_VERSION,
-            GitTFConstants.GIT_TF_CURRENT_FORMAT_VERSION);
+        if (isLocallyDefined(ConfigurationConstants.FILE_FORMAT_VERSION))
+        {
+            repository.getConfig().setInt(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.GENERAL_SUBSECTION,
+                ConfigurationConstants.FILE_FORMAT_VERSION,
+                GitTFConstants.GIT_TF_CURRENT_FORMAT_VERSION);
+        }
 
-        repository.getConfig().setBoolean(
-            ConfigurationConstants.CONFIGURATION_SECTION,
-            ConfigurationConstants.GENERAL_SUBSECTION,
-            ConfigurationConstants.TAG,
-            tag);
+        if (isLocallyDefined(ConfigurationConstants.TAG))
+        {
+            repository.getConfig().setBoolean(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.GENERAL_SUBSECTION,
+                ConfigurationConstants.TAG,
+                tag);
+        }
 
-        repository.getConfig().setBoolean(
-            ConfigurationConstants.CONFIGURATION_SECTION,
-            ConfigurationConstants.GENERAL_SUBSECTION,
-            ConfigurationConstants.INCLUDE_METADATA,
-            includeMetaData);
+        if (isLocallyDefined(ConfigurationConstants.INCLUDE_METADATA))
+        {
+            repository.getConfig().setBoolean(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.GENERAL_SUBSECTION,
+                ConfigurationConstants.INCLUDE_METADATA,
+                includeMetaData);
+        }
 
-        if (buildDefinition != null && buildDefinition.length() > 0)
+        if (isLocallyDefined(ConfigurationConstants.GATED_BUILD_DEFINITION)
+            && !StringUtil.isNullOrEmpty(buildDefinition))
         {
             repository.getConfig().setString(
                 ConfigurationConstants.CONFIGURATION_SECTION,
@@ -275,7 +395,7 @@ public class GitTFConfiguration
                 buildDefinition);
         }
 
-        if (tempDirectory != null && tempDirectory.length() > 0)
+        if (isLocallyDefined(ConfigurationConstants.TEMP_DIRECTORY) && !StringUtil.isNullOrEmpty(tempDirectory))
         {
             repository.getConfig().setString(
                 ConfigurationConstants.CONFIGURATION_SECTION,
@@ -305,17 +425,17 @@ public class GitTFConfiguration
 
     public String toString()
     {
-        StringBuilder result = new StringBuilder();
+        final StringBuilder result = new StringBuilder();
 
         result.append(Messages.formatString("GitTFConfiguration.ToString.ServerURIFormat", this.serverURI) + OutputConstants.NEW_LINE); //$NON-NLS-1$
         result.append(Messages.formatString("GitTFConfiguration.ToString.TfsPathFormat", this.tfsPath) + OutputConstants.NEW_LINE); //$NON-NLS-1$
 
-        if (buildDefinition != null && buildDefinition.length() > 0)
+        if (!StringUtil.isNullOrEmpty(buildDefinition))
         {
             result.append(Messages.formatString("GitTFConfiguration.ToString.GatedBuildFormat", this.buildDefinition) + OutputConstants.NEW_LINE); //$NON-NLS-1$
         }
 
-        if (tempDirectory != null && tempDirectory.length() > 0)
+        if (!StringUtil.isNullOrEmpty(tempDirectory))
         {
             result.append(Messages.formatString("GitTFConfiguration.ToString.TempDirectoryFormat", this.tempDirectory) + OutputConstants.NEW_LINE); //$NON-NLS-1$
         }
@@ -348,7 +468,7 @@ public class GitTFConfiguration
      * @return A new {@link GitTFConfiguration}, or <code>null</code> if the git
      *         repository does not contain a valid git-tf configuration
      */
-    public static GitTFConfiguration loadFrom(Repository repository)
+    public static GitTFConfiguration loadFrom(final Repository repository)
     {
         Check.notNull(repository, "repository"); //$NON-NLS-1$
 
@@ -440,6 +560,23 @@ public class GitTFConfiguration
             return null;
         }
 
+        final String[] sectionNames = new String[]
+        {
+            ConfigurationConstants.GENERAL_SUBSECTION, ConfigurationConstants.SERVER_SUBSECTION
+        };
+        final Map<String, Boolean> isDefined = new HashMap<String, Boolean>();
+
+        for (final String sectionName : sectionNames)
+        {
+            final Set<String> definedNames =
+                repository.getConfig().getNames(ConfigurationConstants.CONFIGURATION_SECTION, sectionName);
+
+            for (final String name : definedNames)
+            {
+                isDefined.put(name, true);
+            }
+        }
+
         return new GitTFConfiguration(
             serverURI,
             tfsPath,
@@ -450,7 +587,8 @@ public class GitTFConfiguration
             includeMetaData,
             fileFormatVersion,
             buildDefinition,
-            tempDirectory);
+            tempDirectory,
+            isDefined);
     }
 
     /**

@@ -39,13 +39,14 @@ public class ConfigurationConstants
     public static final String TAG = "tag"; //$NON-NLS-1$
     public static final String INCLUDE_METADATA = "include-metadata"; //$NON-NLS-1$
     public static final String FILE_FORMAT_VERSION = "file-format-version"; //$NON-NLS-1$
+    public static final String TEMP_DIRECTORY = "tempdir"; //$NON-NLS-1$
+
     public static final String SERVER_SUBSECTION = "server"; //$NON-NLS-1$
     public static final String SERVER_COLLECTION_URI = "collection"; //$NON-NLS-1$
     public static final String SERVER_PATH = "serverpath"; //$NON-NLS-1$
     public static final String USERNAME = "username"; //$NON-NLS-1$
     public static final String PASSWORD = "password"; //$NON-NLS-1$
     public static final String GATED_BUILD_DEFINITION = "gated"; //$NON-NLS-1$
-    public static final String TEMP_DIRECTORY = "tempdir"; //$NON-NLS-1$
 
     public static final String COMMIT_SUBSECTION = "commits"; //$NON-NLS-1$
     public static final String COMMIT_CHANGESET_FORMAT = "changeset-{0}"; //$NON-NLS-1$

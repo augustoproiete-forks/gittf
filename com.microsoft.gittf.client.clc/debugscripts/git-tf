@@ -50,7 +50,7 @@ if [ "$PLATFORM" = "cygwin" ]; then
 
 	exec "$COMSPEC_U" /C "$GITTF_CMD" "$@"
 elif [ "$PLATFORM" = "mingw32" ]; then
-	exec "$COMSPEC" //C "$0.cmd" "$@"
+	exec "$COMSPEC" //C git-tf.cmd "$@"
 fi
 
 # BASE_DIRECTORY is the directory containing the Java libraries

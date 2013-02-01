@@ -277,7 +277,7 @@ public class CheckinPendingChangesTask
                     TaskStatus.ERROR,
                     Messages.getString("CheckinPendingChangesTask.OtherUserCheckinDetected")); //$NON-NLS-1$
             }
-            else if (e.getCheckinConflicts().length > 0)
+            else if (e.getCheckinConflicts() != null && e.getCheckinConflicts().length > 0)
             {
                 return new TaskStatus(TaskStatus.ERROR, buildErrorMessage(e.getCheckinConflicts()));
             }

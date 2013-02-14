@@ -51,6 +51,7 @@ import com.microsoft.tfs.core.clients.versioncontrol.path.LocalPath;
 import com.microsoft.tfs.core.clients.versioncontrol.path.ServerPath;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
+import com.microsoft.tfs.core.clients.workitem.WorkItemClient;
 import com.microsoft.tfs.core.httpclient.Credentials;
 import com.microsoft.tfs.util.Check;
 import com.microsoft.tfs.util.FileHelpers;
@@ -110,6 +111,8 @@ public class CloneCommand
                 Messages.getString("Command.Argument.NoTag.HelpText")) //$NON-NLS-1$
         ),
 
+        new SwitchArgument("mentions", Messages.getString("Command.Argument.Mentions.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+
         new FreeArgument("projectcollection", //$NON-NLS-1$
             Messages.getString("Command.Argument.ProjectCollection.HelpText"), //$NON-NLS-1$
             ArgumentOptions.REQUIRED),
@@ -160,6 +163,12 @@ public class CloneCommand
         final boolean bare = getArguments().contains("bare"); //$NON-NLS-1$
         final int depth = getDepthFromArguments();
 
+        final boolean mentions = getArguments().contains("mentions"); //$NON-NLS-1$
+        if (mentions && depth < 2)
+        {
+            throw new Exception(Messages.getString("Command.MentionsOnlyAvailableWithDeep")); //$NON-NLS-1$
+        }
+
         final boolean tag = getTagFromArguments();
 
         final URI serverURI = URIUtil.getServerURI(collection);
@@ -199,7 +208,10 @@ public class CloneCommand
 
             Check.notNull(connection, "connection"); //$NON-NLS-1$
 
-            final CloneTask cloneTask = new CloneTask(serverURI, getVersionControlService(), tfsPath, repository);
+            final WorkItemClient witClient = mentions ? getConnection().getWorkItemClient() : null;
+            final CloneTask cloneTask =
+                new CloneTask(serverURI, getVersionControlService(), tfsPath, repository, witClient);
+
             cloneTask.setBare(bare);
             cloneTask.setDepth(depth);
             cloneTask.setVersionSpec(versionSpec);

@@ -56,6 +56,7 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionTyp
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
+import com.microsoft.tfs.core.clients.workitem.WorkItemClient;
 
 public class CloneTask
     extends Task
@@ -64,6 +65,7 @@ public class CloneTask
     private final VersionControlService vcClient;
     private final String tfsPath;
     private final Repository repository;
+    private final WorkItemClient witClient;
 
     private boolean bare;
     private VersionSpec versionSpec = LatestVersionSpec.INSTANCE;
@@ -78,6 +80,16 @@ public class CloneTask
         final String tfsPath,
         final Repository repository)
     {
+        this(serverURI, vcClient, tfsPath, repository, null);
+    }
+
+    public CloneTask(
+        final URI serverURI,
+        final VersionControlService vcClient,
+        final String tfsPath,
+        final Repository repository,
+        final WorkItemClient witClient)
+    {
         Check.notNull(serverURI, "serverURI"); //$NON-NLS-1$
         Check.notNull(vcClient, "vcClient"); //$NON-NLS-1$
         Check.notNullOrEmpty(tfsPath, "tfsPath"); //$NON-NLS-1$
@@ -87,6 +99,7 @@ public class CloneTask
         this.vcClient = vcClient;
         this.tfsPath = tfsPath;
         this.repository = repository;
+        this.witClient = witClient;
     }
 
     public void setBare(final boolean bare)
@@ -205,12 +218,15 @@ public class CloneTask
 
             for (int i = numberOfChangesetToDownload; i > 0; i--)
             {
+                final int changesetID = changesets[i - 1].getChangesetID();
+
                 CreateCommitForChangesetVersionSpecTask commitTask =
                     new CreateCommitForChangesetVersionSpecTask(
                         repository,
                         vcClient,
-                        changesets[i - 1].getChangesetID(),
-                        lastCommitID);
+                        changesetID,
+                        lastCommitID,
+                        witClient);
 
                 TaskStatus commitStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(commitTask);
 

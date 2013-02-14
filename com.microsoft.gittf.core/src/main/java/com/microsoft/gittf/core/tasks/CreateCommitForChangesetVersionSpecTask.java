@@ -57,6 +57,8 @@ import com.microsoft.gittf.core.util.Check;
 import com.microsoft.gittf.core.util.tree.CommitTreeEntry;
 import com.microsoft.gittf.core.util.tree.CommitTreePath;
 import com.microsoft.gittf.core.util.tree.CommitTreePathComparator;
+import com.microsoft.tfs.core.artifact.ArtifactID;
+import com.microsoft.tfs.core.artifact.ArtifactIDFactory;
 import com.microsoft.tfs.core.clients.versioncontrol.PropertyConstants;
 import com.microsoft.tfs.core.clients.versioncontrol.PropertyUtils;
 import com.microsoft.tfs.core.clients.versioncontrol.exceptions.VersionControlException;
@@ -66,28 +68,40 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.ItemType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVersionSpec;
+import com.microsoft.tfs.core.clients.workitem.CoreFieldReferenceNames;
+import com.microsoft.tfs.core.clients.workitem.WorkItem;
+import com.microsoft.tfs.core.clients.workitem.WorkItemClient;
+import com.microsoft.tfs.core.clients.workitem.query.Query;
+import com.microsoft.tfs.core.clients.workitem.query.WorkItemCollection;
 import com.microsoft.tfs.util.FileHelpers;
 
 public class CreateCommitForChangesetVersionSpecTask
     extends CreateCommitTask
 {
+    private static final String NEWLINE = System.getProperty("line.separator"); //$NON-NLS-1$
+    private static final String HASH = "#"; //$NON-NLS-1$
+    private static final String SPACES = "          "; //$NON-NLS-1$
+    private static final int WIT_TITLE_PAD_WIDTH = SPACES.length();
+
     private static final Log log = LogFactory.getLog(CreateCommitForChangesetVersionSpecTask.class);
 
     private final int changesetID;
-
     private ObjectId commitTreeID;
+    private final WorkItemClient witClient;
 
     public CreateCommitForChangesetVersionSpecTask(
         final Repository repository,
         final VersionControlService versionControlClient,
-        int changesetID,
-        ObjectId parentCommitID)
+        final int changesetID,
+        final ObjectId parentCommitID,
+        final WorkItemClient witClient)
     {
         super(repository, versionControlClient, parentCommitID);
 
         Check.isTrue(changesetID >= 0, "changesetID >= 0"); //$NON-NLS-1$
 
         this.changesetID = changesetID;
+        this.witClient = witClient;
     }
 
     public ObjectId getCommitTreeID()
@@ -155,14 +169,9 @@ public class CreateCommitForChangesetVersionSpecTask
             if (items != null)
             {
                 progressMonitor.setWork(items.length);
-                for (int i = 0; i < items.length; i++)
+                for (final Item item : items)
                 {
-                    createBlob(
-                        repositoryInserter,
-                        treeHierarchy,
-                        previousChangesetCommitReader,
-                        items[i],
-                        progressMonitor);
+                    createBlob(repositoryInserter, treeHierarchy, previousChangesetCommitReader, item, progressMonitor);
 
                     progressMonitor.worked(1);
                 }
@@ -170,11 +179,11 @@ public class CreateCommitForChangesetVersionSpecTask
 
             /* Phase two: add child trees to their parents. */
             progressMonitor.setDetail(Messages.getString("CreateCommitTask.CreatingTrees")); //$NON-NLS-1$
-            ObjectId rootTree = createTrees(repositoryInserter, treeHierarchy);
+            final ObjectId rootTree = createTrees(repositoryInserter, treeHierarchy);
 
             /* Phase three: create the commit. */
             progressMonitor.setDetail(Messages.getString("CreateCommitTask.CreatingCommit")); //$NON-NLS-1$            
-            ObjectId commit = createCommit(repositoryInserter, rootTree, changeset);
+            final ObjectId commit = createCommit(repositoryInserter, rootTree, changeset);
 
             repositoryInserter.flush();
 
@@ -241,7 +250,7 @@ public class CreateCommitForChangesetVersionSpecTask
                     // if the user is denied read permissions on the file an
                     // exception will be thrown here.
 
-                    String itemName = item.getServerItem() == null ? "" : item.getServerItem(); //$NON-NLS-1$
+                    final String itemName = item.getServerItem() == null ? "" : item.getServerItem(); //$NON-NLS-1$
 
                     progressMonitor.displayWarning(Messages.formatString(
                         "CreateCommitForChangesetVersionSpecTask.NoContentDueToPermissionOrDestroyFormat", //$NON-NLS-1$
@@ -294,7 +303,45 @@ public class CreateCommitForChangesetVersionSpecTask
         }
     }
 
-    private ObjectId createCommit(ObjectInserter repositoryInserter, ObjectId rootTree, Changeset changeset)
+    private String getMentions()
+    {
+        if (witClient == null)
+        {
+            return ""; //$NON-NLS-1$
+        }
+
+        final WorkItem[] workItems = getChangesetWorkItems(changesetID);
+        if (workItems == null)
+        {
+            return ""; //$NON-NLS-1$
+        }
+
+        final StringBuilder sb = new StringBuilder();
+
+        for (final WorkItem workItem : workItems)
+        {
+            addWorkItem(sb, workItem);
+        }
+
+        return sb.toString();
+    }
+
+    private void addWorkItem(final StringBuilder sb, final WorkItem workItem)
+    {
+        sb.append(NEWLINE);
+        sb.append(HASH);
+
+        final String itemID = Integer.toString(workItem.getID());
+        sb.append(itemID);
+        sb.append(SPACES.substring(0, Math.max(1, WIT_TITLE_PAD_WIDTH - itemID.length())));
+
+        sb.append(workItem.getFields().getField(CoreFieldReferenceNames.TITLE).getValue());
+    }
+
+    private ObjectId createCommit(
+        final ObjectInserter repositoryInserter,
+        final ObjectId rootTree,
+        final Changeset changeset)
         throws IOException
     {
         Check.notNull(changeset, "changeset"); //$NON-NLS-1$
@@ -310,7 +357,7 @@ public class CreateCommitForChangesetVersionSpecTask
             changeset.getCommitterDisplayName(),
             changeset.getCommitter(),
             changeset.getDate(),
-            changeset.getComment());
+            changeset.getComment() + getMentions());
     }
 
     private class ChangesetCommitItemReader
@@ -325,13 +372,13 @@ public class CreateCommitForChangesetVersionSpecTask
 
         private Map<String, Integer> changesetItems;
 
-        public ChangesetCommitItemReader(int changesetId, ObjectId commitId)
+        public ChangesetCommitItemReader(final int changesetId, final ObjectId commitId)
         {
             this.changesetID = changesetId;
             this.commitId = commitId;
         }
 
-        public ObjectId getFileObjectId(String itemServerPath, int requestedVersion)
+        public ObjectId getFileObjectId(final String itemServerPath, final int requestedVersion)
         {
             if (!initialized)
             {
@@ -404,31 +451,55 @@ public class CreateCommitForChangesetVersionSpecTask
                     }
                 }
 
-                Item[] items =
+                final Item[] items =
                     versionControlService.getItems(
                         serverPath,
                         new ChangesetVersionSpec(changesetID),
                         RecursionType.FULL);
 
                 changesetItems = new HashMap<String, Integer>(items.length);
-                for (Item item : items)
+                for (final Item item : items)
                 {
                     changesetItems.put(item.getServerItem().toLowerCase(), item.getChangeSetID());
                 }
             }
         }
 
-        private boolean commitContainsFileAtVersion(String filePath, int requestedVersion)
+        private boolean commitContainsFileAtVersion(final String filePath, final int requestedVersion)
         {
-            String filePathKey = filePath.toLowerCase();
+            final String filePathKey = filePath.toLowerCase();
 
             if (changesetItems.containsKey(filePathKey))
             {
-                int changesetVersionInChangeset = changesetItems.get(filePathKey);
+                final int changesetVersionInChangeset = changesetItems.get(filePathKey);
                 return changesetVersionInChangeset == requestedVersion;
             }
 
             return false;
         }
     }
+
+    public WorkItem[] getChangesetWorkItems(final int changesetID)
+    {
+        if (witClient == null)
+        {
+            return null;
+        }
+
+        final ArtifactID changesetArtifactId = ArtifactIDFactory.newChangesetArtifactID(changesetID);
+
+        final Query query = witClient.createReferencingQuery(changesetArtifactId.encodeURI());
+        query.getDisplayFieldList().add(CoreFieldReferenceNames.TITLE);
+
+        final WorkItemCollection collection = query.runQuery();
+        final WorkItem[] workItems = new WorkItem[collection.size()];
+
+        for (int i = 0; i < collection.size(); i++)
+        {
+            workItems[i] = collection.getWorkItem(i);
+        }
+
+        return workItems;
+    }
+
 }

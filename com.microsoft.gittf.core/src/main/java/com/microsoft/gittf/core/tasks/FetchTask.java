@@ -60,6 +60,7 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionTyp
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
+import com.microsoft.tfs.core.clients.workitem.WorkItemClient;
 
 public class FetchTask
     extends Task
@@ -70,6 +71,7 @@ public class FetchTask
 
     private final Repository repository;
     private final VersionControlService versionControlClient;
+    private final WorkItemClient witClient;
 
     private VersionSpec versionSpec = LatestVersionSpec.INSTANCE;
     private boolean deep = false;
@@ -81,11 +83,20 @@ public class FetchTask
 
     public FetchTask(final Repository repository, final VersionControlService versionControlClient)
     {
+        this(repository, versionControlClient, null);
+    }
+
+    public FetchTask(
+        final Repository repository,
+        final VersionControlService versionControlClient,
+        final WorkItemClient witClient)
+    {
         Check.notNull(repository, "repository"); //$NON-NLS-1$
         Check.notNull(versionControlClient, "versionControlClient"); //$NON-NLS-1$
 
         this.repository = repository;
         this.versionControlClient = versionControlClient;
+        this.witClient = witClient;
     }
 
     public void setVersionSpec(VersionSpec versionSpecToFetch)
@@ -223,7 +234,12 @@ public class FetchTask
                     Integer.toString(changesets[i].getChangesetID())));
 
                 CreateCommitForChangesetVersionSpecTask createCommitTask =
-                    new CreateCommitForChangesetVersionSpecTask(repository, versionControlClient, changesets[i].getChangesetID(), lastCommitID);
+                    new CreateCommitForChangesetVersionSpecTask(
+                        repository,
+                        versionControlClient,
+                        changesets[i].getChangesetID(),
+                        lastCommitID,
+                        witClient);
                 TaskStatus createCommitTaskStatus =
                     new TaskExecutor(progressMonitor.newSubTask(1)).execute(createCommitTask);
 

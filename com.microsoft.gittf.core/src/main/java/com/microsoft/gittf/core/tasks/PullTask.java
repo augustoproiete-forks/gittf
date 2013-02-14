@@ -54,6 +54,7 @@ import com.microsoft.gittf.core.util.ObjectIdUtil;
 import com.microsoft.gittf.core.util.VersionSpecUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
+import com.microsoft.tfs.core.clients.workitem.WorkItemClient;
 
 public class PullTask
     extends Task
@@ -62,6 +63,7 @@ public class PullTask
 
     private final Repository repository;
     private final VersionControlService versionControlClient;
+    private final WorkItemClient witClient;
 
     private VersionSpec versionSpec = LatestVersionSpec.INSTANCE;
     private boolean deep = false;
@@ -75,11 +77,20 @@ public class PullTask
 
     public PullTask(final Repository repository, final VersionControlService versionControlClient)
     {
+        this(repository, versionControlClient, null);
+    }
+
+    public PullTask(
+        final Repository repository,
+        final VersionControlService versionControlClient,
+        WorkItemClient witClient)
+    {
         Check.notNull(repository, "repository"); //$NON-NLS-1$
         Check.notNull(versionControlClient, "versionControlClient"); //$NON-NLS-1$
 
         this.repository = repository;
         this.versionControlClient = versionControlClient;
+        this.witClient = witClient;
     }
 
     public void setVersionSpec(VersionSpec versionSpecToFetch)
@@ -140,7 +151,7 @@ public class PullTask
                 "PullTask.FetchingVersionFormat", GitTFConfiguration.loadFrom(repository).getServerPath(), VersionSpecUtil.getDescription(versionSpec)), 1, //$NON-NLS-1$
             TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
 
-        final FetchTask fetchTask = new FetchTask(repository, versionControlClient);
+        final FetchTask fetchTask = new FetchTask(repository, versionControlClient, witClient);
         fetchTask.setVersionSpec(versionSpec);
         fetchTask.setDeep(deep);
         fetchTask.setForce(force);

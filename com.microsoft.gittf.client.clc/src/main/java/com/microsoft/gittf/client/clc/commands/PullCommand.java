@@ -41,13 +41,14 @@ import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.VersionSpecUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
+import com.microsoft.tfs.core.clients.workitem.WorkItemClient;
 
 public class PullCommand
     extends Command
 {
     public static final String COMMAND_NAME = "pull"; //$NON-NLS-1$
 
-    private static Argument[] ARGUMENTS = new Argument[]
+    private static final Argument[] ARGUMENTS = new Argument[]
     {
         new SwitchArgument("help", Messages.getString("Command.Argument.Help.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
 
@@ -91,6 +92,8 @@ public class PullCommand
         new SwitchArgument("rebase", Messages.getString("PullCommand.Argument.Rebase.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
 
         new SwitchArgument("force", Messages.getString("PullCommand.Argument.Force.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+
+        new SwitchArgument("mentions", Messages.getString("Command.Argument.Mentions.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
     };
 
     @Override
@@ -125,7 +128,7 @@ public class PullCommand
         verifyMasterBranch();
         verifyRepoSafeState();
 
-        VersionSpec versionSpec =
+        final VersionSpec versionSpec =
             getArguments().contains("version") ? //$NON-NLS-1$
                 VersionSpecUtil.parseVersionSpec(((ValueArgument) getArguments().getArgument("version")).getValue()) : LatestVersionSpec.INSTANCE; //$NON-NLS-1$
 
@@ -137,11 +140,18 @@ public class PullCommand
             deep = getDeepFromArguments();
         }
 
-        boolean force = getArguments().contains("force"); //$NON-NLS-1$
+        final boolean mentions = getArguments().contains("mentions"); //$NON-NLS-1$
+        if (mentions && !deep)
+        {
+            throw new Exception(Messages.getString("Command.MentionsOnlyAvailableWithDeep")); //$NON-NLS-1$
+        }
 
-        boolean rebase = getArguments().contains("rebase"); //$NON-NLS-1$
+        final boolean force = getArguments().contains("force"); //$NON-NLS-1$
 
-        final PullTask pullTask = new PullTask(getRepository(), getVersionControlService());
+        final boolean rebase = getArguments().contains("rebase"); //$NON-NLS-1$
+
+        final WorkItemClient witClient = mentions ? getConnection().getWorkItemClient() : null;
+        final PullTask pullTask = new PullTask(getRepository(), getVersionControlService(), witClient);
         pullTask.setVersionSpec(versionSpec);
         pullTask.setDeep(deep);
         pullTask.setStrategy(getSpecifiedMergeStrategy());

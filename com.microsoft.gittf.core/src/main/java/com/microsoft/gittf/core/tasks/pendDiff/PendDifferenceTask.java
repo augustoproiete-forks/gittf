@@ -569,16 +569,6 @@ public class PendDifferenceTask
         {
             errorListener = workspace.getErrorListener();
 
-            /* Pend Edits */
-            progressMonitor.setDetail(Messages.getString("PendDifferencesTask.PendingEdits")); //$NON-NLS-1$
-            pendEdits(analysis, errorListener);
-            progressMonitor.worked(1);
-
-            /* Pend Adds */
-            progressMonitor.setDetail(Messages.getString("PendDifferencesTask.PendingAdds")); //$NON-NLS-1$
-            pendAdds(analysis, errorListener);
-            progressMonitor.worked(1);
-
             /* Pend Renames */
             progressMonitor.setDetail(Messages.getString("PendDifferencesTask.PendingRenames")); //$NON-NLS-1$
             pendRenames(analysis, errorListener);
@@ -587,6 +577,16 @@ public class PendDifferenceTask
             /* Pend Deletes */
             progressMonitor.setDetail(Messages.getString("PendDifferencesTask.PendingDeletes")); //$NON-NLS-1$
             pendDeletes(analysis, errorListener);
+            progressMonitor.worked(1);
+
+            /* Pend Edits */
+            progressMonitor.setDetail(Messages.getString("PendDifferencesTask.PendingEdits")); //$NON-NLS-1$
+            pendEdits(analysis, errorListener);
+            progressMonitor.worked(1);
+
+            /* Pend Adds */
+            progressMonitor.setDetail(Messages.getString("PendDifferencesTask.PendingAdds")); //$NON-NLS-1$
+            pendAdds(analysis, errorListener);
             progressMonitor.worked(1);
 
             /*
@@ -812,7 +812,7 @@ public class PendDifferenceTask
      *        the error listener to report the errors through
      * @throws Exception
      */
-    private void pendBatchRenames(List<RenameChange> renames, WorkspaceOperationErrorListener errorListener)
+    private void pendBatchRenames(final List<RenameChange> renames, final WorkspaceOperationErrorListener errorListener)
         throws Exception
     {
         Check.notNull(renames, "renames"); //$NON-NLS-1$
@@ -824,70 +824,92 @@ public class PendDifferenceTask
         }
 
         /* Build the item specs for renames */
-        List<String> renameOldPaths = new ArrayList<String>();
-        List<String> renameNewPaths = new ArrayList<String>();
-        List<Boolean> renameEdits = new ArrayList<Boolean>();
+        final List<String> renameOldPaths = new ArrayList<String>();
+        final List<String> renameNewPaths = new ArrayList<String>();
+        final List<Boolean> renameEdits = new ArrayList<Boolean>();
+        final List<String> editRenameOldPaths = new ArrayList<String>();
+        final List<String> editRenameNewPaths = new ArrayList<String>();
 
         /*
          * Build the item specs for rename edits since some of the items can be
          * renames and edits in the same time
          */
-        List<ItemSpec> editSpecs = new ArrayList<ItemSpec>();
-        List<LockLevel> lockLevels = new ArrayList<LockLevel>();
+        final List<ItemSpec> editSpecs = new ArrayList<ItemSpec>();
+        final List<LockLevel> lockLevels = new ArrayList<LockLevel>();
 
-        int renameCountToValidate = 0, editCountToValidate = 0;
         for (int i = 0; i < renames.size(); i++)
         {
             final RenameChange rename = renames.get(i);
 
-            /* if the path has changed then the item is a rename */
-            if (!rename.getOldPath().equals(rename.getNewPath()))
+            if (rename.isEdit())
+            {
+                editRenameOldPaths.add(ServerPath.combine(serverPathRoot, rename.getOldPath()));
+                editRenameNewPaths.add(ServerPath.combine(serverPathRoot, rename.getNewPath()));
+
+                editSpecs.add(new ItemSpec(ServerPath.combine(serverPathRoot, rename.getNewPath()), RecursionType.NONE));
+                lockLevels.add(LockLevel.NONE);
+                renameEdits.add(true);
+            }
+            else
             {
                 renameOldPaths.add(ServerPath.combine(serverPathRoot, rename.getOldPath()));
                 renameNewPaths.add(ServerPath.combine(serverPathRoot, rename.getNewPath()));
-                renameEdits.add(rename.isEdit());
-
-                renameCountToValidate++;
-            }
-
-            /* if the item was edited as well pend an edit */
-            if (rename.isEdit())
-            {
-                editSpecs.add(new ItemSpec(ServerPath.combine(serverPathRoot, rename.getNewPath()), RecursionType.NONE));
-                lockLevels.add(LockLevel.NONE);
-
-                extractToWorkingFolder(rename.getOldPath(), rename.getObjectID());
-
-                editCountToValidate++;
             }
         }
 
-        /* Pend the renames */
         if (renameOldPaths.size() > 0)
         {
-            int count =
+            final int renamesCount =
                 workspace.pendRename(
                     renameOldPaths.toArray(new String[renameOldPaths.size()]),
                     renameNewPaths.toArray(new String[renameNewPaths.size()]),
-                    renameEdits.toArray(new Boolean[renameEdits.size()]),
+                    null,
                     LockLevel.NONE,
-                    GetOptions.NONE,
+                    GetOptions.NO_DISK_UPDATE,
                     false,
                     PendChangesOptions.NONE);
 
             /* Validate that the renames were pended correctly */
             errorListener.validate();
 
-            if (count < renameCountToValidate)
+            if (renamesCount < renameOldPaths.size())
             {
                 throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
             }
         }
 
-        /* Pend the rename edits */
-        if (editSpecs.size() > 0)
+        /* Pend the edited renames */
+        if (editRenameOldPaths.size() > 0)
         {
-            int count =
+            final int count =
+                workspace.pendRename(
+                    editRenameOldPaths.toArray(new String[editRenameOldPaths.size()]),
+                    editRenameNewPaths.toArray(new String[editRenameNewPaths.size()]),
+                    renameEdits.toArray(new Boolean[renameEdits.size()]),
+                    LockLevel.NONE,
+                    GetOptions.NO_DISK_UPDATE,
+                    false,
+                    PendChangesOptions.NONE);
+
+            /* Validate that the renames were pended correctly */
+            errorListener.validate();
+
+            if (count < editRenameOldPaths.size())
+            {
+                throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
+            }
+
+            for (int i = 0; i < renames.size(); i++)
+            {
+                final RenameChange rename = renames.get(i);
+
+                if (rename.isEdit())
+                {
+                    extractToWorkingFolder(rename.getNewPath(), rename.getObjectID());
+                }
+            }
+
+            final int editsCount =
                 workspace.pendEdit(
                     editSpecs.toArray(new ItemSpec[editSpecs.size()]),
                     lockLevels.toArray(new LockLevel[lockLevels.size()]),
@@ -895,12 +917,12 @@ public class PendDifferenceTask
                     GetOptions.NO_DISK_UPDATE,
                     PendChangesOptions.NONE,
                     null,
-                    renameOldPaths.size() == 0);
+                    editSpecs.size() == 0);
 
-            /* Validate that the edits were pendded correctly */
+            /* Validate that the edits were pended correctly */
             errorListener.validate();
 
-            if (count < editCountToValidate)
+            if (editsCount < editSpecs.size())
             {
                 throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
             }

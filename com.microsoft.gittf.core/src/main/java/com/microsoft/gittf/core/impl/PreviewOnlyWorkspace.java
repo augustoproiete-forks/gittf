@@ -139,7 +139,7 @@ public class PreviewOnlyWorkspace
     {
         for (int count = 0; count < oldPaths.length; count++)
         {
-            if (editFlag[count])
+            if (editFlag != null && editFlag[count])
             {
                 progressMonitor.displayMessage(Messages.formatString(
                     "PreviewOnlyWorkspace.RenameEditFormat", newPaths[count])); //$NON-NLS-1$

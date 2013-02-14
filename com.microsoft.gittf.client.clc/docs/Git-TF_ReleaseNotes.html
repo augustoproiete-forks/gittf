@@ -39,6 +39,36 @@
 <body>
     <h1>Git-TF: Release Notes</h1>
 
+    <h2>Git-TF V2.0.2</h2>
+    <p>
+        <h3>New Features:</h3>
+        <nl>
+            <li>Clone, Fetch, and Pull <span class="code">--mentions</span> option to add references in the commit comments for any work items linked to the corresponding changeset</li>
+            <li>Enable to save Git-TF configuration parameters in the global git config file.
+                <p>
+                With this change:
+                <ol>
+                   <li>The 'git tf clone' command does not store in the local repository config file 'depth', 'tag', and 'include-metadata' parameters. The user has to configure them explicitly with 'git tf configure' or 'git config' commands.</li>
+                   <li>The 'git tf configure' command puts to the the local repository config file _only_ the parameters explicitly specified by the user.</li>
+                   <li>The user has an ability to specify git-tf configuration parameters in a global .gitconfig file by using commands:
+                        <p>
+                        <span class="code">git config --global git-tf.depth {1|number} </span> - where number is any positive number between 2 and 2147483647.
+                        </p>
+                        <p>  
+                        <span class="code">git config --global git-tf.tag {true|false} </span> 
+                        </p>
+                        <p>  
+                        <span class="code">git config --global git-tf.include-metadata {true|false}</span>
+                        </p>
+                   </li>
+                </ol>
+               <p>
+               In the similar way these parameters could be specified in the --system git configuration.
+               </p>
+            </li>
+        </ul>
+    </p>
+
     <h2>Git-TF V2.0.1</h2>
     <p>
         <h3>New Features:</h3>

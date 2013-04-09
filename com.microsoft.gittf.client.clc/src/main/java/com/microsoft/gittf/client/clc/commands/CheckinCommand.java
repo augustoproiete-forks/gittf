@@ -51,6 +51,7 @@ import com.microsoft.gittf.core.tasks.framework.TaskCompletedHandler;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.tasks.pendDiff.RenameMode;
 import com.microsoft.tfs.core.clients.versioncontrol.exceptions.ActionDeniedBySubscriberException;
+import com.microsoft.tfs.core.clients.workitem.WorkItemClient;
 
 public class CheckinCommand
     extends PendingChangesCommand
@@ -135,7 +136,7 @@ public class CheckinCommand
              */
             new SwitchArgument("bypass", //$NON-NLS-1$
                 Messages.getString("CheckinCommand.Argument.Bypass.HelpText")), //$NON-NLS-1$
-
+            new SwitchArgument("mentions", Messages.getString("Command.Argument.Mentions.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
             new ValueArgument("gated", //$NON-NLS-1$
                 'g',
                 Messages.getString("CheckinCommand.Argument.Gated.ValueDescription"), //$NON-NLS-1$
@@ -173,6 +174,8 @@ public class CheckinCommand
         boolean deep = currentConfiguration.getDeep();
         deep = isDepthSpecified() ? getDeepFromArguments() : deep;
 
+        boolean mentions = getArguments().contains("mentions"); //$NON-NLS-1$
+
         if (getArguments().contains("squash") && !getArguments().contains("deep")) //$NON-NLS-1$ //$NON-NLS-2$
         {
             throw new Exception(Messages.getString("CheckinCommand.SquashOnlyAvailableWithDeep")); //$NON-NLS-1$
@@ -200,13 +203,15 @@ public class CheckinCommand
             ((ValueArgument) getArguments().getArgument("gated")).getValue() : null; //$NON-NLS-1$
 
         RenameMode renameMode = getRenameModeIfSpecified();
-
-        final CheckinHeadCommitTask checkinTask = new CheckinHeadCommitTask(getRepository(), getVersionControlClient());
+        final WorkItemClient witClient = mentions ? getConnection().getWorkItemClient() : null;
+        final CheckinHeadCommitTask checkinTask =
+            new CheckinHeadCommitTask(getRepository(), getVersionControlClient(), witClient);
 
         checkinTask.setWorkItemCheckinInfo(getWorkItemCheckinInfo());
         checkinTask.setDeep(deep);
         checkinTask.setLock(!noLock);
         checkinTask.setPreview(preview);
+        checkinTask.setMentions(mentions);
         checkinTask.setOverrideGatedCheckin(overrideGatedCheckin);
         checkinTask.setSquashCommitIDs(getSquashCommitIDs());
         checkinTask.setAutoSquash(autoSquashMultipleParents);

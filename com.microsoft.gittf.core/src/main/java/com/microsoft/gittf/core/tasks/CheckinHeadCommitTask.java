@@ -29,6 +29,8 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -69,6 +71,9 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.ItemType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
+import com.microsoft.tfs.core.clients.workitem.CheckinWorkItemAction;
+import com.microsoft.tfs.core.clients.workitem.WorkItem;
+import com.microsoft.tfs.core.clients.workitem.WorkItemClient;
 import com.microsoft.tfs.util.FileHelpers;
 
 /**
@@ -87,6 +92,7 @@ public class CheckinHeadCommitTask
     private static final Log log = LogFactory.getLog(CheckinHeadCommitTask.class);
 
     private boolean deep = false;
+    private boolean mentions = false;
     private AbbreviatedObjectId[] squashCommitIDs = new AbbreviatedObjectId[0];
     private WorkItemCheckinInfo[] workItems;
     private boolean lock = true;
@@ -97,6 +103,7 @@ public class CheckinHeadCommitTask
     private String buildDefinition = null;
     private boolean includeMetaDataInComment = false;
     private RenameMode renameMode = RenameMode.JUSTFILES;
+    private final WorkItemClient witClient;
 
     /**
      * Constructor
@@ -107,9 +114,13 @@ public class CheckinHeadCommitTask
      * @param versionControlClient
      *        the version client object to use
      */
-    public CheckinHeadCommitTask(final Repository repository, final VersionControlClient versionControlClient)
+    public CheckinHeadCommitTask(
+        final Repository repository,
+        final VersionControlClient versionControlClient,
+        final WorkItemClient witClient)
     {
         super(repository, versionControlClient, GitTFConfiguration.loadFrom(repository).getServerPath());
+        this.witClient = witClient;
     }
 
     /**
@@ -120,6 +131,16 @@ public class CheckinHeadCommitTask
     public void setDeep(final boolean deep)
     {
         this.deep = deep;
+    }
+
+    /**
+     * Sets the mentions option. The default is false.
+     * 
+     * @param mentions
+     */
+    public void setMentions(final boolean mentions)
+    {
+        this.mentions = mentions;
     }
 
     /**
@@ -471,21 +492,20 @@ public class CheckinHeadCommitTask
                 else
                 {
                     progressMonitor.setDetail(Messages.getString("CheckinHeadCommitTask.CheckingIn")); //$NON-NLS-1$
+                    String commitComment = buildCommitComment(commitDelta);
 
                     /*
                      * Perform the checkin using the checkin pending changes
                      * task
                      */
                     final CheckinPendingChangesTask checkinTask =
-                        new CheckinPendingChangesTask(
-                            repository,
-                            commitDelta.getToCommit(),
-                            comment == null ? buildCommitComment(commitDelta) : comment,
-                            versionControlClient,
-                            workspace,
-                            pendTask.getPendingChanges());
+                        new CheckinPendingChangesTask(repository, commitDelta.getToCommit(), comment == null
+                            ? commitComment : comment, versionControlClient, workspace, pendTask.getPendingChanges());
 
-                    checkinTask.setWorkItemCheckinInfo(isLastCommit ? workItems : null);
+                    checkinTask.setWorkItemCheckinInfo(getWorkItems(
+                        progressMonitor.newSubTask(1),
+                        commitComment,
+                        isLastCommit));
                     checkinTask.setOverrideGatedCheckin(overrideGatedCheckin);
                     checkinTask.setBuildDefinition(buildDefinition);
                     checkinTask.setExpectedChangesetNumber(expectedChangesetNumber);
@@ -798,5 +818,104 @@ public class CheckinHeadCommitTask
         disposeWorkspace(progressMonitor.newSubTask(1));
 
         progressMonitor.endTask();
+    }
+
+    /**
+     * Parses the comments of the commits to list the mentioned work items
+     */
+    private WorkItemCheckinInfo[] getWorkItems(
+        final TaskProgressMonitor progressMonitor,
+        final String commitComment,
+        final boolean isLastCommit)
+        throws Exception
+    {
+
+        List<WorkItemCheckinInfo> workItemsCheckinInfo = new ArrayList<WorkItemCheckinInfo>();
+        if (mentions)
+        {
+            final String REGEX = "(\\s|^)#\\d+(\\s|$)(#\\d+(\\s|$))*"; //$NON-NLS-1$
+            if (commitComment != null && commitComment.length() > 0)
+            {
+                final Pattern pattern = Pattern.compile(REGEX);
+                // get a matcher object
+                final Matcher patternMatcher = pattern.matcher(commitComment);
+                while (patternMatcher.find())
+                {
+
+                    final String workItemIDREGEX = "#\\d+"; //$NON-NLS-1$
+                    final Pattern workItemIDPattern = Pattern.compile(workItemIDREGEX);
+                    final String workItemIDString =
+                        commitComment.substring(patternMatcher.start(), patternMatcher.end());
+                    final Matcher workItemIDMatcher = workItemIDPattern.matcher(workItemIDString);
+                    while (workItemIDMatcher.find())
+                    {
+                        final WorkItem workitem =
+                            getWorkItem(
+                                progressMonitor,
+                                workItemIDString.substring(workItemIDMatcher.start(), workItemIDMatcher.end()));
+                        if (workitem != null)
+                        {
+                            final WorkItemCheckinInfo workItemCheckinInfo =
+                                new WorkItemCheckinInfo(workitem, CheckinWorkItemAction.ASSOCIATE);
+                            if (!workItemsCheckinInfo.contains(workItemCheckinInfo))
+                            {
+                                workItemsCheckinInfo.add(workItemCheckinInfo);
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+        if (isLastCommit)
+        {
+            // If there were no work items in the comments
+            if (workItemsCheckinInfo.isEmpty())
+            {
+                return workItems;
+            }
+
+            for (final WorkItemCheckinInfo workItem : workItems)
+            {
+                if (!workItemsCheckinInfo.contains(workItem))
+                {
+                    workItemsCheckinInfo.add(workItem);
+                }
+            }
+        }
+        return workItemsCheckinInfo.toArray(new WorkItemCheckinInfo[workItemsCheckinInfo.size()]);
+    }
+
+    private WorkItem getWorkItem(final TaskProgressMonitor progressMonitor, final String mentionsString)
+        throws Exception
+    {
+        final int id;
+
+        try
+        {
+            id = Integer.parseInt(mentionsString.replace("#", "")); //$NON-NLS-1$//$NON-NLS-2$
+
+            if (id <= 0)
+            {
+                progressMonitor.displayWarning(Messages.formatString(
+                    "CheckinHeadCommitTask.WorkItemInvalidFormat", mentionsString)); //$NON-NLS-1$
+                return null;
+            }
+        }
+        catch (final NumberFormatException e)
+        {
+            progressMonitor.displayWarning(Messages.formatString(
+                "CheckinHeadCommitTask.WorkItemInvalidFormat", mentionsString)); //$NON-NLS-1$
+            return null;
+        }
+
+        final WorkItem workItem = witClient.getWorkItemByID(id);
+
+        if (workItem == null)
+        {
+            progressMonitor.displayWarning(Messages.formatString("CheckinHeadCommitTask.WorkItemDoesNotExistFormat", id)); //$NON-NLS-1$
+        }
+
+        return workItem;
     }
 }

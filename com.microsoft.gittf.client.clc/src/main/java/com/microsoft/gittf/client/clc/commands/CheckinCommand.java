@@ -126,6 +126,8 @@ public class CheckinCommand
             Messages.getString("PendingChangesCommand.Argument.Associate.HelpText"), //$NON-NLS-1$
             ArgumentOptions.VALUE_REQUIRED.combine(ArgumentOptions.MULTIPLE)),
 
+        new SwitchArgument("mentions", Messages.getString("Command.Argument.Mentions.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$    
+
         new SwitchArgument("no-lock", Messages.getString("CheckinCommand.Argument.NoLock.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
 
         new SwitchArgument("preview", 'p', Messages.getString("CheckinCommand.Argument.Preview.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
@@ -136,7 +138,7 @@ public class CheckinCommand
              */
             new SwitchArgument("bypass", //$NON-NLS-1$
                 Messages.getString("CheckinCommand.Argument.Bypass.HelpText")), //$NON-NLS-1$
-            new SwitchArgument("mentions", Messages.getString("Command.Argument.Mentions.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+
             new ValueArgument("gated", //$NON-NLS-1$
                 'g',
                 Messages.getString("CheckinCommand.Argument.Gated.ValueDescription"), //$NON-NLS-1$

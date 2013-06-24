@@ -225,6 +225,10 @@ public class HelpFormatter
         StringBuilder wrapped = new StringBuilder();
 
         int wrapWidth = (ConsoleUtils.getInstance().getConsoleColumns() - 2) - indent;
+        if (wrapWidth < 0)
+        {
+            wrapWidth = 60;
+        }
 
         while (paragraph.length() > wrapWidth)
         {

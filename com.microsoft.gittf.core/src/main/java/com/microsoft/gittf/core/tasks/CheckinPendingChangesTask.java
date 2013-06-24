@@ -87,7 +87,6 @@ public class CheckinPendingChangesTask
     {
         Check.notNull(repository, "repository"); //$NON-NLS-1$
         Check.notNull(commit, "commit"); //$NON-NLS-1$
-        Check.notNullOrEmpty(comment, "comment"); //$NON-NLS-1$
         Check.notNull(workspace, "workspace"); //$NON-NLS-1$
         Check.notNull(versionControlClient, "versionControlClient"); //$NON-NLS-1$
         Check.isTrue(changes.length > 0, "changes.length > 0"); //$NON-NLS-1$

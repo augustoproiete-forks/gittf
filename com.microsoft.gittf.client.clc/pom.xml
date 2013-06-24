@@ -45,7 +45,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
         <version.major>2</version.major>
         <version.minor>0</version.minor>
-        <version.service>2</version.service>
+        <version.service>3</version.service>
         <version.build>SNAPSHOT</version.build> 
         <downloadRoot>${basedir}/../target</downloadRoot>
     </properties>

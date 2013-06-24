@@ -56,6 +56,7 @@ import com.microsoft.gittf.core.util.ObjectIdUtil;
 import com.microsoft.gittf.core.util.TfsBranchUtil;
 import com.microsoft.gittf.core.util.VersionSpecUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Item;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
@@ -225,6 +226,11 @@ public class FetchTask
             Changeset[] changesets = calculateChangesetsToDownload(latestChangesets, latestChangesetID);
 
             changesetCounter = changesets.length - 1;
+            Item[] previousChangesetItems =
+                versionControlClient.getItems(
+                    configuration.getServerPath(),
+                    new ChangesetVersionSpec(latestChangesetID),
+                    RecursionType.FULL);
 
             progressMonitor.setWork(changesetCounter + 1);
 
@@ -237,7 +243,8 @@ public class FetchTask
                     new CreateCommitForChangesetVersionSpecTask(
                         repository,
                         versionControlClient,
-                        changesets[i].getChangesetID(),
+                        changesets[i],
+                        previousChangesetItems,
                         lastCommitID,
                         witClient);
                 TaskStatus createCommitTaskStatus =
@@ -252,6 +259,7 @@ public class FetchTask
 
                 lastCommitID = createCommitTask.getCommitID();
                 fetchedChangesetId = changesets[i].getChangesetID();
+                previousChangesetItems = createCommitTask.getCommittedItems();
 
                 try
                 {

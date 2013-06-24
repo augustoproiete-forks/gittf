@@ -208,6 +208,7 @@ public class CloneTask
         {
             ObjectId lastCommitID = null;
             ObjectId lastTreeID = null;
+            Item[] previousChangesetItems = null;
 
             /*
              * Download changesets.
@@ -218,13 +219,12 @@ public class CloneTask
 
             for (int i = numberOfChangesetToDownload; i > 0; i--)
             {
-                final int changesetID = changesets[i - 1].getChangesetID();
-
                 CreateCommitForChangesetVersionSpecTask commitTask =
                     new CreateCommitForChangesetVersionSpecTask(
                         repository,
                         vcClient,
-                        changesetID,
+                        changesets[i - 1],
+                        previousChangesetItems,
                         lastCommitID,
                         witClient);
 
@@ -237,6 +237,7 @@ public class CloneTask
 
                 lastCommitID = commitTask.getCommitID();
                 lastTreeID = commitTask.getCommitTreeID();
+                previousChangesetItems = commitTask.getCommittedItems();
 
                 Check.notNull(lastCommitID, "lastCommitID"); //$NON-NLS-1$
                 Check.notNull(lastTreeID, "lastTreeID"); //$NON-NLS-1$

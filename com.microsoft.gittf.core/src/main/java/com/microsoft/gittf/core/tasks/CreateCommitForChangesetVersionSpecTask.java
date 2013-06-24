@@ -86,22 +86,28 @@ public class CreateCommitForChangesetVersionSpecTask
     private static final Log log = LogFactory.getLog(CreateCommitForChangesetVersionSpecTask.class);
 
     private final int changesetID;
+    private final Changeset changeset;
     private ObjectId commitTreeID;
     private final WorkItemClient witClient;
+    private Item[] committedItems;
+    private final Item[] previousChangesetItems;
 
     public CreateCommitForChangesetVersionSpecTask(
         final Repository repository,
         final VersionControlService versionControlClient,
-        final int changesetID,
+        final Changeset changeset,
+        final Item[] previousCommittedItems,
         final ObjectId parentCommitID,
         final WorkItemClient witClient)
     {
         super(repository, versionControlClient, parentCommitID);
 
-        Check.isTrue(changesetID >= 0, "changesetID >= 0"); //$NON-NLS-1$
+        Check.isTrue(changeset.getChangesetID() >= 0, "changesetID >= 0"); //$NON-NLS-1$
 
-        this.changesetID = changesetID;
+        this.changesetID = changeset.getChangesetID();
         this.witClient = witClient;
+        this.changeset = changeset;
+        this.previousChangesetItems = previousCommittedItems;
     }
 
     public ObjectId getCommitTreeID()
@@ -122,7 +128,6 @@ public class CreateCommitForChangesetVersionSpecTask
             validateTempDirectory();
 
             /* Make sure that the changeset requested exist on the server */
-            final Changeset changeset = versionControlService.getChangeset(changesetID);
             if (changeset == null)
             {
                 throw new Exception(Messages.formatString(
@@ -134,7 +139,8 @@ public class CreateCommitForChangesetVersionSpecTask
              * Retrieve the items at the specified changeset version from the
              * server
              */
-            Item[] items =
+
+            committedItems =
                 versionControlService.getItems(serverPath, new ChangesetVersionSpec(changesetID), RecursionType.FULL);
 
             /*
@@ -150,7 +156,7 @@ public class CreateCommitForChangesetVersionSpecTask
                 previousChangesetId >= 0 ? changesetCommitMap.getCommitID(previousChangesetId, true) : null;
 
             final ChangesetCommitItemReader previousChangesetCommitReader =
-                new ChangesetCommitItemReader(previousChangesetId, previousChangesetCommitId);
+                new ChangesetCommitItemReader(previousChangesetId, previousChangesetCommitId, previousChangesetItems);
 
             /*
              * We want trees sorted by children first so we can simply walk them
@@ -166,10 +172,10 @@ public class CreateCommitForChangesetVersionSpecTask
              * Phase one: insert files as blobs in the git repository and add
              * them to the TreeFormatter for their parent folder.
              */
-            if (items != null)
+            if (committedItems != null)
             {
-                progressMonitor.setWork(items.length);
-                for (final Item item : items)
+                progressMonitor.setWork(committedItems.length);
+                for (final Item item : committedItems)
                 {
                     createBlob(repositoryInserter, treeHierarchy, previousChangesetCommitReader, item, progressMonitor);
 
@@ -326,6 +332,11 @@ public class CreateCommitForChangesetVersionSpecTask
         return sb.toString();
     }
 
+    public Item[] getCommittedItems()
+    {
+        return committedItems;
+    }
+
     private void addWorkItem(final StringBuilder sb, final WorkItem workItem)
     {
         sb.append(NEWLINE);
@@ -369,13 +380,15 @@ public class CreateCommitForChangesetVersionSpecTask
 
         private RevTree commitRevTree;
         private ObjectReader objectReader;
+        private final Item[] committedItems;
 
         private Map<String, Integer> changesetItems;
 
-        public ChangesetCommitItemReader(final int changesetId, final ObjectId commitId)
+        public ChangesetCommitItemReader(final int changesetId, final ObjectId commitId, final Item[] committedItems)
         {
             this.changesetID = changesetId;
             this.commitId = commitId;
+            this.committedItems = committedItems;
         }
 
         public ObjectId getFileObjectId(final String itemServerPath, final int requestedVersion)
@@ -451,14 +464,8 @@ public class CreateCommitForChangesetVersionSpecTask
                     }
                 }
 
-                final Item[] items =
-                    versionControlService.getItems(
-                        serverPath,
-                        new ChangesetVersionSpec(changesetID),
-                        RecursionType.FULL);
-
-                changesetItems = new HashMap<String, Integer>(items.length);
-                for (final Item item : items)
+                changesetItems = new HashMap<String, Integer>(committedItems.length);
+                for (final Item item : committedItems)
                 {
                     changesetItems.put(item.getServerItem().toLowerCase(), item.getChangeSetID());
                 }

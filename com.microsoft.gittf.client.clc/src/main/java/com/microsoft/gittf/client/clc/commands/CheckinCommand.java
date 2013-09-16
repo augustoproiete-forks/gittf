@@ -26,6 +26,8 @@ package com.microsoft.gittf.client.clc.commands;
 
 import java.util.Collection;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -57,6 +59,8 @@ public class CheckinCommand
     extends PendingChangesCommand
 {
     public static final String COMMAND_NAME = "checkin"; //$NON-NLS-1$
+
+    private static final Log log = LogFactory.getLog(CheckinCommand.class);
 
     private static final CheckinTaskCompletedHandler checkinTaskCompletedHandler = new CheckinTaskCompletedHandler();
 
@@ -143,8 +147,19 @@ public class CheckinCommand
                 'g',
                 Messages.getString("CheckinCommand.Argument.Gated.ValueDescription"), //$NON-NLS-1$
                 Messages.getString("CheckinCommand.Argument.Gated.HelpText"), //$NON-NLS-1$
-                ArgumentOptions.VALUE_REQUIRED))
-    };
+                ArgumentOptions.VALUE_REQUIRED)),
+
+        new ChoiceArgument(
+        // no help text
+            new SwitchArgument("keep-author", Messages.getString("CheckinCommand.Argument.KeepAuthor.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+            new SwitchArgument("ignore-author", Messages.getString("CheckinCommand.Argument.IgnoreAuthor.HelpText")) //$NON-NLS-1$ //$NON-NLS-2$
+        ),
+
+        new ValueArgument("user-map", //$NON-NLS-1$
+            Messages.getString("CheckinCommand.Argument.UserMap.ValueDescription"), //$NON-NLS-1$
+            Messages.getString("CheckinCommand.Argument.UserMap.HelpText")) //$NON-NLS-1$
+
+        };
 
     @Override
     protected String getCommandName()
@@ -168,10 +183,15 @@ public class CheckinCommand
     public int run()
         throws Exception
     {
+
+        log.debug("Verifying configuration");
+
         verifyGitTfConfigured();
         verifyRepoSafeState();
 
         GitTFConfiguration currentConfiguration = GitTFConfiguration.loadFrom(getRepository());
+
+        log.debug("Paring command parameters");
 
         boolean deep = currentConfiguration.getDeep();
         deep = isDepthSpecified() ? getDeepFromArguments() : deep;
@@ -201,10 +221,21 @@ public class CheckinCommand
             message = null;
         }
 
-        String buildDefinition = getArguments().contains("gated") ? //$NON-NLS-1$
+        final String buildDefinition = getArguments().contains("gated") ? //$NON-NLS-1$
             ((ValueArgument) getArguments().getArgument("gated")).getValue() : null; //$NON-NLS-1$
 
-        RenameMode renameMode = getRenameModeIfSpecified();
+        final RenameMode renameMode = getRenameModeIfSpecified();
+
+        final boolean keepAuthor = (getArguments().contains("keep-author") //$NON-NLS-1$
+            || !getArguments().contains("ignore-author") && currentConfiguration.getKeepAuthor()) //$NON-NLS-1$
+            && deep;
+
+        final String userMapPath = getArguments().contains("user-map") ? //$NON-NLS-1$
+            ((ValueArgument) getArguments().getArgument("user-map")).getValue() : //$NON-NLS-1$
+            currentConfiguration.getUserMap();
+
+        log.debug("Createing CheckinHeadCommitTask");
+
         final WorkItemClient witClient = mentions ? getConnection().getWorkItemClient() : null;
         final CheckinHeadCommitTask checkinTask =
             new CheckinHeadCommitTask(getRepository(), getVersionControlClient(), witClient);
@@ -221,16 +252,21 @@ public class CheckinCommand
         checkinTask.setBuildDefinition(buildDefinition);
         checkinTask.setIncludeMetaDataInComment(includeMetaData);
         checkinTask.setRenameMode(renameMode);
+        checkinTask.setKeepAuthor(keepAuthor);
+        checkinTask.setUserMapPath(userMapPath);
 
         /*
          * Hook up a custom task executor that does not print gated errors to
          * standard error (we handle those specially.)
          */
+        log.debug("Starting CheckinHeadCommitTask");
         final CommandTaskExecutor taskExecutor = new CommandTaskExecutor(getProgressMonitor());
         taskExecutor.removeTaskCompletedHandler(CommandTaskExecutor.CONSOLE_OUTPUT_TASK_HANDLER);
         taskExecutor.addTaskCompletedHandler(checkinTaskCompletedHandler);
 
         final TaskStatus checkinStatus = taskExecutor.execute(checkinTask);
+
+        log.debug("CheckinHeadCommitTask finished");
 
         if (checkinStatus.isOK() && checkinStatus.getCode() == CheckinHeadCommitTask.ALREADY_UP_TO_DATE)
         {

@@ -171,6 +171,8 @@ public class PendDifferenceTask
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {
+        log.debug("Pend differences task started.");
+
         progressMonitor.beginTask(
             Messages.formatString(
                 "PendDifferencesTask.PendingChangesFormat", ObjectIdUtil.abbreviate(repository, commitTo.getId())), //$NON-NLS-1$
@@ -218,6 +220,8 @@ public class PendDifferenceTask
 
         try
         {
+            log.debug("Validate the commit tree objects for any violations");
+
             /* Validate the commit tree objects for any violations */
             validate();
 
@@ -227,6 +231,8 @@ public class PendDifferenceTask
              */
             if (fromTree != null)
             {
+                log.debug("Analyzing differences");
+
                 analysis = analyzeDifferences(repository, fromTree, toTree, renameMode, analyzeMonitor);
             }
             /*
@@ -235,11 +241,15 @@ public class PendDifferenceTask
              */
             else
             {
+                log.debug("Analyzing entire tree to pend ADDs");
+
                 analysis = analyzeTree(repository, toTree, analyzeMonitor);
             }
         }
         catch (Exception e)
         {
+            log.debug("Pend differences task error:", e);
+
             return new TaskStatus(TaskStatus.ERROR, e);
         }
 
@@ -250,6 +260,8 @@ public class PendDifferenceTask
         /* If the analysis is empty then there is nothing to pend */
         if (analysis.isEmpty())
         {
+            log.debug("Nothing to pend.");
+
             return new TaskStatus(TaskStatus.OK, NOTHING_TO_PEND);
         }
 
@@ -260,6 +272,9 @@ public class PendDifferenceTask
         }
         catch (Exception e)
         {
+            log.debug("Pend differences task error:", e);
+            log.debug("Undoing pended changes.");
+
             workspace.undo(new ItemSpec[]
             {
                 new ItemSpec(ServerPath.ROOT, RecursionType.FULL)
@@ -270,6 +285,8 @@ public class PendDifferenceTask
         pendMonitor.endTask();
 
         progressMonitor.endTask();
+
+        log.debug("Pend differences task ended.");
 
         return TaskStatus.OK_STATUS;
     }
@@ -398,6 +415,8 @@ public class PendDifferenceTask
         final CheckinAnalysisChangeCollection analysis =
             new CheckinAnalysisChangeCollection(repository, fromRootTree, toRootTree);
 
+        log.debug("Walking thru the git-repository tree.");
+
         /* Init the tree walker object */
         final TreeWalk treeWalker = new NameConflictTreeWalk(repository);
         final RenameDetector repositoryRenameDetector = new RenameDetector(repository);
@@ -412,6 +431,8 @@ public class PendDifferenceTask
             treeWalker.setFilter(TreeFilter.ANY_DIFF);
 
             List<DiffEntry> treeDifferences = DiffEntry.scan(treeWalker);
+
+            log.debug("The number of differences found: " + treeDifferences.size());
 
             /*
              * If we need to detect file renames then use the rename detector to
@@ -475,6 +496,8 @@ public class PendDifferenceTask
             progressMonitor.endTask();
         }
 
+        log.debug("Walk thru the git-repository tree finished.");
+
         return analysis;
     }
 
@@ -506,6 +529,8 @@ public class PendDifferenceTask
         /* Create the CheckinAnalysisChangeCollection object */
         final CheckinAnalysisChangeCollection analysis = new CheckinAnalysisChangeCollection();
         final TreeWalk treeWalker = new NameConflictTreeWalk(repository);
+
+        log.debug("Walking thru the git-repository tree.");
 
         try
         {
@@ -539,6 +564,8 @@ public class PendDifferenceTask
 
             progressMonitor.endTask();
         }
+
+        log.debug("Walk thru the git-repository tree finished.");
 
         return analysis;
     }

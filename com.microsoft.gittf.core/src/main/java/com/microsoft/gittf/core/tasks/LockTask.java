@@ -24,6 +24,9 @@
 
 package com.microsoft.gittf.core.tasks;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.tasks.framework.Task;
@@ -39,6 +42,8 @@ import com.microsoft.tfs.core.clients.versioncontrol.specs.ItemSpec;
 public class LockTask
     extends Task
 {
+    private static final Log log = LogFactory.getLog(LockTask.class);
+
     private final WorkspaceService workspace;
     private final String serverPath;
 
@@ -57,6 +62,8 @@ public class LockTask
         progressMonitor.beginTask(
             Messages.formatString("LockTask.LockingFormat", serverPath), TaskProgressMonitor.INDETERMINATE); //$NON-NLS-1$
 
+        log.debug("Trying to lock " + serverPath);
+
         int pended = workspace.setLock(new ItemSpec[]
         {
             new ItemSpec(serverPath, RecursionType.FULL)
@@ -68,6 +75,11 @@ public class LockTask
          */
         if (pended == 0)
         {
+
+            log.debug("Cannot lock " + serverPath + "because it does not exist");
+
+            log.debug("Trying to pend add for " + serverPath);
+
             pended = workspace.pendAdd(new String[]
             {
                 serverPath

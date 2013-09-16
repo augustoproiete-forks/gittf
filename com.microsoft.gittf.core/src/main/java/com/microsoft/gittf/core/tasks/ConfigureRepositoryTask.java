@@ -103,6 +103,26 @@ public class ConfigureRepositoryTask
         return config.getTempDirectory();
     }
 
+    public void setKeepAuthor(final boolean keepAuthor)
+    {
+        config.setKeepAuthor(keepAuthor);
+    }
+
+    public boolean getKeepAuthor()
+    {
+        return config.getKeepAuthor();
+    }
+
+    public String getUserMap()
+    {
+        return config.getUserMap();
+    }
+
+    public void setUserMap(final String userMap)
+    {
+        config.setUserMap(userMap);
+    }
+
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {

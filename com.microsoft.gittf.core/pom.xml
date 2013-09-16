@@ -72,9 +72,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         <dependency>
             <groupId>com.microsoft.tfs.sdk</groupId>
             <artifactId>com.microsoft.tfs.sdk</artifactId>
-            <version>11.0.0</version>
+            <version>12.0.0</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/lib/com.microsoft.tfs.sdk-11.0.0.jar</systemPath>
+            <systemPath>${project.basedir}/lib/com.microsoft.tfs.sdk-12.0.0.jar</systemPath>
         </dependency>
     </dependencies>
 

@@ -69,6 +69,11 @@ public class PreviewOnlyWorkspace
         this.progressMonitor = progressMonitor;
     }
 
+    public String getName()
+    {
+        return "PreviewOnlyWorkspace";
+    }
+
     public void deleteWorkspace()
     {
     }
@@ -178,6 +183,21 @@ public class PreviewOnlyWorkspace
         PendingChange[] changes,
         String author,
         String authorDisplayName,
+        String fullMessage,
+        CheckinNote checkinNote,
+        WorkItemCheckinInfo[] associatedWorkItems,
+        PolicyOverrideInfo policyOverrideInfo,
+        CheckinFlags flags)
+    {
+        return 0;
+    }
+
+    public int checkIn(
+        PendingChange[] changes,
+        String author,
+        String authorDisplayName,
+        String committer,
+        String committerDisplayName,
         String fullMessage,
         CheckinNote checkinNote,
         WorkItemCheckinInfo[] associatedWorkItems,

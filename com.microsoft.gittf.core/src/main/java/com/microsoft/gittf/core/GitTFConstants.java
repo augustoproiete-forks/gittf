@@ -71,6 +71,16 @@ public final class GitTFConstants
      */
     public static final String GIT_TF_BRANCHNAME = "tfs"; //$NON-NLS-1$
 
+    /**
+     * The default keep-author option
+     */
+    public static final boolean GIT_TF_DEFAULT_KEEP_AUTHOR = false;
+
+    /**
+     * The default file path for the user map
+     */
+    public static final String GIT_TF_DEFAULT_USER_MAP = "./USERMAP"; //$NON-NLS-1$
+
     private GitTFConstants()
     {
     }

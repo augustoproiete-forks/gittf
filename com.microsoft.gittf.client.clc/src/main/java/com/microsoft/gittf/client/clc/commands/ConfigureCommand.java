@@ -24,7 +24,9 @@
 
 package com.microsoft.gittf.client.clc.commands;
 
+import java.io.File;
 import java.net.URI;
+import java.text.MessageFormat;
 
 import org.eclipse.jgit.lib.Repository;
 
@@ -112,7 +114,21 @@ public class ConfigureCommand
 
         new ValueArgument("git-dir", //$NON-NLS-1$
             Messages.getString("CloneCommand.Argument.GitDir.ValueDescription"), //$NON-NLS-1$
-            Messages.getString("CloneCommand.Argument.GitDir.HelpText")), //$NON-NLS-1$),
+            Messages.getString("CloneCommand.Argument.GitDir.HelpText"), //$NON-NLS-1$)
+            ArgumentOptions.VALUE_REQUIRED),
+
+        new ChoiceArgument(Messages.getString("ConfigureCommand.Argument.KeepAuthorChoice.HelpText"), //$NON-NLS-1$
+            /*
+             * Users can specify one of --keep-author or --ignore-author
+             * (Default: ignore-author).
+             */
+            new SwitchArgument("keep-author", Messages.getString("CheckinCommand.Argument.KeepAuthor.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+            new SwitchArgument("ignore-author", Messages.getString("CheckinCommand.Argument.IgnoreAuthor.HelpText")) //$NON-NLS-1$ //$NON-NLS-2$
+        ),
+
+        new ValueArgument("user-map", //$NON-NLS-1$
+            Messages.getString("CheckinCommand.Argument.UserMap.ValueDescription"), //$NON-NLS-1$
+            Messages.getString("CheckinCommand.Argument.UserMap.HelpText")), //$NON-NLS-1$
 
         new FreeArgument("projectcollection", //$NON-NLS-1$
             Messages.getString("Command.Argument.ProjectCollection.HelpText")), //$NON-NLS-1$
@@ -206,7 +222,10 @@ public class ConfigureCommand
                 !getArguments().contains("no-tag") && //$NON-NLS-1$
                 !getArguments().contains("metadata") && //$NON-NLS-1$
                 !getArguments().contains("no-metadata") && //$NON-NLS-1$
-                !getArguments().contains("gated")) //$NON-NLS-1$ 
+                !getArguments().contains("gated") && //$NON-NLS-1$
+                !getArguments().contains("keep-author") && //$NON-NLS-1$
+                !getArguments().contains("ignore-author") && //$NON-NLS-1$
+                !getArguments().contains("user-map")) //$NON-NLS-1$ 
             {
                 throw new Exception(Messages.getString("ConfigureCommand.InvalidOptionsSpecified")); //$NON-NLS-1$
             }
@@ -247,6 +266,24 @@ public class ConfigureCommand
             configureTask.setBuildDefinition(buildDefinition);
         }
 
+        if (getArguments().contains("keep-author")) //$NON-NLS-1$
+        {
+            configureTask.setKeepAuthor(true);
+        }
+        else if (getArguments().contains("ignore-author")) //$NON-NLS-1$
+        {
+            configureTask.setKeepAuthor(false);
+        }
+
+        if (getArguments().contains("user-map")) //$NON-NLS-1$
+        {
+            final String userMap = ((ValueArgument) getArguments().getArgument("user-map")).getValue(); //$NON-NLS-1$
+            if (isValidPath(userMap))
+            {
+                configureTask.setUserMap(userMap);
+            }
+        }
+
         configureTask.setTempDirectory(null);
 
         TaskStatus configureStatus = new CommandTaskExecutor(getProgressMonitor()).execute(configureTask);
@@ -257,5 +294,25 @@ public class ConfigureCommand
         }
 
         return ExitCode.SUCCESS;
+    }
+
+    private boolean isValidPath(final String path)
+        throws Exception
+    {
+        if (StringUtil.isNullOrEmpty(path))
+        {
+            return true;
+        }
+
+        try
+        {
+            (new File(path)).getCanonicalFile();
+            return true;
+        }
+        catch (final Exception e)
+        {
+            final String errorMessageFormat = Messages.getString("ConfigureCommand.IncorrectPathFormat"); //$NON-NLS-1$
+            throw new Exception(MessageFormat.format(errorMessageFormat, path));
+        }
     }
 }

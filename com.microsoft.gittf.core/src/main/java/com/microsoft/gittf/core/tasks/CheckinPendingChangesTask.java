@@ -27,6 +27,8 @@ package com.microsoft.gittf.core.tasks;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 
@@ -34,6 +36,9 @@ import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.OutputConstants;
 import com.microsoft.gittf.core.config.ChangesetCommitMap;
 import com.microsoft.gittf.core.config.GitTFConfiguration;
+import com.microsoft.gittf.core.identity.GitUser;
+import com.microsoft.gittf.core.identity.TfsUser;
+import com.microsoft.gittf.core.identity.UserMap;
 import com.microsoft.gittf.core.interfaces.WorkspaceService;
 import com.microsoft.gittf.core.tasks.framework.Task;
 import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
@@ -63,6 +68,8 @@ public class CheckinPendingChangesTask
 {
     public static final int CHANGESET_NUMBER_NOT_AS_EXPECTED = 32;
 
+    private static final Log log = LogFactory.getLog(CheckinPendingChangesTask.class);
+
     private final Repository repository;
     private final RevCommit commit;
     private final WorkspaceService workspace;
@@ -74,6 +81,7 @@ public class CheckinPendingChangesTask
     private boolean overrideGatedCheckin;
     private String buildDefinition = null;
     private int expectedChangesetNumber = -1;
+    private UserMap userMap;
 
     private int changesetID = -1;
 
@@ -124,10 +132,17 @@ public class CheckinPendingChangesTask
         this.expectedChangesetNumber = expectedChangesetNumber;
     }
 
+    public void setUserMap(final UserMap userMap)
+    {
+        this.userMap = userMap;
+    }
+
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {
         progressMonitor.beginTask(Messages.getString("CheckinPendingChangesTask.CheckingIn"), 100); //$NON-NLS-1$
+
+        log.debug("CheckinPendingChangesTask started");
 
         try
         {
@@ -148,19 +163,29 @@ public class CheckinPendingChangesTask
 
             if (workspace.canCheckIn())
             {
+                final TfsUser author =
+                    userMap == null ? null : userMap.getTfsUser(new GitUser(commit.getAuthorIdent()));
+
+                log.debug("Submiting check-in command to the server");
+
                 changesetID =
                     workspace.checkIn(
                         changes,
                         null,
                         null,
+                        author == null ? null : author.getName(),
+                        author == null ? null : author.getDisplayName(),
                         comment == null ? commit.getFullMessage() : comment,
                         null,
                         workItems,
                         null,
                         checkinFlags);
 
+                log.debug("Change set created: " + changesetID);
+
                 commitMap.setChangesetCommit(changesetID, commit.getId());
 
+                log.debug("Updating git-repository branch: tfs");
                 /* Update tfs branch */
                 try
                 {
@@ -182,6 +207,8 @@ public class CheckinPendingChangesTask
             // we can use any affected gated config
             // from MSDN:
             // http://msdn.microsoft.com/en-us/library/microsoft.teamfoundation.versioncontrol.client.checkinparameters.queuebuildforgatedcheckin.aspx
+
+            log.debug("Action denied by subscriber exception:", e);
 
             /*
              * If one or more of the items being checked in affects a gated
@@ -270,6 +297,8 @@ public class CheckinPendingChangesTask
         }
         catch (CheckinException e)
         {
+            log.debug("Check-in exception:", e);
+
             if (e.allConflictsResolved() || e.isAnyResolvable())
             {
                 return new TaskStatus(
@@ -285,6 +314,7 @@ public class CheckinPendingChangesTask
         }
         catch (Exception e)
         {
+            log.debug("Exception:", e);
             return new TaskStatus(TaskStatus.ERROR, e);
         }
         finally
@@ -292,6 +322,8 @@ public class CheckinPendingChangesTask
             progressMonitor.endTask();
             progressMonitor.dispose();
         }
+
+        log.debug("CheckinPendingChangesTask ended");
 
         return TaskStatus.OK_STATUS;
     }

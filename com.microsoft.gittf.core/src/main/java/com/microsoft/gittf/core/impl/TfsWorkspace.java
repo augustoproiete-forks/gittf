@@ -64,6 +64,11 @@ public class TfsWorkspace
         this.workspace = workspace;
     }
 
+    public String getName()
+    {
+        return workspace.getName();
+    }
+
     public void deleteWorkspace()
     {
         workspace.getClient().deleteWorkspace(workspace);
@@ -150,6 +155,31 @@ public class TfsWorkspace
     {
         return workspace.checkIn(
             changes,
+            author,
+            authorDisplayName,
+            fullMessage,
+            checkinNote,
+            associatedWorkItems,
+            policyOverrideInfo,
+            flags);
+    }
+
+    public int checkIn(
+        PendingChange[] changes,
+        String committer,
+        String committerDisplayName,
+        String author,
+        String authorDisplayName,
+        String fullMessage,
+        CheckinNote checkinNote,
+        WorkItemCheckinInfo[] associatedWorkItems,
+        PolicyOverrideInfo policyOverrideInfo,
+        CheckinFlags flags)
+    {
+        return workspace.checkIn(
+            changes,
+            committer,
+            committerDisplayName,
             author,
             authorDisplayName,
             fullMessage,

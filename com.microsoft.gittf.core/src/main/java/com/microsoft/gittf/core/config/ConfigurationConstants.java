@@ -40,6 +40,8 @@ public class ConfigurationConstants
     public static final String INCLUDE_METADATA = "include-metadata"; //$NON-NLS-1$
     public static final String FILE_FORMAT_VERSION = "file-format-version"; //$NON-NLS-1$
     public static final String TEMP_DIRECTORY = "tempdir"; //$NON-NLS-1$
+    public static final String KEEP_AUTHOR = "keep-author"; //$NON-NLS-1$
+    public static final String USER_MAP = "user-map"; //$NON-NLS-1$
 
     public static final String SERVER_SUBSECTION = "server"; //$NON-NLS-1$
     public static final String SERVER_COLLECTION_URI = "collection"; //$NON-NLS-1$

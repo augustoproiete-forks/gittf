@@ -42,6 +42,7 @@ import com.microsoft.tfs.core.util.FileEncoding;
 
 public interface WorkspaceService
 {
+    String getName();
 
     void deleteWorkspace();
 
@@ -87,6 +88,18 @@ public interface WorkspaceService
         PendingChange[] changes,
         String author,
         String authorDisplayName,
+        String fullMessage,
+        CheckinNote checkinNote,
+        WorkItemCheckinInfo[] associatedWorkItems,
+        PolicyOverrideInfo policyOverrideInfo,
+        CheckinFlags flags);
+
+    int checkIn(
+        PendingChange[] changes,
+        String author,
+        String authorDisplayName,
+        String committer,
+        String committerDisplayName,
         String fullMessage,
         CheckinNote checkinNote,
         WorkItemCheckinInfo[] associatedWorkItems,

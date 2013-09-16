@@ -72,6 +72,8 @@ public class GitTFConfiguration
     private boolean includeMetaData;
     private int fileFormatVersion;
     private String tempDirectory;
+    private boolean keepAuthor;
+    private String userMap;
 
     /* Parameter names defined in the local repository config file */
     private final Map<String, Boolean> locallyDefinedNames;
@@ -111,6 +113,8 @@ public class GitTFConfiguration
         final int fileFormatVersion,
         final String buildDefinition,
         final String tempDirectory,
+        final boolean keepAuthor,
+        final String userMap,
         final Map<String, Boolean> locallyDefinedNames)
     {
         Check.notNull(serverURI, "serverURI"); //$NON-NLS-1$
@@ -127,6 +131,8 @@ public class GitTFConfiguration
         this.fileFormatVersion = fileFormatVersion;
         this.buildDefinition = buildDefinition;
         this.tempDirectory = tempDirectory;
+        this.keepAuthor = keepAuthor;
+        this.userMap = userMap;
         this.locallyDefinedNames = locallyDefinedNames;
     }
 
@@ -256,6 +262,16 @@ public class GitTFConfiguration
         return tempDirectory;
     }
 
+    public boolean getKeepAuthor()
+    {
+        return keepAuthor;
+    }
+
+    public String getUserMap()
+    {
+        return userMap;
+    }
+
     /*
      * Configuration field setters. Each setter keeps track that the field has
      * changed along with changig the fields value
@@ -306,6 +322,18 @@ public class GitTFConfiguration
     {
         this.tempDirectory = tempDirectory;
         locallyDefinedNames.put(ConfigurationConstants.TEMP_DIRECTORY, true);
+    }
+
+    public void setKeepAuthor(final boolean keepAuthor)
+    {
+        this.keepAuthor = keepAuthor;
+        locallyDefinedNames.put(ConfigurationConstants.KEEP_AUTHOR, true);
+    }
+
+    public void setUserMap(final String userMap)
+    {
+        this.userMap = userMap;
+        locallyDefinedNames.put(ConfigurationConstants.USER_MAP, true);
     }
 
     /**
@@ -385,6 +413,34 @@ public class GitTFConfiguration
                 includeMetaData);
         }
 
+        if (isLocallyDefined(ConfigurationConstants.KEEP_AUTHOR))
+        {
+            repository.getConfig().setBoolean(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.GENERAL_SUBSECTION,
+                ConfigurationConstants.KEEP_AUTHOR,
+                keepAuthor);
+        }
+
+        if (isLocallyDefined(ConfigurationConstants.USER_MAP))
+        {
+            if (!StringUtil.isNullOrEmpty(userMap))
+            {
+                repository.getConfig().setString(
+                    ConfigurationConstants.CONFIGURATION_SECTION,
+                    ConfigurationConstants.GENERAL_SUBSECTION,
+                    ConfigurationConstants.USER_MAP,
+                    userMap);
+            }
+            else
+            {
+                repository.getConfig().unset(
+                    ConfigurationConstants.CONFIGURATION_SECTION,
+                    ConfigurationConstants.GENERAL_SUBSECTION,
+                    ConfigurationConstants.USER_MAP);
+            }
+        }
+
         if (isLocallyDefined(ConfigurationConstants.GATED_BUILD_DEFINITION)
             && !StringUtil.isNullOrEmpty(buildDefinition))
         {
@@ -443,6 +499,12 @@ public class GitTFConfiguration
         result.append(Messages.formatString("GitTFConfiguration.ToString.DepthFormat", getDepthString()) + OutputConstants.NEW_LINE); //$NON-NLS-1$
         result.append(Messages.formatString("GitTFConfiguration.ToString.TagFormat", this.tag) + OutputConstants.NEW_LINE); //$NON-NLS-1$
         result.append(Messages.formatString("GitTFConfiguration.ToString.IncludeMetaDataFormat", this.includeMetaData)); //$NON-NLS-1$
+        result.append(Messages.formatString(Messages.getString("GitTFConfiguration.KeepAuthorFormat"), this.keepAuthor)); //$NON-NLS-1$
+        if (!StringUtil.isNullOrEmpty(userMap))
+        {
+            result.append(Messages.formatString(Messages.getString("GitTFConfiguration.UserMapFormat"), this.userMap)); //$NON-NLS-1$
+
+        }
 
         return result.toString();
     }
@@ -536,6 +598,19 @@ public class GitTFConfiguration
                 ConfigurationConstants.GENERAL_SUBSECTION,
                 ConfigurationConstants.TEMP_DIRECTORY);
 
+        final boolean keepAuthor =
+            repository.getConfig().getBoolean(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.GENERAL_SUBSECTION,
+                ConfigurationConstants.KEEP_AUTHOR,
+                GitTFConstants.GIT_TF_DEFAULT_KEEP_AUTHOR);
+
+        final String userMap =
+            repository.getConfig().getString(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.GENERAL_SUBSECTION,
+                ConfigurationConstants.USER_MAP);
+
         if (projectCollection == null)
         {
             log.error("No project collection configuration in repository"); //$NON-NLS-1$
@@ -588,6 +663,8 @@ public class GitTFConfiguration
             fileFormatVersion,
             buildDefinition,
             tempDirectory,
+            keepAuthor,
+            userMap,
             isDefined);
     }
 

@@ -68,6 +68,8 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChang
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.ItemSpec;
+import com.microsoft.tfs.jni.PlatformMiscUtils;
+import com.microsoft.tfs.util.StringHelpers;
 
 /**
  * The task converts the differences between two commits into a list of pending
@@ -82,6 +84,8 @@ public class PendDifferenceTask
      * nothing to pend
      */
     public static final int NOTHING_TO_PEND = 1;
+
+    private final int MAX_CHANGES_TO_SEND;
 
     private final static Log log = LogFactory.getLog(PendDifferenceTask.class);
 
@@ -135,6 +139,8 @@ public class PendDifferenceTask
         Check.isTrue(
             localWorkingFolder.exists() && localWorkingFolder.isDirectory(),
             "localWorkingFolder.exists && localWorkingFolder.isDirectory"); //$NON-NLS-1$
+
+        MAX_CHANGES_TO_SEND = getMaxChangesToSend();
 
         this.repository = repository;
         this.commitFrom = commitFrom;
@@ -652,21 +658,42 @@ public class PendDifferenceTask
      *        the error listener to use
      * @throws Exception
      */
-    private void pendDeletes(CheckinAnalysisChangeCollection analysis, WorkspaceOperationErrorListener errorListener)
+    private void pendDeletes(
+        final CheckinAnalysisChangeCollection analysis,
+        final WorkspaceOperationErrorListener errorListener)
         throws Exception
     {
-        Check.notNull(analysis, "analysis"); //$NON-NLS-1$
+        final List<DeleteChange> deletesChunk = new ArrayList<DeleteChange>();
 
-        if (analysis.getDeletes().size() == 0)
+        for (final DeleteChange delete : analysis.getDeletes())
+        {
+            if (deletesChunk.size() == MAX_CHANGES_TO_SEND)
+            {
+                pendDeletesInt(deletesChunk, errorListener);
+                deletesChunk.clear();
+            }
+
+            deletesChunk.add(delete);
+        }
+
+        pendDeletesInt(deletesChunk, errorListener);
+    }
+
+    private void pendDeletesInt(final List<DeleteChange> deletes, final WorkspaceOperationErrorListener errorListener)
+        throws Exception
+    {
+        Check.notNull(deletes, "deletes"); //$NON-NLS-1$
+
+        if (deletes.size() == 0)
         {
             return;
         }
 
         /* Build the delete specs */
-        ItemSpec[] deleteSpecs = new ItemSpec[analysis.getDeletes().size()];
-        for (int i = 0; i < analysis.getDeletes().size(); i++)
+        ItemSpec[] deleteSpecs = new ItemSpec[deletes.size()];
+        for (int i = 0; i < deletes.size(); i++)
         {
-            final DeleteChange delete = analysis.getDeletes().get(i);
+            final DeleteChange delete = deletes.get(i);
 
             deleteSpecs[i] =
                 new ItemSpec(ServerPath.combine(serverPathRoot, delete.getPath()), delete.getType() == FileMode.TREE
@@ -699,21 +726,42 @@ public class PendDifferenceTask
      *        the error listener to use
      * @throws Exception
      */
-    private void pendEdits(CheckinAnalysisChangeCollection analysis, WorkspaceOperationErrorListener errorListener)
+    private void pendEdits(
+        final CheckinAnalysisChangeCollection analysis,
+        final WorkspaceOperationErrorListener errorListener)
         throws Exception
     {
-        Check.notNull(analysis, "analysis"); //$NON-NLS-1$
+        final List<EditChange> editsChunk = new ArrayList<EditChange>();
 
-        if (analysis.getEdits().size() == 0)
+        for (final EditChange edit : analysis.getEdits())
+        {
+            if (editsChunk.size() == MAX_CHANGES_TO_SEND)
+            {
+                pendEditsInt(editsChunk, errorListener);
+                editsChunk.clear();
+            }
+
+            editsChunk.add(edit);
+        }
+
+        pendEditsInt(editsChunk, errorListener);
+    }
+
+    private void pendEditsInt(final List<EditChange> edits, final WorkspaceOperationErrorListener errorListener)
+        throws Exception
+    {
+        Check.notNull(edits, "edits"); //$NON-NLS-1$
+
+        if (edits.size() == 0)
         {
             return;
         }
 
         /* Builds the edit specs */
-        List<ItemSpec> editSpecs = new ArrayList<ItemSpec>();
-        List<LockLevel> lockLevels = new ArrayList<LockLevel>();
+        final List<ItemSpec> editSpecs = new ArrayList<ItemSpec>();
+        final List<LockLevel> lockLevels = new ArrayList<LockLevel>();
 
-        for (EditChange edit : analysis.getEdits())
+        for (final EditChange edit : edits)
         {
             extractToWorkingFolder(edit.getPath(), edit.getObjectID());
 
@@ -724,7 +772,7 @@ public class PendDifferenceTask
         Check.isTrue(editSpecs.size() == lockLevels.size(), "editSpecs.size == lockLevels.size"); //$NON-NLS-1$
 
         /* Pends the edits in the workspace */
-        int count =
+        final int count =
             workspace.pendEdit(
                 editSpecs.toArray(new ItemSpec[editSpecs.size()]),
                 lockLevels.toArray(new LockLevel[lockLevels.size()]),
@@ -752,12 +800,33 @@ public class PendDifferenceTask
      *        the error listener to use
      * @throws Exception
      */
-    private void pendAdds(CheckinAnalysisChangeCollection analysis, WorkspaceOperationErrorListener errorListener)
+    private void pendAdds(
+        final CheckinAnalysisChangeCollection analysis,
+        final WorkspaceOperationErrorListener errorListener)
         throws Exception
     {
-        Check.notNull(analysis, "analysis"); //$NON-NLS-1$
+        final List<AddChange> addsChunk = new ArrayList<AddChange>();
 
-        int addCount = analysis.getAdds().size();
+        for (final AddChange add : analysis.getAdds())
+        {
+            if (addsChunk.size() == MAX_CHANGES_TO_SEND)
+            {
+                pendAddsInt(addsChunk, errorListener);
+                addsChunk.clear();
+            }
+
+            addsChunk.add(add);
+        }
+
+        pendAddsInt(addsChunk, errorListener);
+    }
+
+    private void pendAddsInt(final List<AddChange> adds, final WorkspaceOperationErrorListener errorListener)
+        throws Exception
+    {
+        Check.notNull(adds, "adds"); //$NON-NLS-1$
+
+        int addCount = adds.size();
 
         if (addCount == 0)
         {
@@ -765,10 +834,10 @@ public class PendDifferenceTask
         }
 
         /* Build the adds item spec */
-        String[] addPaths = new String[addCount];
+        final String[] addPaths = new String[addCount];
         for (int i = 0; i < addCount; i++)
         {
-            final AddChange add = analysis.getAdds().get(i);
+            final AddChange add = adds.get(i);
 
             extractToWorkingFolder(add.getPath(), add.getObjectID());
 
@@ -776,7 +845,7 @@ public class PendDifferenceTask
         }
 
         /* Pend the adds in the workspace */
-        int count =
+        final int count =
             workspace.pendAdd(addPaths, false, null, LockLevel.NONE, GetOptions.NO_DISK_UPDATE, PendChangesOptions.NONE);
 
         /* Validate that the adds have been pended correctly */
@@ -797,7 +866,9 @@ public class PendDifferenceTask
      *        the error listener to use
      * @throws Exception
      */
-    private void pendRenames(CheckinAnalysisChangeCollection analysis, WorkspaceOperationErrorListener errorListener)
+    private void pendRenames(
+        final CheckinAnalysisChangeCollection analysis,
+        final WorkspaceOperationErrorListener errorListener)
         throws Exception
     {
         /*
@@ -811,7 +882,7 @@ public class PendDifferenceTask
         if (renameMode == RenameMode.ALL)
         {
             /* Compute folder renames */
-            TfsFolderRenameDetector folderRenameDetector = analysis.createFolderRenameDetector();
+            final TfsFolderRenameDetector folderRenameDetector = analysis.createFolderRenameDetector();
             folderRenameDetector.compute();
 
             /*
@@ -819,7 +890,7 @@ public class PendDifferenceTask
              * an item inside the folder in the same pendRename call, thus we
              * are batching the rename calls by the depth of the item path
              */
-            for (List<RenameChange> renames : folderRenameDetector.getRenameBatches())
+            for (final List<RenameChange> renames : folderRenameDetector.getRenameBatches())
             {
                 pendBatchRenames(renames, errorListener);
             }
@@ -840,6 +911,27 @@ public class PendDifferenceTask
      * @throws Exception
      */
     private void pendBatchRenames(final List<RenameChange> renames, final WorkspaceOperationErrorListener errorListener)
+        throws Exception
+    {
+        final List<RenameChange> renamesChunk = new ArrayList<RenameChange>();
+
+        for (final RenameChange rename : renames)
+        {
+            if (renamesChunk.size() == MAX_CHANGES_TO_SEND)
+            {
+                pendBatchRenamesInt(renamesChunk, errorListener);
+                renamesChunk.clear();
+            }
+
+            renamesChunk.add(rename);
+        }
+
+        pendBatchRenamesInt(renamesChunk, errorListener);
+    }
+
+    private void pendBatchRenamesInt(
+        final List<RenameChange> renames,
+        final WorkspaceOperationErrorListener errorListener)
         throws Exception
     {
         Check.notNull(renames, "renames"); //$NON-NLS-1$
@@ -1008,5 +1100,35 @@ public class PendDifferenceTask
         {
             workingOutput.close();
         }
+    }
+
+    private static int getMaxChangesToSend()
+    {
+        final String MAX_CHANGES_TO_PEND_NAME = "GITTF_MAX_CHANGES"; //$NON-NLS-1$
+        final String MAX_CHANGES_TO_PEND_NAME_ALTERNATE = "gittf_max_changes"; //$NON-NLS-1$
+        final int DEFAULT_MAX_CHANGES_TO_PEND = 10;
+
+        int count = -1;
+
+        String value = PlatformMiscUtils.getInstance().getEnvironmentVariable(MAX_CHANGES_TO_PEND_NAME);
+
+        if (StringHelpers.isNullOrEmpty(value))
+        {
+            value = PlatformMiscUtils.getInstance().getEnvironmentVariable(MAX_CHANGES_TO_PEND_NAME_ALTERNATE);
+        }
+
+        try
+        {
+            if (!StringHelpers.isNullOrEmpty(value))
+            {
+                count = Integer.parseInt(value);
+            }
+
+        }
+        catch (final Exception e)
+        {
+        }
+
+        return count > 0 ? count : DEFAULT_MAX_CHANGES_TO_PEND;
     }
 }

@@ -496,7 +496,7 @@ public class CheckinHeadCommitTask
                 log.debug("Committing delta "
                     + i
                     + ": from "
-                    + commitDelta.getFromCommit().getName()
+                    + (commitDelta.getFromCommit() == null ? "initial commit" : commitDelta.getFromCommit().getName())
                     + " to "
                     + commitDelta.getToCommit().getName());
 

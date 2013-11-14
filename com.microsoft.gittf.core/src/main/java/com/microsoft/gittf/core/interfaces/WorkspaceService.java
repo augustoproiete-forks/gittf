@@ -29,11 +29,13 @@ import com.microsoft.tfs.core.clients.build.IBuildServer;
 import com.microsoft.tfs.core.clients.versioncontrol.CheckinFlags;
 import com.microsoft.tfs.core.clients.versioncontrol.GetOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.PendChangesOptions;
+import com.microsoft.tfs.core.clients.versioncontrol.WebServiceLevel;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.CheckinNote;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.LockLevel;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PolicyOverrideInfo;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PropertyValue;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
@@ -76,6 +78,8 @@ public interface WorkspaceService
         boolean detectTargetItemType,
         PendChangesOptions pendOptions);
 
+    int pendPropertyChange(String path, PropertyValue[] properties, RecursionType recursion, LockLevel lockLevel);
+
     void undo(ItemSpec[] itemSpecs);
 
     void undo(ItemSpec[] itemSpecs, GetOptions getOptions);
@@ -111,4 +115,6 @@ public interface WorkspaceService
     WorkspaceOperationErrorListener getErrorListener();
 
     IBuildServer getBuildServer();
+
+    public WebServiceLevel getServiceLevel();
 }

@@ -440,6 +440,7 @@ public class CheckinHeadCommitTask
 
             progressMonitor.setWork(commitsToCheckin.size() * 2);
 
+            TaskStatus userMapErrorStatus = null;
             if (keepAuthor)
             {
                 log.debug("Loading the user map.");
@@ -457,30 +458,29 @@ public class CheckinHeadCommitTask
                 {
                     userMap.save();
 
-                    final String userMapChangedMessageFormat =
-                        Messages.getString("CheckinHeadCommitTask.UserMapChangedMessageFormat"); //$NON-NLS-1$
-                    progressMonitor.displayMessage(Messages.formatString(
-                        userMapChangedMessageFormat,
-                        userMap.getUserMapFile().getPath()));
+                    final String userMapChangedMessage =
+                        Messages.formatString("CheckinHeadCommitTask.UserMapChangedMessageFormat", //$NON-NLS-1$
+                            userMap.getUserMapFile().getPath());
+                    progressMonitor.displayMessage(userMapChangedMessage);
 
                     if (!userMap.isOK())
                     {
-                        final String incompleteUserMapWarningFormat =
-                            Messages.getString("CheckinHeadCommitTask.IncompleteUserMapFormat"); //$NON-NLS-1$
-                        final String incompleteUserMapWarning =
-                            MessageFormat.format(incompleteUserMapWarningFormat, userMap.getUserMapFile().getPath());
+                        final String incompleteUserMapError =
+                            Messages.formatString("CheckinHeadCommitTask.IncompleteUserMapFormat", //$NON-NLS-1$
+                                userMap.getUserMapFile().getPath());
 
-                        progressMonitor.displayMessage(incompleteUserMapWarning);
+                        userMapErrorStatus = new TaskStatus(TaskStatus.ERROR, incompleteUserMapError);
+                        progressMonitor.worked(0);
 
                         if (!preview)
                         {
-                            progressMonitor.endTask();
-                            return new TaskStatus(TaskStatus.WARNING, incompleteUserMapWarning);
+                            return userMapErrorStatus;
                         }
                     }
                 }
 
                 log.debug("The user map is loaded.");
+                progressMonitor.setDetail(null);
             }
 
             log.debug("Processing commit deltas.");
@@ -648,6 +648,11 @@ public class CheckinHeadCommitTask
             final TaskProgressMonitor cleanupMonitor = progressMonitor.newSubTask(1);
             cleanupWorkspace(cleanupMonitor, workspaceData);
             workspaceData = null;
+
+            if (userMapErrorStatus != null)
+            {
+                return userMapErrorStatus;
+            }
 
             progressMonitor.endTask();
 

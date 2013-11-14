@@ -46,6 +46,7 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.gittf.core.util.ObjectIdUtil;
+import com.microsoft.gittf.core.util.RepositoryUtil;
 import com.microsoft.gittf.core.util.TfsBranchUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.GetItemsOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
@@ -270,6 +271,8 @@ public class CloneTask
                 DirCacheCheckout checkout = new DirCacheCheckout(repository, dirCache, lastTreeID);
                 checkout.checkout();
                 dirCache.unlock();
+
+                RepositoryUtil.fixFileAttributes(repository);
             }
 
             progressMonitor.endTask();

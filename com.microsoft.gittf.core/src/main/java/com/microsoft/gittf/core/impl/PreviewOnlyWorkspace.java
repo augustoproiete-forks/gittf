@@ -33,11 +33,13 @@ import com.microsoft.tfs.core.clients.build.IBuildServer;
 import com.microsoft.tfs.core.clients.versioncontrol.CheckinFlags;
 import com.microsoft.tfs.core.clients.versioncontrol.GetOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.PendChangesOptions;
+import com.microsoft.tfs.core.clients.versioncontrol.WebServiceLevel;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.CheckinNote;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.LockLevel;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PolicyOverrideInfo;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PropertyValue;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
@@ -159,6 +161,15 @@ public class PreviewOnlyWorkspace
         return oldPaths.length;
     }
 
+    public int pendPropertyChange(
+        final String path,
+        final PropertyValue[] properties,
+        final RecursionType recursion,
+        final LockLevel lockLevel)
+    {
+        return 1;
+    }
+
     public void undo(ItemSpec[] itemSpecs)
     {
 
@@ -220,5 +231,10 @@ public class PreviewOnlyWorkspace
     public IBuildServer getBuildServer()
     {
         return null;
+    }
+
+    public WebServiceLevel getServiceLevel()
+    {
+        return WebServiceLevel.TFS_2012_QU1;
     }
 }

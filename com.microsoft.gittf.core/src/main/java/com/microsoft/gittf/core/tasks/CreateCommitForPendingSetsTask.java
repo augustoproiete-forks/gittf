@@ -540,16 +540,22 @@ public abstract class CreateCommitForPendingSetsTask
             FileMode fileMode;
 
             /* handle executable files */
-            if (pendingChange.getPropertyValues() != null
-                && PropertyConstants.EXECUTABLE_ENABLED_VALUE.equals(PropertyUtils.selectMatching(
+            if (pendingChange.getPropertyValues() != null)
+            {
+                if (PropertyConstants.EXECUTABLE_ENABLED_VALUE.equals(PropertyUtils.selectMatching(
                     pendingChange.getPropertyValues(),
                     PropertyConstants.EXECUTABLE_KEY)))
-            {
-                fileMode = FileMode.EXECUTABLE_FILE;
+                {
+                    fileMode = addBaseContent ? FileMode.REGULAR_FILE : FileMode.EXECUTABLE_FILE;
+                }
+                else
+                {
+                    fileMode = addBaseContent ? FileMode.EXECUTABLE_FILE : FileMode.REGULAR_FILE;
+                }
             }
             else
             {
-                fileMode = FileMode.REGULAR_FILE;
+                fileMode = FileMode.MISSING;
             }
 
             String serverItem =

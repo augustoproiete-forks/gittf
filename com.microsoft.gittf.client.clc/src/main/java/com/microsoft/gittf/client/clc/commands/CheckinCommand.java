@@ -226,9 +226,14 @@ public class CheckinCommand
 
         final RenameMode renameMode = getRenameModeIfSpecified();
 
-        final boolean keepAuthor = (getArguments().contains("keep-author") //$NON-NLS-1$
-            || !getArguments().contains("ignore-author") && currentConfiguration.getKeepAuthor()) //$NON-NLS-1$
-            && deep;
+        boolean keepAuthor = (getArguments().contains("keep-author") //$NON-NLS-1$
+            || !getArguments().contains("ignore-author") && currentConfiguration.getKeepAuthor()); //$NON-NLS-1$
+
+        if (!deep && keepAuthor)
+        {
+            Main.printWarning("the check-in authors will be ignored because --deep is not specified");
+            keepAuthor = false;
+        }
 
         final String userMapPath = getArguments().contains("user-map") ? //$NON-NLS-1$
             ((ValueArgument) getArguments().getArgument("user-map")).getValue() : //$NON-NLS-1$

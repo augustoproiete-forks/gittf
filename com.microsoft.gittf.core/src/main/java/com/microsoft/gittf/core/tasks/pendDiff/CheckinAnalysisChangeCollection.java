@@ -58,6 +58,7 @@ public class CheckinAnalysisChangeCollection
     private final List<EditChange> edits = new ArrayList<EditChange>();
     private final List<DeleteChange> deletes = new ArrayList<DeleteChange>();
     private final List<RenameChange> renames = new ArrayList<RenameChange>();
+    private final List<PropertyChange> properties = new ArrayList<PropertyChange>();
 
     private boolean processDeletedFolders = true;
 
@@ -116,7 +117,7 @@ public class CheckinAnalysisChangeCollection
      */
     public boolean isEmpty()
     {
-        return adds.isEmpty() && edits.isEmpty() && deletes.isEmpty() && renames.isEmpty();
+        return adds.isEmpty() && edits.isEmpty() && deletes.isEmpty() && renames.isEmpty() && properties.isEmpty();
     }
 
     /**
@@ -176,6 +177,16 @@ public class CheckinAnalysisChangeCollection
     }
 
     /**
+     * Gets the list of property changes
+     * 
+     * @return
+     */
+    public final List<PropertyChange> getProperties()
+    {
+        return Collections.unmodifiableList(properties);
+    }
+
+    /**
      * Adds an add change
      * 
      * @param change
@@ -232,6 +243,33 @@ public class CheckinAnalysisChangeCollection
     }
 
     /**
+     * Adds a property change
+     * 
+     * @param change
+     * @throws Exception
+     */
+    public final void pendProperty(PropertyChange change)
+        throws Exception
+    {
+        properties.add(change);
+    }
+
+    /**
+     * Adds a property change
+     * 
+     * @param change
+     * @throws Exception
+     */
+    public final void pendPropertyIfChanged(PropertyChange change)
+        throws Exception
+    {
+        if (change.isPropertyChanged())
+        {
+            properties.add(change);
+        }
+    }
+
+    /**
      * Determies the size of the collection
      * 
      * @return
@@ -246,7 +284,7 @@ public class CheckinAnalysisChangeCollection
             CorruptObjectException,
             IOException
     {
-        return adds.size() + deletes.size() + edits.size() + renames.size();
+        return adds.size() + deletes.size() + edits.size() + renames.size() + properties.size();
     }
 
     /**

@@ -62,10 +62,12 @@ import com.microsoft.gittf.core.util.ObjectIdUtil;
 import com.microsoft.gittf.core.util.WorkspaceOperationErrorListener;
 import com.microsoft.tfs.core.clients.versioncontrol.GetOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.PendChangesOptions;
+import com.microsoft.tfs.core.clients.versioncontrol.WebServiceLevel;
 import com.microsoft.tfs.core.clients.versioncontrol.path.ServerPath;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.LockLevel;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PropertyValue;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.ItemSpec;
 import com.microsoft.tfs.jni.PlatformMiscUtils;
@@ -471,6 +473,10 @@ public class PendDifferenceTask
                         analysis.pendAdd(new AddChange(change.getNewPath(), CommitUtil.resolveAbbreviatedId(
                             repository,
                             change.getNewId())));
+                        analysis.pendPropertyIfChanged(new PropertyChange(
+                            change.getNewPath(),
+                            CommitUtil.resolveAbbreviatedId(repository, change.getNewId()),
+                            change.getNewMode()));
                         break;
 
                     case DELETE:
@@ -481,6 +487,11 @@ public class PendDifferenceTask
                         analysis.pendEdit(new EditChange(change.getNewPath(), CommitUtil.resolveAbbreviatedId(
                             repository,
                             change.getNewId())));
+                        analysis.pendPropertyIfChanged(new PropertyChange(
+                            change.getNewPath(),
+                            CommitUtil.resolveAbbreviatedId(repository, change.getNewId()),
+                            change.getOldMode(),
+                            change.getNewMode()));
                         break;
 
                     case RENAME:
@@ -489,6 +500,11 @@ public class PendDifferenceTask
                             change.getNewPath(),
                             CommitUtil.resolveAbbreviatedId(repository, change.getNewId()),
                             !change.getOldId().equals(change.getNewId())));
+                        analysis.pendPropertyIfChanged(new PropertyChange(
+                            change.getNewPath(),
+                            CommitUtil.resolveAbbreviatedId(repository, change.getNewId()),
+                            change.getOldMode(),
+                            change.getNewMode()));
                 }
             }
         }
@@ -594,7 +610,7 @@ public class PendDifferenceTask
         Check.notNull(analysis, "analysis"); //$NON-NLS-1$
 
         progressMonitor.beginTask(
-            Messages.getString("PendDifferencesTask.PendingChanges"), 5, TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL); //$NON-NLS-1$
+            Messages.getString("PendDifferencesTask.PendingChanges"), 6, TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL); //$NON-NLS-1$
 
         WorkspaceOperationErrorListener errorListener = null;
 
@@ -620,6 +636,11 @@ public class PendDifferenceTask
             /* Pend Adds */
             progressMonitor.setDetail(Messages.getString("PendDifferencesTask.PendingAdds")); //$NON-NLS-1$
             pendAdds(analysis, errorListener);
+            progressMonitor.worked(1);
+
+            /* Pend Properties */
+            progressMonitor.setDetail(Messages.getString("PendDifferencesTask.PendingProperties")); //$NON-NLS-1$
+            pendProperties(analysis, errorListener);
             progressMonitor.worked(1);
 
             /*
@@ -800,61 +821,83 @@ public class PendDifferenceTask
      *        the error listener to use
      * @throws Exception
      */
-    private void pendAdds(
+    private void pendProperties(
         final CheckinAnalysisChangeCollection analysis,
         final WorkspaceOperationErrorListener errorListener)
         throws Exception
     {
-        final List<AddChange> addsChunk = new ArrayList<AddChange>();
-
-        for (final AddChange add : analysis.getAdds())
+        if (workspace.getServiceLevel().getValue() < WebServiceLevel.TFS_2012.getValue())
         {
-            if (addsChunk.size() == MAX_CHANGES_TO_SEND)
-            {
-                pendAddsInt(addsChunk, errorListener);
-                addsChunk.clear();
-            }
-
-            addsChunk.add(add);
+            return;
         }
 
-        pendAddsInt(addsChunk, errorListener);
+        final List<PropertyChange> propertiesChunk = new ArrayList<PropertyChange>();
+
+        for (final PropertyChange property : analysis.getProperties())
+        {
+            if (propertiesChunk.size() == MAX_CHANGES_TO_SEND)
+            {
+                pendPropertiessInt(propertiesChunk, errorListener);
+                propertiesChunk.clear();
+            }
+
+            propertiesChunk.add(property);
+        }
+
+        pendPropertiessInt(propertiesChunk, errorListener);
     }
 
-    private void pendAddsInt(final List<AddChange> adds, final WorkspaceOperationErrorListener errorListener)
+    private void pendPropertiessInt(
+        final List<PropertyChange> propertyChanges,
+        final WorkspaceOperationErrorListener errorListener)
         throws Exception
     {
-        Check.notNull(adds, "adds"); //$NON-NLS-1$
+        Check.notNull(propertyChanges, "propertyChanges"); //$NON-NLS-1$
 
-        int addCount = adds.size();
+        int propertiesCount = propertyChanges.size();
 
-        if (addCount == 0)
+        if (propertiesCount == 0)
         {
             return;
         }
 
         /* Build the adds item spec */
-        final String[] addPaths = new String[addCount];
-        for (int i = 0; i < addCount; i++)
+        for (int i = 0; i < propertiesCount; i++)
         {
-            final AddChange add = adds.get(i);
+            final PropertyChange propertyChange = propertyChanges.get(i);
 
-            extractToWorkingFolder(add.getPath(), add.getObjectID());
+            extractToWorkingFolder(propertyChange.getPath(), propertyChange.getObjectID());
 
-            addPaths[i] = ServerPath.combine(serverPathRoot, add.getPath());
+            final String path = ServerPath.combine(serverPathRoot, propertyChange.getPath());
+
+            final List<PropertyValue> properties = new ArrayList<PropertyValue>();
+
+            if (propertyChange.isExecutablePropertyChanged())
+            {
+                properties.add(propertyChange.getExecutablePropertyValue());
+            }
+
+            /* Pend the property change in the workspace */
+            final int count =
+                workspace.pendPropertyChange(
+                    path,
+                    properties.toArray(new PropertyValue[properties.size()]),
+                    RecursionType.NONE,
+                    LockLevel.NONE);
+
+            /* Validate that the adds have been pended correctly */
+            errorListener.validate();
+
+            if (count != 1)
+            {
+                throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
+            }
         }
+    }
 
-        /* Pend the adds in the workspace */
-        final int count =
-            workspace.pendAdd(addPaths, false, null, LockLevel.NONE, GetOptions.NO_DISK_UPDATE, PendChangesOptions.NONE);
-
-        /* Validate that the adds have been pended correctly */
-        errorListener.validate();
-
-        if (count != addCount)
-        {
-            throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
-        }
+    private PropertyValue createBooleanProperty(final String key, final boolean value)
+    {
+        return new PropertyValue(key, (value ? "true" : "false"));
     }
 
     /**
@@ -1045,6 +1088,72 @@ public class PendDifferenceTask
             {
                 throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
             }
+        }
+    }
+
+    /**
+     * Pends the adds in the CheckinAnalysisChangeCollection
+     * 
+     * @param analysis
+     *        the collection of changes to pend
+     * @param errorListener
+     *        the error listener to use
+     * @throws Exception
+     */
+    private void pendAdds(
+        final CheckinAnalysisChangeCollection analysis,
+        final WorkspaceOperationErrorListener errorListener)
+        throws Exception
+    {
+        final List<AddChange> addsChunk = new ArrayList<AddChange>();
+
+        for (final AddChange add : analysis.getAdds())
+        {
+            if (addsChunk.size() == MAX_CHANGES_TO_SEND)
+            {
+                pendAddsInt(addsChunk, errorListener);
+                addsChunk.clear();
+            }
+
+            addsChunk.add(add);
+        }
+
+        pendAddsInt(addsChunk, errorListener);
+    }
+
+    private void pendAddsInt(final List<AddChange> adds, final WorkspaceOperationErrorListener errorListener)
+        throws Exception
+    {
+        Check.notNull(adds, "adds"); //$NON-NLS-1$
+
+        int addCount = adds.size();
+
+        if (addCount == 0)
+        {
+            return;
+        }
+
+        /* Build the adds item spec */
+        final String[] addPaths = new String[addCount];
+        for (int i = 0; i < addCount; i++)
+        {
+            final AddChange add = adds.get(i);
+
+            extractToWorkingFolder(add.getPath(), add.getObjectID());
+
+            addPaths[i] = ServerPath.combine(serverPathRoot, add.getPath());
+        }
+
+        /* Pend the adds in the workspace */
+        final int count =
+            workspace.pendAdd(addPaths, false, null, LockLevel.NONE, GetOptions.NO_DISK_UPDATE, PendChangesOptions.NONE);
+
+        /* Validate that the adds have been pended correctly */
+        errorListener.validate();
+
+        if (count != addCount)
+        {
+            throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
         }
     }
 

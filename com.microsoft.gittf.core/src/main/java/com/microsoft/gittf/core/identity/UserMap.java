@@ -340,17 +340,14 @@ public abstract class UserMap
     {
         addMappedUsersSection(fileLines);
 
-        for (final GitUser gitUser : gitUsers)
+        for (final GitUser gitUser : userMap.keySet())
         {
-            if (userMap.containsKey(gitUser))
-            {
-                final List<TfsUser> tfsUsers = userMap.get(gitUser);
-                Check.isTrue(tfsUsers.size() > 0, "Unexpected empty TFS users list in the user map"); //$NON-NLS-1$
+            final List<TfsUser> tfsUsers = userMap.get(gitUser);
+            Check.isTrue(tfsUsers.size() > 0, "Unexpected empty TFS users list in the user map"); //$NON-NLS-1$
 
-                if (tfsUsers.size() == 1)
-                {
-                    addMappedUserRecord(fileLines, gitUser, tfsUsers.get(0));
-                }
+            if (tfsUsers.size() == 1)
+            {
+                addMappedUserRecord(fileLines, gitUser, tfsUsers.get(0));
             }
         }
     }
@@ -378,23 +375,20 @@ public abstract class UserMap
     {
         boolean firstUser = true;
 
-        for (final GitUser gitUser : gitUsers)
+        for (final GitUser gitUser : userMap.keySet())
         {
-            if (userMap.containsKey(gitUser))
+            final List<TfsUser> tfsUsers = userMap.get(gitUser);
+            Check.isTrue(tfsUsers.size() > 0, "Unexpected empty TFS users list in the user map"); //$NON-NLS-1$
+
+            if (tfsUsers.size() > 1)
             {
-                final List<TfsUser> tfsUsers = userMap.get(gitUser);
-                Check.isTrue(tfsUsers.size() > 0, "Unexpected empty TFS users list in the user map"); //$NON-NLS-1$
-
-                if (tfsUsers.size() > 1)
+                if (firstUser)
                 {
-                    if (firstUser)
-                    {
-                        addDuplicateUsersSection(fileLines);
-                        firstUser = false;
-                    }
-
-                    addDuplicateUserRecords(fileLines, gitUser, tfsUsers);
+                    addDuplicateUsersSection(fileLines);
+                    firstUser = false;
                 }
+
+                addDuplicateUserRecords(fileLines, gitUser, tfsUsers);
             }
         }
     }
@@ -485,16 +479,17 @@ public abstract class UserMap
 
             if (foundIdentities == null)
             {
-                log.warn(MessageFormat.format("No identity matching \"{0}\" found on the TFS server", tfsUserName)); //$NON-NLS-1$
+                log.warn(MessageFormat.format("No identity matching \"{0}\" found on the TFS server", tfsUserName));
             }
             else if (foundIdentities.size() > 1)
             {
                 log.warn(MessageFormat.format(
-                    "Multiple identities matching \"{0}\" found on the TFS server", tfsUserName)); //$NON-NLS-1$
+                    "Multiple identities matching \"{0}\" found on the TFS server",
+                    tfsUserName));
             }
             else if (!tfsUserName.equalsIgnoreCase(foundIdentities.get(0).getName()))
             {
-                log.warn(MessageFormat.format("Identity \"{0}\" has changed on the TFS server", tfsUserName)); //$NON-NLS-1$
+                log.warn(MessageFormat.format("Identity \"{0}\" has changed on the TFS server", tfsUserName));
             }
             else
             {

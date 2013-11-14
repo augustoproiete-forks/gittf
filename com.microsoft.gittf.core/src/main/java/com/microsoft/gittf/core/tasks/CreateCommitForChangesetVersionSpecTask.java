@@ -278,19 +278,17 @@ public class CreateCommitForChangesetVersionSpecTask
                 }
             }
 
-            FileMode fileMode;
+            FileMode fileMode = FileMode.REGULAR_FILE;
 
             /* handle executable files */
-            if (item.getPropertyValues() != null
-                && PropertyConstants.EXECUTABLE_ENABLED_VALUE.equals(PropertyUtils.selectMatching(
+            if (item.getPropertyValues() != null)
+            {
+                if (PropertyConstants.EXECUTABLE_ENABLED_VALUE.equals(PropertyUtils.selectMatching(
                     item.getPropertyValues(),
                     PropertyConstants.EXECUTABLE_KEY)))
-            {
-                fileMode = FileMode.EXECUTABLE_FILE;
-            }
-            else
-            {
-                fileMode = FileMode.REGULAR_FILE;
+                {
+                    fileMode = FileMode.EXECUTABLE_FILE;
+                }
             }
 
             createBlob(repositoryInserter, treeHierarchy, item.getServerItem(), blobID, fileMode, progressMonitor);

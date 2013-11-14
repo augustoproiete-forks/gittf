@@ -26,22 +26,40 @@ package com.microsoft.gittf.core.util;
 
 import static org.eclipse.jgit.lib.Constants.DOT_GIT;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.text.MessageFormat;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.NoWorkTreeException;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.FileMode;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.NameConflictTreeWalk;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 import com.microsoft.gittf.core.Messages;
 import com.microsoft.gittf.core.config.GitTFConfiguration;
+import com.microsoft.tfs.jni.FileSystemAttributes;
+import com.microsoft.tfs.jni.FileSystemUtils;
+import com.microsoft.tfs.util.Platform;
 
 public final class RepositoryUtil
 {
+    private static final Log log = LogFactory.getLog(RepositoryUtil.class);
+
     private RepositoryUtil()
     {
     }
@@ -164,5 +182,40 @@ public final class RepositoryUtil
         }
 
         return false;
+    }
+
+    public static void fixFileAttributes(final Repository repository)
+        throws IOException
+    {
+        if (Platform.isCurrentPlatform(Platform.GENERIC_UNIX))
+        {
+            final TreeWalk treeWalk = new NameConflictTreeWalk(repository);
+            final Ref headReference = repository.getRef(Constants.HEAD);
+            final RevCommit headCommit = new RevWalk(repository).parseCommit(headReference.getObjectId());
+
+            treeWalk.setRecursive(true);
+            treeWalk.addTree(headCommit.getTree().getId());
+            treeWalk.setFilter(TreeFilter.ANY_DIFF);
+
+            final File workingDirectory = repository.getWorkTree();
+
+            while (treeWalk.next())
+            {
+                final FileMode fileMode = treeWalk.getFileMode(0);
+
+                if (FileMode.EXECUTABLE_FILE == fileMode)
+                {
+                    final File file = new File(workingDirectory, treeWalk.getPathString());
+                    log.debug("Executable: " + file.getAbsolutePath());
+
+                    final FileSystemAttributes attr = FileSystemUtils.getInstance().getAttributes(file);
+
+                    attr.setExecutable(true);
+                    FileSystemUtils.getInstance().setAttributes(file, attr);
+                }
+            }
+
+            treeWalk.reset();
+        }
     }
 }

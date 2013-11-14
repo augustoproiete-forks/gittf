@@ -31,11 +31,13 @@ import com.microsoft.tfs.core.clients.build.IBuildServer;
 import com.microsoft.tfs.core.clients.versioncontrol.CheckinFlags;
 import com.microsoft.tfs.core.clients.versioncontrol.GetOptions;
 import com.microsoft.tfs.core.clients.versioncontrol.PendChangesOptions;
+import com.microsoft.tfs.core.clients.versioncontrol.WebServiceLevel;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.CheckinNote;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.LockLevel;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingSet;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PolicyOverrideInfo;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PropertyValue;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.RecursionType;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
@@ -123,6 +125,15 @@ public class TfsWorkspace
         return workspace.pendRename(oldPaths, newPaths, lockLevel, getOptions, detectTargetItemType, pendOptions);
     }
 
+    public int pendPropertyChange(
+        final String path,
+        final PropertyValue[] properties,
+        final RecursionType recursion,
+        final LockLevel lockLevel)
+    {
+        return workspace.pendPropertyChange(path, properties, recursion, lockLevel);
+    }
+
     public void undo(ItemSpec[] itemSpecs)
     {
         workspace.undo(itemSpecs);
@@ -202,5 +213,10 @@ public class TfsWorkspace
     public IBuildServer getBuildServer()
     {
         return workspace.getClient().getConnection().getBuildServer();
+    }
+
+    public WebServiceLevel getServiceLevel()
+    {
+        return workspace.getClient().getServiceLevel();
     }
 }

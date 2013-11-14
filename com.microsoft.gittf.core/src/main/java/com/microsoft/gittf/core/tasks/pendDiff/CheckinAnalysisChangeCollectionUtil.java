@@ -81,6 +81,11 @@ public final class CheckinAnalysisChangeCollectionUtil
             return true;
         }
 
+        if (contains(analysis.getProperties(), path))
+        {
+            return true;
+        }
+
         return false;
     }
 

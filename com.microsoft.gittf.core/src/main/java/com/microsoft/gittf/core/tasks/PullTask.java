@@ -51,6 +51,7 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.gittf.core.util.ObjectIdUtil;
+import com.microsoft.gittf.core.util.RepositoryUtil;
 import com.microsoft.gittf.core.util.VersionSpecUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
@@ -174,7 +175,6 @@ public class PullTask
         {
             return merge(progressMonitor, fetchTask.getLatestChangeSetId(), fetchTask.getCommitId());
         }
-
     }
 
     private TaskStatus merge(TaskProgressMonitor progressMonitor, int changeset, ObjectId commitId)
@@ -213,6 +213,8 @@ public class PullTask
                     displayFailures(progressMonitor, mergeResults.getFailingPaths());
                     break;
             }
+
+            RepositoryUtil.fixFileAttributes(repository);
         }
         catch (Exception e)
         {
@@ -267,6 +269,8 @@ public class PullTask
                         "PullTask.Rebase.StoppedFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     break;
             }
+
+            RepositoryUtil.fixFileAttributes(repository);
         }
         catch (Exception e)
         {

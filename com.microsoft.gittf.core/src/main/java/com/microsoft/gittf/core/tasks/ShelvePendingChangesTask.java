@@ -38,6 +38,8 @@ import com.microsoft.tfs.core.clients.versioncontrol.VersionControlConstants;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.PendingChange;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Shelveset;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemCheckinInfo;
+import com.microsoft.tfs.util.NewlineUtils;
+import com.microsoft.tfs.util.StringUtil;
 
 /**
  * Shelves the changes pended in the workspace
@@ -46,6 +48,7 @@ import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.WorkItemChec
 public class ShelvePendingChangesTask
     extends Task
 {
+    private static String CRLF = "" + NewlineUtils.CARRIAGE_RETURN + NewlineUtils.LINE_FEED;
     private final String message;
     private final WorkspaceService workspace;
     private final PendingChange[] changes;
@@ -114,6 +117,9 @@ public class ShelvePendingChangesTask
         progressMonitor.beginTask(
             Messages.formatString("ShelvePendingChangesTask.ShelvingChangesFormat", changes.length), TaskProgressMonitor.INDETERMINATE); //$NON-NLS-1$
 
+        final String normalizedMessage =
+            (message == null ? StringUtil.EMPTY : NewlineUtils.replaceNewlines(message, CRLF).trim());
+
         try
         {
             /* Create shelveset */
@@ -122,7 +128,7 @@ public class ShelvePendingChangesTask
                     shelvesetName,
                     VersionControlConstants.AUTHENTICATED_USER,
                     VersionControlConstants.AUTHENTICATED_USER,
-                    message,
+                    normalizedMessage,
                     null,
                     null,
                     workItems,

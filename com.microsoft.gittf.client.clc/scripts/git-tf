@@ -76,6 +76,8 @@ for LIBRARY_JAR in "$BASE_DIRECTORY"/lib/*.jar ; do
 	GITTF_CLASSPATH="$GITTF_CLASSPATH:$LIBRARY_JAR"
 done
 
+export TF_DISABLE_SYMBOLIC_LINK_PROP="true"
+
 exec java -Xmx512m -classpath "$GITTF_CLASSPATH" \
 	"-Dcom.microsoft.tfs.jni.native.base-directory=$BASE_DIRECTORY/native" \
 	com.microsoft.gittf.client.clc.Main "$@"

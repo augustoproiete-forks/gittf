@@ -26,11 +26,9 @@ package com.microsoft.gittf.core.util;
 
 import static org.eclipse.jgit.lib.Constants.DOT_GIT;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.text.MessageFormat;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -42,6 +40,7 @@ import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -217,5 +216,13 @@ public final class RepositoryUtil
 
             treeWalk.reset();
         }
+    }
+
+    public static boolean isEmptyRepository(final Repository repository)
+        throws IOException
+    {
+        final RefDatabase refsDB = repository.getRefDatabase();
+        final Map<String, Ref> refs = refsDB.getRefs(RefDatabase.ALL);
+        return refs.isEmpty();
     }
 }

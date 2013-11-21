@@ -26,7 +26,6 @@ package com.microsoft.gittf.client.clc.commands;
 
 import java.io.File;
 import java.net.URI;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jgit.lib.Repository;
 
@@ -52,7 +51,6 @@ import com.microsoft.tfs.core.clients.versioncontrol.path.ServerPath;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.LatestVersionSpec;
 import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
 import com.microsoft.tfs.core.clients.workitem.WorkItemClient;
-import com.microsoft.tfs.core.httpclient.Credentials;
 import com.microsoft.tfs.util.Check;
 import com.microsoft.tfs.util.FileHelpers;
 
@@ -202,13 +200,11 @@ public class CloneCommand
          */
         try
         {
-
-            final AtomicReference<Credentials> credentials = new AtomicReference<Credentials>(getDefaultCredentials());
-            final TFSTeamProjectCollection connection = getConnection(serverURI, credentials);
+            final TFSTeamProjectCollection connection = getConnection(serverURI, repository);
 
             Check.notNull(connection, "connection"); //$NON-NLS-1$
 
-            final WorkItemClient witClient = mentions ? getConnection().getWorkItemClient() : null;
+            final WorkItemClient witClient = mentions ? connection.getWorkItemClient() : null;
             final CloneTask cloneTask =
                 new CloneTask(serverURI, getVersionControlService(), tfsPath, repository, witClient);
 

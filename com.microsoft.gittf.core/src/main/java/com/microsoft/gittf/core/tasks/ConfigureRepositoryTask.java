@@ -123,6 +123,26 @@ public class ConfigureRepositoryTask
         config.setUserMap(userMap);
     }
 
+    public String getUsername()
+    {
+        return config.getUsername();
+    }
+
+    public void setUsername(final String username)
+    {
+        config.setUsername(username);
+    }
+
+    public String getPassword()
+    {
+        return config.getPassword();
+    }
+
+    public void setPassword(final String password)
+    {
+        config.setPassword(password);
+    }
+
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {

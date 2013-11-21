@@ -128,7 +128,18 @@ public class ConfigureCommand
 
         new ValueArgument("user-map", //$NON-NLS-1$
             Messages.getString("CheckinCommand.Argument.UserMap.ValueDescription"), //$NON-NLS-1$
-            Messages.getString("CheckinCommand.Argument.UserMap.HelpText")), //$NON-NLS-1$
+            Messages.getString("CheckinCommand.Argument.UserMap.HelpText"), //$NON-NLS-1$)
+            ArgumentOptions.VALUE_REQUIRED),
+
+        new ValueArgument("username", //$NON-NLS-1$
+            Messages.getString("CloneCommand.Argument.UserName.ValueDescription"), //$NON-NLS-1$
+            Messages.getString("CloneCommand.Argument.UserName.HelpText"), //$NON-NLS-1$)
+            ArgumentOptions.VALUE_REQUIRED),
+
+        new ValueArgument("password", //$NON-NLS-1$
+            Messages.getString("CloneCommand.Argument.Password.ValueDescription"), //$NON-NLS-1$
+            Messages.getString("CloneCommand.Argument.Password.HelpText"), //$NON-NLS-1$)
+            ArgumentOptions.VALUE_REQUIRED),
 
         new FreeArgument("projectcollection", //$NON-NLS-1$
             Messages.getString("Command.Argument.ProjectCollection.HelpText")), //$NON-NLS-1$
@@ -225,6 +236,8 @@ public class ConfigureCommand
                 !getArguments().contains("gated") && //$NON-NLS-1$
                 !getArguments().contains("keep-author") && //$NON-NLS-1$
                 !getArguments().contains("ignore-author") && //$NON-NLS-1$
+                !getArguments().contains("username") && //$NON-NLS-1$
+                !getArguments().contains("password") && //$NON-NLS-1$
                 !getArguments().contains("user-map")) //$NON-NLS-1$ 
             {
                 throw new Exception(Messages.getString("ConfigureCommand.InvalidOptionsSpecified")); //$NON-NLS-1$
@@ -282,6 +295,18 @@ public class ConfigureCommand
             {
                 configureTask.setUserMap(userMap);
             }
+        }
+
+        if (getArguments().contains("username")) //$NON-NLS-1$
+        {
+            final String username = ((ValueArgument) getArguments().getArgument("username")).getValue(); //$NON-NLS-1$
+            configureTask.setUsername(username);
+        }
+
+        if (getArguments().contains("password")) //$NON-NLS-1$
+        {
+            final String password = ((ValueArgument) getArguments().getArgument("password")).getValue(); //$NON-NLS-1$
+            configureTask.setPassword(password);
         }
 
         configureTask.setTempDirectory(null);

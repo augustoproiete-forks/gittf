@@ -73,6 +73,7 @@ import com.microsoft.tfs.core.ws.runtime.exceptions.UnauthorizedException;
 import com.microsoft.tfs.jni.ConsoleUtils;
 import com.microsoft.tfs.jni.NTLMEngine;
 import com.microsoft.tfs.jni.NegotiateEngine;
+import com.microsoft.tfs.util.StringHelpers;
 
 public abstract class Command
 {
@@ -308,20 +309,28 @@ public abstract class Command
         return promptForCredentials(null);
     }
 
-    private Credentials getCredentials()
+    private Credentials getCredentials(final Repository repository)
         throws Exception
     {
         if (userCredentials == null)
         {
-            GitTFConfiguration config = GitTFConfiguration.loadFrom(getRepository());
+            final String username;
+            final String password;
 
-            if (config.getUsername() != null)
+            if (repository == null)
             {
-                String password = (config.getPassword() != null) ? config.getPassword() : promptForPassword();
+                final GitTFConfiguration config = GitTFConfiguration.loadFrom(getRepository());
 
-                userCredentials = new UsernamePasswordCredentials(config.getUsername(), password);
+                username = config.getUsername();
+                password = config.getPassword();
             }
             else
+            {
+                username = GitTFConfiguration.getUsername(repository);
+                password = GitTFConfiguration.getPassword(repository);
+            }
+
+            if (StringHelpers.isNullOrEmpty(username))
             {
                 userCredentials = getDefaultCredentials();
 
@@ -329,6 +338,12 @@ public abstract class Command
                 {
                     throw new Exception("cancelled"); //$NON-NLS-1$
                 }
+            }
+            else
+            {
+                userCredentials =
+                    new UsernamePasswordCredentials(username, (StringHelpers.isNullOrEmpty(password))
+                        ? promptForPassword() : password);
             }
         }
 
@@ -338,12 +353,18 @@ public abstract class Command
     protected TFSTeamProjectCollection getConnection()
         throws Exception
     {
+        return getConnection(getServerConfiguration().getServerURI(), (Repository) null);
+    }
+
+    protected TFSTeamProjectCollection getConnection(final URI serverURI, final Repository repository)
+        throws Exception
+    {
         if (connection == null)
         {
             AtomicReference<Credentials> credentials = new AtomicReference<Credentials>();
-            credentials.set(getCredentials());
+            credentials.set(getCredentials(repository));
 
-            connection = getConnection(getServerConfiguration().getServerURI(), credentials);
+            connection = getConnection(serverURI, credentials);
 
             userCredentials = credentials.get();
         }
@@ -351,7 +372,7 @@ public abstract class Command
         return connection;
     }
 
-    protected TFSTeamProjectCollection getConnection(final URI serverURI, final AtomicReference<Credentials> credentials)
+    private TFSTeamProjectCollection getConnection(final URI serverURI, final AtomicReference<Credentials> credentials)
         throws Exception
     {
         Check.notNull(serverURI, "serverURI"); //$NON-NLS-1$
@@ -529,14 +550,17 @@ public abstract class Command
     protected void verifyMasterBranch()
         throws Exception
     {
-        Repository repository = getRepository();
+        final Repository repository = getRepository();
 
-        Ref masterHeadRef = repository.getRef(Constants.R_HEADS + Constants.MASTER).getLeaf();
-        Ref currentHeadRef = repository.getRef(Constants.HEAD).getLeaf();
-
-        if (masterHeadRef == null || !masterHeadRef.getName().equals(currentHeadRef.getName()))
+        if (!RepositoryUtil.isEmptyRepository(repository))
         {
-            throw new Exception(Messages.getString("Command.MasterNotCurrentBranch")); //$NON-NLS-1$
+            Ref masterHeadRef = repository.getRef(Constants.R_HEADS + Constants.MASTER).getLeaf();
+            Ref currentHeadRef = repository.getRef(Constants.HEAD).getLeaf();
+
+            if (masterHeadRef == null || !masterHeadRef.getName().equals(currentHeadRef.getName()))
+            {
+                throw new Exception(Messages.getString("Command.MasterNotCurrentBranch")); //$NON-NLS-1$
+            }
         }
     }
 

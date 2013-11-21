@@ -190,6 +190,19 @@ public class GitTFConfiguration
         return username;
     }
 
+    public static String getUsername(final Repository repository)
+    {
+        /*
+         * The repository could be not initialized yet, in this case we'll get
+         * the value (if any) from a global config file
+         */
+        return repository.getConfig().getString(
+            ConfigurationConstants.CONFIGURATION_SECTION,
+            ConfigurationConstants.SERVER_SUBSECTION,
+            ConfigurationConstants.USERNAME);
+
+    }
+
     /**
      * Returns the password to connect to TFS with. If none has been saved but
      * the username has been saved, the client should prompt for password.
@@ -200,6 +213,19 @@ public class GitTFConfiguration
     public String getPassword()
     {
         return password;
+    }
+
+    public static String getPassword(final Repository repository)
+    {
+        /*
+         * The repository could be not initialized yet, in this case we'll get
+         * the value (if any) from a global config file
+         */
+        return repository.getConfig().getString(
+            ConfigurationConstants.CONFIGURATION_SECTION,
+            ConfigurationConstants.SERVER_SUBSECTION,
+            ConfigurationConstants.PASSWORD);
+
     }
 
     /**
@@ -451,6 +477,24 @@ public class GitTFConfiguration
                 buildDefinition);
         }
 
+        if (isLocallyDefined(ConfigurationConstants.USERNAME))
+        {
+            repository.getConfig().setString(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.SERVER_SUBSECTION,
+                ConfigurationConstants.USERNAME,
+                username);
+        }
+
+        if (isLocallyDefined(ConfigurationConstants.PASSWORD))
+        {
+            repository.getConfig().setString(
+                ConfigurationConstants.CONFIGURATION_SECTION,
+                ConfigurationConstants.SERVER_SUBSECTION,
+                ConfigurationConstants.PASSWORD,
+                password);
+        }
+
         if (isLocallyDefined(ConfigurationConstants.TEMP_DIRECTORY) && !StringUtil.isNullOrEmpty(tempDirectory))
         {
             repository.getConfig().setString(
@@ -479,6 +523,7 @@ public class GitTFConfiguration
         return true;
     }
 
+    @Override
     public String toString()
     {
         final StringBuilder result = new StringBuilder();
@@ -498,11 +543,11 @@ public class GitTFConfiguration
 
         result.append(Messages.formatString("GitTFConfiguration.ToString.DepthFormat", getDepthString()) + OutputConstants.NEW_LINE); //$NON-NLS-1$
         result.append(Messages.formatString("GitTFConfiguration.ToString.TagFormat", this.tag) + OutputConstants.NEW_LINE); //$NON-NLS-1$
-        result.append(Messages.formatString("GitTFConfiguration.ToString.IncludeMetaDataFormat", this.includeMetaData)); //$NON-NLS-1$
-        result.append(Messages.formatString(Messages.getString("GitTFConfiguration.KeepAuthorFormat"), this.keepAuthor)); //$NON-NLS-1$
+        result.append(Messages.formatString("GitTFConfiguration.ToString.IncludeMetaDataFormat", this.includeMetaData) + OutputConstants.NEW_LINE); //$NON-NLS-1$
+        result.append(Messages.formatString("GitTFConfiguration.KeepAuthorFormat", this.keepAuthor) + OutputConstants.NEW_LINE); //$NON-NLS-1$
         if (!StringUtil.isNullOrEmpty(userMap))
         {
-            result.append(Messages.formatString(Messages.getString("GitTFConfiguration.UserMapFormat"), this.userMap)); //$NON-NLS-1$
+            result.append(Messages.formatString("GitTFConfiguration.UserMapFormat", this.userMap) + OutputConstants.NEW_LINE); //$NON-NLS-1$
 
         }
 

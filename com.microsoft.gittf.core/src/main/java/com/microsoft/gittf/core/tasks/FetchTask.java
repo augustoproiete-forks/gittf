@@ -53,6 +53,7 @@ import com.microsoft.gittf.core.tasks.framework.TaskProgressMonitor;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.util.Check;
 import com.microsoft.gittf.core.util.ObjectIdUtil;
+import com.microsoft.gittf.core.util.RepositoryUtil;
 import com.microsoft.gittf.core.util.TfsBranchUtil;
 import com.microsoft.gittf.core.util.VersionSpecUtil;
 import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.Changeset;
@@ -143,15 +144,35 @@ public class FetchTask
         final GitTFConfiguration configuration = GitTFConfiguration.loadFrom(repository);
         final ChangesetCommitMap changesetCommitMap = new ChangesetCommitMap(repository);
 
-        final int latestChangesetID = changesetCommitMap.getLastBridgedChangesetID(true);
+        int latestChangesetID = changesetCommitMap.getLastBridgedChangesetID(true);
 
         /*
-         * If nothing has been fetched or checked in before i.e. this is a
-         * configured repo we need to show a message and exit
+         * If nothing has been fetched or checked in by Git-TF before, i.e. this
+         * is a configured repo, we need to check if the Git repository itself
+         * is not empty. In that case we have to show a message and exit.
+         * Otherwise we may continue because that is the safe first fetch into
+         * empty just configured repository.
          */
         if (latestChangesetID < 0)
         {
-            return new TaskStatus(TaskStatus.ERROR, Messages.getString("FetchTask.NothingToFetchInNewlyConfiguredRepo")); //$NON-NLS-1$
+            try
+            {
+                if (RepositoryUtil.isEmptyRepository(repository))
+                {
+                    log.info("This is a newly configured empty repository. Continue fetching"); //$NON-NLS-1$
+                    latestChangesetID = 0;
+                }
+                else
+                {
+                    return new TaskStatus(
+                        TaskStatus.ERROR,
+                        Messages.getString("FetchTask.NothingToFetchInNewlyConfiguredRepo")); //$NON-NLS-1$
+                }
+            }
+            catch (IOException e)
+            {
+                return new TaskStatus(TaskStatus.ERROR, e);
+            }
         }
 
         Changeset[] latestChangesets =
@@ -161,7 +182,7 @@ public class FetchTask
                 0,
                 RecursionType.FULL,
                 null,
-                new ChangesetVersionSpec(force ? latestChangesetID - 1 : latestChangesetID),
+                new ChangesetVersionSpec(force && latestChangesetID > 0 ? latestChangesetID - 1 : latestChangesetID),
                 versionSpec,
                 deep || force ? Integer.MAX_VALUE : GitTFConstants.GIT_TF_SHALLOW_DEPTH,
                 false,

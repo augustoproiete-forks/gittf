@@ -353,7 +353,12 @@ public abstract class Command
     protected TFSTeamProjectCollection getConnection()
         throws Exception
     {
-        return getConnection(getServerConfiguration().getServerURI(), (Repository) null);
+        if (connection == null)
+        {
+            return getConnection(getServerConfiguration().getServerURI(), (Repository) null);
+        }
+
+        return connection;
     }
 
     protected TFSTeamProjectCollection getConnection(final URI serverURI, final Repository repository)
@@ -554,8 +559,10 @@ public abstract class Command
 
         if (!RepositoryUtil.isEmptyRepository(repository))
         {
-            Ref masterHeadRef = repository.getRef(Constants.R_HEADS + Constants.MASTER).getLeaf();
-            Ref currentHeadRef = repository.getRef(Constants.HEAD).getLeaf();
+            Ref master = repository.getRef(Constants.R_HEADS + Constants.MASTER);
+            Ref head = repository.getRef(Constants.HEAD);
+            Ref masterHeadRef = master != null ? master.getLeaf() : null;
+            Ref currentHeadRef = head != null ? head.getLeaf() : null;
 
             if (masterHeadRef == null || !masterHeadRef.getName().equals(currentHeadRef.getName()))
             {

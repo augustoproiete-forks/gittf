@@ -31,8 +31,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.logging.Log;
@@ -463,6 +465,23 @@ public class PendDifferenceTask
                 analysis.setProcessDeletedFolders(false);
             }
 
+            Map<String, DiffEntry> deleteChanges = new HashMap<String, DiffEntry>();
+            Map<String, DiffEntry> addChanges = new HashMap<String, DiffEntry>();
+
+            for (DiffEntry change : treeDifferences)
+            {
+                switch (change.getChangeType())
+                {
+                    case ADD:
+                        addChanges.put(change.getNewPath().toUpperCase(), change);
+                        break;
+
+                    case DELETE:
+                        deleteChanges.put(change.getOldPath().toUpperCase(), change);
+                        break;
+                }
+            }
+
             /* Append each change in to the analysis object */
             for (DiffEntry change : treeDifferences)
             {
@@ -470,17 +489,38 @@ public class PendDifferenceTask
                 {
                     case ADD:
                     case COPY:
-                        analysis.pendAdd(new AddChange(change.getNewPath(), CommitUtil.resolveAbbreviatedId(
-                            repository,
-                            change.getNewId())));
-                        analysis.pendPropertyIfChanged(new PropertyChange(
-                            change.getNewPath(),
-                            CommitUtil.resolveAbbreviatedId(repository, change.getNewId()),
-                            change.getNewMode()));
+                        if (!isCaseSensitiveRename(change, deleteChanges, addChanges))
+                        {
+                            analysis.pendAdd(new AddChange(change.getNewPath(), CommitUtil.resolveAbbreviatedId(
+                                repository,
+                                change.getNewId())));
+                            analysis.pendPropertyIfChanged(new PropertyChange(
+                                change.getNewPath(),
+                                CommitUtil.resolveAbbreviatedId(repository, change.getNewId()),
+                                change.getNewMode()));
+                        }
                         break;
 
                     case DELETE:
-                        analysis.pendDelete(new DeleteChange(change.getOldPath(), change.getOldMode()));
+                        if (isCaseSensitiveRename(change, deleteChanges, addChanges))
+                        {
+                            DiffEntry addChange = addChanges.get(change.getOldPath().toUpperCase());
+
+                            analysis.pendRename(new RenameChange(
+                                change.getOldPath(),
+                                addChange.getNewPath(),
+                                CommitUtil.resolveAbbreviatedId(repository, addChange.getNewId()),
+                                !change.getOldId().equals(addChange.getNewId())));
+                            analysis.pendPropertyIfChanged(new PropertyChange(
+                                addChange.getNewPath(),
+                                CommitUtil.resolveAbbreviatedId(repository, addChange.getNewId()),
+                                change.getOldMode(),
+                                addChange.getNewMode()));
+                        }
+                        else
+                        {
+                            analysis.pendDelete(new DeleteChange(change.getOldPath(), change.getOldMode()));
+                        }
                         break;
 
                     case MODIFY:
@@ -521,6 +561,24 @@ public class PendDifferenceTask
         log.debug("Walk thru the git-repository tree finished.");
 
         return analysis;
+    }
+
+    private static boolean isCaseSensitiveRename(
+        DiffEntry change,
+        Map<String, DiffEntry> deleteChanges,
+        Map<String, DiffEntry> addChanges)
+    {
+        switch (change.getChangeType())
+        {
+            case ADD:
+                return deleteChanges.containsKey(change.getNewPath().toUpperCase());
+
+            case DELETE:
+                return addChanges.containsKey(change.getOldPath().toUpperCase());
+
+            default:
+                return false;
+        }
     }
 
     /**

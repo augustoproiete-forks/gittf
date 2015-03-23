@@ -266,6 +266,52 @@ public class CreateCommitForChangesetVersionSpecTask
 
                     return;
                 }
+                catch (Throwable e)
+                {
+                    /*
+                     * A workaround for unexpected TFS server errors. Aged
+                     * servers with long history might have some items corrupted
+                     * in some change sets and return incorrect HTTP response to
+                     * the download request.
+                     * 
+                     * In this case we'd better suppress the error and assume
+                     * that the file does not exist. The next change set that
+                     * contains this file will commit it into the repository. It
+                     * seems to better to miss something in the file's history
+                     * log rather than to fail cloning the repository entirely.
+                     */
+
+                    // TODO: We should make this behavior optional since it's a
+                    // bit dangerous. If the file download fails in its last
+                    // change set the file will be marked as deleted in the
+                    // repository.
+
+                    if (e instanceof IOException)
+                    {
+                        throw e;
+                    }
+                    else
+                    {
+                        final String itemName = item.getServerItem() == null ? "???" : item.getServerItem(); //$NON-NLS-1$
+                        final String changeSetID =
+                            item.getChangeSetID() == 0 ? "???" : Integer.toString(item.getChangeSetID()); //$NON-NLS-1$
+                        final String checkinDate =
+                            item.getCheckinDate() == null ? "???" : item.getCheckinDate().toString(); //$NON-NLS-1$
+
+                        final String message =
+                            Messages.formatString("CreateCommitForChangesetVersionSpecTask.UnexpectedError", //$NON-NLS-1$
+                                itemName,
+                                changeSetID,
+                                checkinDate);
+
+                        progressMonitor.displayWarning(message);
+                        progressMonitor.displayWarning(e.getMessage());
+                        progressMonitor.displayWarning(Messages.getString("CreateCommitForChangesetVersionSpecTask.SeeLog")); //$NON-NLS-1$
+
+                        log.warn(message);
+                        log.error(e);
+                    }
+                }
 
                 if (tempFile.exists())
                 {

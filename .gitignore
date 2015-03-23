@@ -3,6 +3,7 @@ output
 .classpath
 .project
 .wtpmodules
+.recommenders
 *~
 
 /.metadata

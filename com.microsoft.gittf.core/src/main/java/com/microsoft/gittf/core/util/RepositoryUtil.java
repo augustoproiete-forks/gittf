@@ -205,7 +205,7 @@ public final class RepositoryUtil
                 if (FileMode.EXECUTABLE_FILE == fileMode)
                 {
                     final File file = new File(workingDirectory, treeWalk.getPathString());
-                    log.debug("Executable: " + file.getAbsolutePath());
+                    log.debug("Executable: " + file.getAbsolutePath()); //$NON-NLS-1$
 
                     final FileSystemAttributes attr = FileSystemUtils.getInstance().getAttributes(file);
 

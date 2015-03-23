@@ -73,7 +73,7 @@ public class PreviewOnlyWorkspace
 
     public String getName()
     {
-        return "PreviewOnlyWorkspace";
+        return "PreviewOnlyWorkspace"; //$NON-NLS-1$
     }
 
     public void deleteWorkspace()

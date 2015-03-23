@@ -48,7 +48,7 @@ import com.microsoft.tfs.util.StringUtil;
 public class ShelvePendingChangesTask
     extends Task
 {
-    private static String CRLF = "" + NewlineUtils.CARRIAGE_RETURN + NewlineUtils.LINE_FEED;
+    private static String CRLF = "" + NewlineUtils.CARRIAGE_RETURN + NewlineUtils.LINE_FEED; //$NON-NLS-1$
     private final String message;
     private final WorkspaceService workspace;
     private final PendingChange[] changes;

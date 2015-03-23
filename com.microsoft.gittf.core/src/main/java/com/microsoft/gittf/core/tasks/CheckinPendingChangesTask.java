@@ -142,7 +142,7 @@ public class CheckinPendingChangesTask
     {
         progressMonitor.beginTask(Messages.getString("CheckinPendingChangesTask.CheckingIn"), 100); //$NON-NLS-1$
 
-        log.debug("CheckinPendingChangesTask started");
+        log.debug("CheckinPendingChangesTask started"); //$NON-NLS-1$
 
         try
         {
@@ -166,7 +166,7 @@ public class CheckinPendingChangesTask
                 final TfsUser author =
                     userMap == null ? null : userMap.getTfsUser(new GitUser(commit.getAuthorIdent()));
 
-                log.debug("Submiting check-in command to the server");
+                log.debug("Submiting check-in command to the server"); //$NON-NLS-1$
 
                 changesetID =
                     workspace.checkIn(
@@ -181,11 +181,11 @@ public class CheckinPendingChangesTask
                         null,
                         checkinFlags);
 
-                log.debug("Change set created: " + changesetID);
+                log.debug("Change set created: " + changesetID); //$NON-NLS-1$
 
                 commitMap.setChangesetCommit(changesetID, commit.getId());
 
-                log.debug("Updating git-repository branch: tfs");
+                log.debug("Updating git-repository branch: tfs"); //$NON-NLS-1$
                 /* Update tfs branch */
                 try
                 {
@@ -208,7 +208,7 @@ public class CheckinPendingChangesTask
             // from MSDN:
             // http://msdn.microsoft.com/en-us/library/microsoft.teamfoundation.versioncontrol.client.checkinparameters.queuebuildforgatedcheckin.aspx
 
-            log.debug("Action denied by subscriber exception:", e);
+            log.debug("Action denied by subscriber exception:", e); //$NON-NLS-1$
 
             /*
              * If one or more of the items being checked in affects a gated
@@ -297,7 +297,7 @@ public class CheckinPendingChangesTask
         }
         catch (CheckinException e)
         {
-            log.debug("Check-in exception:", e);
+            log.debug("Check-in exception:", e); //$NON-NLS-1$
 
             if (e.allConflictsResolved() || e.isAnyResolvable())
             {
@@ -314,7 +314,7 @@ public class CheckinPendingChangesTask
         }
         catch (Exception e)
         {
-            log.debug("Exception:", e);
+            log.debug("Exception:", e); //$NON-NLS-1$
             return new TaskStatus(TaskStatus.ERROR, e);
         }
         finally
@@ -323,7 +323,7 @@ public class CheckinPendingChangesTask
             progressMonitor.dispose();
         }
 
-        log.debug("CheckinPendingChangesTask ended");
+        log.debug("CheckinPendingChangesTask ended"); //$NON-NLS-1$
 
         return TaskStatus.OK_STATUS;
     }

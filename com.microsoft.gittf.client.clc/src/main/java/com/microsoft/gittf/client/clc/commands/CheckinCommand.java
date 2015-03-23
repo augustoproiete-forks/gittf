@@ -184,14 +184,14 @@ public class CheckinCommand
         throws Exception
     {
 
-        log.debug("Verifying configuration");
+        log.debug("Verifying configuration"); //$NON-NLS-1$
 
         verifyGitTfConfigured();
         verifyRepoSafeState();
 
         GitTFConfiguration currentConfiguration = GitTFConfiguration.loadFrom(getRepository());
 
-        log.debug("Paring command parameters");
+        log.debug("Paring command parameters"); //$NON-NLS-1$
 
         boolean deep = currentConfiguration.getDeep();
         deep = isDepthSpecified() ? getDeepFromArguments() : deep;
@@ -231,7 +231,7 @@ public class CheckinCommand
 
         if (!deep && keepAuthor)
         {
-            Main.printWarning("the check-in authors will be ignored because --deep is not specified");
+            Main.printWarning("the check-in authors will be ignored because --deep is not specified"); //$NON-NLS-1$
             keepAuthor = false;
         }
 
@@ -239,7 +239,7 @@ public class CheckinCommand
             ((ValueArgument) getArguments().getArgument("user-map")).getValue() : //$NON-NLS-1$
             currentConfiguration.getUserMap();
 
-        log.debug("Createing CheckinHeadCommitTask");
+        log.debug("Createing CheckinHeadCommitTask"); //$NON-NLS-1$
 
         final WorkItemClient witClient = mentions ? getConnection().getWorkItemClient() : null;
         final CheckinHeadCommitTask checkinTask =
@@ -264,14 +264,14 @@ public class CheckinCommand
          * Hook up a custom task executor that does not print gated errors to
          * standard error (we handle those specially.)
          */
-        log.debug("Starting CheckinHeadCommitTask");
+        log.debug("Starting CheckinHeadCommitTask"); //$NON-NLS-1$
         final CommandTaskExecutor taskExecutor = new CommandTaskExecutor(getProgressMonitor());
         taskExecutor.removeTaskCompletedHandler(CommandTaskExecutor.CONSOLE_OUTPUT_TASK_HANDLER);
         taskExecutor.addTaskCompletedHandler(checkinTaskCompletedHandler);
 
         final TaskStatus checkinStatus = taskExecutor.execute(checkinTask);
 
-        log.debug("CheckinHeadCommitTask finished");
+        log.debug("CheckinHeadCommitTask finished"); //$NON-NLS-1$
 
         if (checkinStatus.isOK() && checkinStatus.getCode() == CheckinHeadCommitTask.ALREADY_UP_TO_DATE)
         {

@@ -62,7 +62,7 @@ public class LockTask
         progressMonitor.beginTask(
             Messages.formatString("LockTask.LockingFormat", serverPath), TaskProgressMonitor.INDETERMINATE); //$NON-NLS-1$
 
-        log.debug("Trying to lock " + serverPath);
+        log.debug("Trying to lock " + serverPath); //$NON-NLS-1$
 
         int pended = workspace.setLock(new ItemSpec[]
         {
@@ -76,9 +76,9 @@ public class LockTask
         if (pended == 0)
         {
 
-            log.debug("Cannot lock " + serverPath + "because it does not exist");
+            log.debug("Cannot lock " + serverPath + "because it does not exist"); //$NON-NLS-1$ //$NON-NLS-2$
 
-            log.debug("Trying to pend add for " + serverPath);
+            log.debug("Trying to pend add for " + serverPath); //$NON-NLS-1$
 
             pended = workspace.pendAdd(new String[]
             {

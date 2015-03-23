@@ -181,7 +181,7 @@ public class PendDifferenceTask
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
     {
-        log.debug("Pend differences task started.");
+        log.debug("Pend differences task started."); //$NON-NLS-1$
 
         progressMonitor.beginTask(
             Messages.formatString(
@@ -230,7 +230,7 @@ public class PendDifferenceTask
 
         try
         {
-            log.debug("Validate the commit tree objects for any violations");
+            log.debug("Validate the commit tree objects for any violations"); //$NON-NLS-1$
 
             /* Validate the commit tree objects for any violations */
             validate();
@@ -241,7 +241,7 @@ public class PendDifferenceTask
              */
             if (fromTree != null)
             {
-                log.debug("Analyzing differences");
+                log.debug("Analyzing differences"); //$NON-NLS-1$
 
                 analysis = analyzeDifferences(repository, fromTree, toTree, renameMode, analyzeMonitor);
             }
@@ -251,14 +251,14 @@ public class PendDifferenceTask
              */
             else
             {
-                log.debug("Analyzing entire tree to pend ADDs");
+                log.debug("Analyzing entire tree to pend ADDs"); //$NON-NLS-1$
 
                 analysis = analyzeTree(repository, toTree, analyzeMonitor);
             }
         }
         catch (Exception e)
         {
-            log.debug("Pend differences task error:", e);
+            log.debug("Pend differences task error:", e); //$NON-NLS-1$
 
             return new TaskStatus(TaskStatus.ERROR, e);
         }
@@ -270,7 +270,7 @@ public class PendDifferenceTask
         /* If the analysis is empty then there is nothing to pend */
         if (analysis.isEmpty())
         {
-            log.debug("Nothing to pend.");
+            log.debug("Nothing to pend."); //$NON-NLS-1$
 
             return new TaskStatus(TaskStatus.OK, NOTHING_TO_PEND);
         }
@@ -282,8 +282,8 @@ public class PendDifferenceTask
         }
         catch (Exception e)
         {
-            log.debug("Pend differences task error:", e);
-            log.debug("Undoing pended changes.");
+            log.debug("Pend differences task error:", e); //$NON-NLS-1$
+            log.debug("Undoing pended changes."); //$NON-NLS-1$
 
             workspace.undo(new ItemSpec[]
             {
@@ -296,7 +296,7 @@ public class PendDifferenceTask
 
         progressMonitor.endTask();
 
-        log.debug("Pend differences task ended.");
+        log.debug("Pend differences task ended."); //$NON-NLS-1$
 
         return TaskStatus.OK_STATUS;
     }
@@ -425,7 +425,7 @@ public class PendDifferenceTask
         final CheckinAnalysisChangeCollection analysis =
             new CheckinAnalysisChangeCollection(repository, fromRootTree, toRootTree);
 
-        log.debug("Walking thru the git-repository tree.");
+        log.debug("Walking thru the git-repository tree."); //$NON-NLS-1$
 
         /* Init the tree walker object */
         final TreeWalk treeWalker = new NameConflictTreeWalk(repository);
@@ -442,7 +442,7 @@ public class PendDifferenceTask
 
             List<DiffEntry> treeDifferences = DiffEntry.scan(treeWalker);
 
-            log.debug("The number of differences found: " + treeDifferences.size());
+            log.debug("The number of differences found: " + treeDifferences.size()); //$NON-NLS-1$
 
             /*
              * If we need to detect file renames then use the rename detector to
@@ -558,7 +558,7 @@ public class PendDifferenceTask
             progressMonitor.endTask();
         }
 
-        log.debug("Walk thru the git-repository tree finished.");
+        log.debug("Walk thru the git-repository tree finished."); //$NON-NLS-1$
 
         return analysis;
     }
@@ -610,7 +610,7 @@ public class PendDifferenceTask
         final CheckinAnalysisChangeCollection analysis = new CheckinAnalysisChangeCollection();
         final TreeWalk treeWalker = new NameConflictTreeWalk(repository);
 
-        log.debug("Walking thru the git-repository tree.");
+        log.debug("Walking thru the git-repository tree."); //$NON-NLS-1$
 
         try
         {
@@ -645,7 +645,7 @@ public class PendDifferenceTask
             progressMonitor.endTask();
         }
 
-        log.debug("Walk thru the git-repository tree finished.");
+        log.debug("Walk thru the git-repository tree finished."); //$NON-NLS-1$
 
         return analysis;
     }
@@ -955,7 +955,7 @@ public class PendDifferenceTask
 
     private PropertyValue createBooleanProperty(final String key, final boolean value)
     {
-        return new PropertyValue(key, (value ? "true" : "false"));
+        return new PropertyValue(key, (value ? "true" : "false")); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
     /**

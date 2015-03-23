@@ -479,17 +479,16 @@ public abstract class UserMap
 
             if (foundIdentities == null)
             {
-                log.warn(MessageFormat.format("No identity matching \"{0}\" found on the TFS server", tfsUserName));
+                log.warn(MessageFormat.format("No identity matching \"{0}\" found on the TFS server", tfsUserName)); //$NON-NLS-1$
             }
             else if (foundIdentities.size() > 1)
             {
-                log.warn(MessageFormat.format(
-                    "Multiple identities matching \"{0}\" found on the TFS server",
+                log.warn(MessageFormat.format("Multiple identities matching \"{0}\" found on the TFS server", //$NON-NLS-1$
                     tfsUserName));
             }
             else if (!tfsUserName.equalsIgnoreCase(foundIdentities.get(0).getName()))
             {
-                log.warn(MessageFormat.format("Identity \"{0}\" has changed on the TFS server", tfsUserName));
+                log.warn(MessageFormat.format("Identity \"{0}\" has changed on the TFS server", tfsUserName)); //$NON-NLS-1$
             }
             else
             {

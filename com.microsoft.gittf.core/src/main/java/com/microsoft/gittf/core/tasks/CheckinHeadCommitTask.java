@@ -292,21 +292,21 @@ public class CheckinHeadCommitTask
             WorkspaceService workspace = null;
             File workingFolder = null;
 
-            log.debug("Creating temporary workspace");
+            log.debug("Creating temporary workspace"); //$NON-NLS-1$
 
             workspaceData = createWorkspace(progressMonitor.newSubTask(1), preview);
 
             workspace = workspaceData.getWorkspace();
             workingFolder = workspaceData.getWorkingFolder();
 
-            log.debug("Workspace " + workspace.getName() + " created for the folder " + workingFolder.getAbsolutePath());
+            log.debug("Workspace " + workspace.getName() + " created for the folder " + workingFolder.getAbsolutePath()); //$NON-NLS-1$ //$NON-NLS-2$
 
             int expectedChangesetNumber = -1;
 
             /* In deep mode we should always lock the workspace */
             if (lock && deep)
             {
-                log.debug("Locking TFS resource");
+                log.debug("Locking TFS resource"); //$NON-NLS-1$
                 final TaskStatus lockStatus =
                     new TaskExecutor(progressMonitor.newSubTask(1)).execute(new LockTask(workspace, serverPath));
 
@@ -321,7 +321,7 @@ public class CheckinHeadCommitTask
              */
             else if (!deep)
             {
-                log.debug("No lock requested. Checking the latest change set.");
+                log.debug("No lock requested. Checking the latest change set."); //$NON-NLS-1$
 
                 Changeset[] latestChangesets =
                     versionControlClient.queryHistory(
@@ -342,10 +342,10 @@ public class CheckinHeadCommitTask
 
                 expectedChangesetNumber = latestChangesets[0].getChangesetID() + 1;
 
-                log.debug("Expected change set number = " + expectedChangesetNumber);
+                log.debug("Expected change set number = " + expectedChangesetNumber); //$NON-NLS-1$
             }
 
-            log.debug("Obtaining the HEAD commit in the master barnch.");
+            log.debug("Obtaining the HEAD commit in the master barnch."); //$NON-NLS-1$
             /* Get the HEAD commit id */
             final ObjectId headCommitID = CommitUtil.getMasterHeadCommitID(repository);
 
@@ -353,7 +353,7 @@ public class CheckinHeadCommitTask
              * Retrieve the last bridged changeset and the latest changeset on
              * the server
              */
-            log.debug("Loading change set/commit map");
+            log.debug("Loading change set/commit map"); //$NON-NLS-1$
             final ChangesetCommitMap commitMap = new ChangesetCommitMap(repository);
             final ChangesetCommitDetails lastBridgedChangeset =
                 ChangesetCommitMapUtil.getLastBridgedChangeset(commitMap);
@@ -367,7 +367,7 @@ public class CheckinHeadCommitTask
              */
             if (lastBridgedChangeset == null || lastBridgedChangeset.getChangesetID() < 0)
             {
-                log.debug("Firts checking for the new repository. Check that the root folder is ampty or does notexist.");
+                log.debug("Firts checking for the new repository. Check that the root folder is ampty or does notexist."); //$NON-NLS-1$
                 Item[] items =
                     versionControlClient.getItems(
                         serverPath,
@@ -419,10 +419,10 @@ public class CheckinHeadCommitTask
                 return new TaskStatus(TaskStatus.OK, CheckinHeadCommitTask.ALREADY_UP_TO_DATE);
             }
 
-            log.debug("Examining the repository");
+            log.debug("Examining the repository"); //$NON-NLS-1$
             progressMonitor.setDetail(Messages.getString("CheckinHeadCommitTask.ExaminingRepository")); //$NON-NLS-1$
 
-            log.debug("Building the list of commit sequence we need to checkin");
+            log.debug("Building the list of commit sequence we need to checkin"); //$NON-NLS-1$
 
             /* Build the list of commit sequence we need to checkin */
             List<CommitDelta> commitsToCheckin =
@@ -436,14 +436,14 @@ public class CheckinHeadCommitTask
             boolean anyThingCheckedIn = false;
             boolean otherUserCheckinDetected = false;
 
-            log.debug("Number of commits to checkin: " + commitsToCheckin.size());
+            log.debug("Number of commits to checkin: " + commitsToCheckin.size()); //$NON-NLS-1$
 
             progressMonitor.setWork(commitsToCheckin.size() * 2);
 
             TaskStatus userMapErrorStatus = null;
             if (keepAuthor)
             {
-                log.debug("Loading the user map.");
+                log.debug("Loading the user map."); //$NON-NLS-1$
 
                 userMap = new TfsUserMap(versionControlClient.getConnection(), userMapPath, commitsToCheckin);
 
@@ -479,11 +479,11 @@ public class CheckinHeadCommitTask
                     }
                 }
 
-                log.debug("The user map is loaded.");
+                log.debug("The user map is loaded."); //$NON-NLS-1$
                 progressMonitor.setDetail(null);
             }
 
-            log.debug("Processing commit deltas.");
+            log.debug("Processing commit deltas."); //$NON-NLS-1$
 
             /*
              * Loop the list of commit sequence and checkin the difference one
@@ -493,11 +493,11 @@ public class CheckinHeadCommitTask
             {
                 CommitDelta commitDelta = commitsToCheckin.get(i);
 
-                log.debug("Committing delta "
+                log.debug("Committing delta " //$NON-NLS-1$
                     + i
-                    + ": from "
-                    + (commitDelta.getFromCommit() == null ? "initial commit" : commitDelta.getFromCommit().getName())
-                    + " to "
+                    + ": from " //$NON-NLS-1$
+                    + (commitDelta.getFromCommit() == null ? "initial commit" : commitDelta.getFromCommit().getName()) //$NON-NLS-1$
+                    + " to " //$NON-NLS-1$
                     + commitDelta.getToCommit().getName());
 
                 progressMonitor.setDetail(Messages.formatString("CheckinHeadCommitTask.CommitFormat", //$NON-NLS-1$
@@ -508,7 +508,7 @@ public class CheckinHeadCommitTask
                 /* Save space: clean working folder after each checkin */
                 if (i > 0)
                 {
-                    log.debug("Cleaning the working folder" + workingFolder.getAbsolutePath());
+                    log.debug("Cleaning the working folder" + workingFolder.getAbsolutePath()); //$NON-NLS-1$
 
                     cleanWorkingFolder(workingFolder);
                 }
@@ -564,7 +564,7 @@ public class CheckinHeadCommitTask
                     progressMonitor.displayMessage("---------------------------------------------------------------------"); //$NON-NLS-1$
                 }
 
-                log.debug("Pend the differences between the two commits.");
+                log.debug("Pend the differences between the two commits."); //$NON-NLS-1$
 
                 final TaskStatus pendStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(pendTask);
 
@@ -589,11 +589,11 @@ public class CheckinHeadCommitTask
                 /* else perform the actual checkin */
                 else
                 {
-                    log.debug("Checking in.");
+                    log.debug("Checking in."); //$NON-NLS-1$
 
                     progressMonitor.setDetail(Messages.getString("CheckinHeadCommitTask.CheckingIn")); //$NON-NLS-1$
 
-                    log.debug("Building the change set comment.");
+                    log.debug("Building the change set comment."); //$NON-NLS-1$
                     String commitComment = buildCommitComment(commitDelta);
 
                     /*
@@ -613,12 +613,12 @@ public class CheckinHeadCommitTask
                     checkinTask.setExpectedChangesetNumber(expectedChangesetNumber);
                     checkinTask.setUserMap(userMap);
 
-                    log.debug("Staring the check-in task.");
+                    log.debug("Staring the check-in task."); //$NON-NLS-1$
 
                     final TaskStatus checkinStatus =
                         new TaskExecutor(progressMonitor.newSubTask(1)).execute(checkinTask);
 
-                    log.debug("The check-in task ended with the status code: " + checkinStatus.getCode());
+                    log.debug("The check-in task ended with the status code: " + checkinStatus.getCode()); //$NON-NLS-1$
 
                     if (!checkinStatus.isOK())
                     {
@@ -630,9 +630,9 @@ public class CheckinHeadCommitTask
                     otherUserCheckinDetected =
                         checkinStatus.getCode() == CheckinPendingChangesTask.CHANGESET_NUMBER_NOT_AS_EXPECTED;
 
-                    log.debug("    lastChangesetID: " + lastChangesetID);
-                    log.debug("    lastCommitID: " + lastCommitID);
-                    log.debug("    otherUserCheckinDetected: " + otherUserCheckinDetected);
+                    log.debug("    lastChangesetID: " + lastChangesetID); //$NON-NLS-1$
+                    log.debug("    lastCommitID: " + lastCommitID); //$NON-NLS-1$
+                    log.debug("    otherUserCheckinDetected: " + otherUserCheckinDetected); //$NON-NLS-1$
 
                     expectedChangesetNumber = -1;
 
@@ -643,7 +643,7 @@ public class CheckinHeadCommitTask
                 }
             }
 
-            log.debug("Cleaning up the workspace.");
+            log.debug("Cleaning up the workspace."); //$NON-NLS-1$
             /* Clean up the workspace */
             final TaskProgressMonitor cleanupMonitor = progressMonitor.newSubTask(1);
             cleanupWorkspace(cleanupMonitor, workspaceData);
@@ -839,13 +839,13 @@ public class CheckinHeadCommitTask
     private List<CommitDelta> getCommitsToCheckin(final ObjectId sourceCommitID, final ObjectId headCommitID)
         throws Exception
     {
-        log.debug("Detecting commit deltas.");
+        log.debug("Detecting commit deltas."); //$NON-NLS-1$
 
         Check.notNull(headCommitID, "headCommitID"); //$NON-NLS-1$
 
         List<CommitDelta> commitsToCheckin;
 
-        log.debug("Walking thru commit tree.");
+        log.debug("Walking thru commit tree."); //$NON-NLS-1$
         /*
          * In the case of shallow commit, we do not care if the user provided
          * ids to squash or not since we are not preserving history anyways we
@@ -862,12 +862,12 @@ public class CheckinHeadCommitTask
 
         int depth = deep ? Integer.MAX_VALUE : GitTFConstants.GIT_TF_SHALLOW_DEPTH;
 
-        log.debug("Commit s to check-in number: " + commitsToCheckin.size());
+        log.debug("Commit s to check-in number: " + commitsToCheckin.size()); //$NON-NLS-1$
 
         /* Prune the list of commits down to their depth. */
         if (commitsToCheckin.size() > depth)
         {
-            log.debug("Prune commits to the depth: " + depth);
+            log.debug("Prune commits to the depth: " + depth); //$NON-NLS-1$
 
             List<CommitDelta> prunedCommits = new ArrayList<CommitDelta>();
 
@@ -897,7 +897,7 @@ public class CheckinHeadCommitTask
             commitsToCheckin = prunedCommits;
         }
 
-        log.debug("Detection commit deltas finished.");
+        log.debug("Detection commit deltas finished."); //$NON-NLS-1$
 
         return commitsToCheckin;
     }

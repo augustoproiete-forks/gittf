@@ -332,6 +332,8 @@ public class Main
         {
             printError(e.getLocalizedMessage());
             log.warn(MessageFormat.format("Error executing command: {0}", getCommandLine(args)), e); //$NON-NLS-1$
+
+            System.exit(ExitCode.FAILURE);
         }
     }
 

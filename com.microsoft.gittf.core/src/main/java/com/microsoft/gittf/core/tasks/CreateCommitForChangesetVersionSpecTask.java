@@ -288,7 +288,7 @@ public class CreateCommitForChangesetVersionSpecTask
 
                     if (e instanceof IOException)
                     {
-                        throw e;
+                        throw (Exception) e;
                     }
                     else
                     {
@@ -299,7 +299,7 @@ public class CreateCommitForChangesetVersionSpecTask
                             item.getCheckinDate() == null ? "???" : item.getCheckinDate().toString(); //$NON-NLS-1$
 
                         final String message =
-                            Messages.formatString("CreateCommitForChangesetVersionSpecTask.UnexpectedError", //$NON-NLS-1$
+                            Messages.formatString("CreateCommitForChangesetVersionSpecTask.UnexpectedErrorFormat", //$NON-NLS-1$
                                 itemName,
                                 changeSetID,
                                 checkinDate);

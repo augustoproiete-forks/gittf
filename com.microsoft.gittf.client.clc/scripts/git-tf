@@ -62,9 +62,9 @@ else
 fi
 
 # Ensure that our main JAR exists
-TEST_REQUIRED_JAR="$BASE_DIRECTORY/lib/com.microsoft.gittf.client.clc-*.jar"
-if [ ! -f $TEST_REQUIRED_JAR ]; then
-	echo "Unable to find a required JAR: $TEST_REQUIRED_JAR does not exist"
+REQUIRED_JAR="`echo "$BASE_DIRECTORY"/lib/com.microsoft.gittf.client.clc-*.jar`"
+if [ ! -f "$REQUIRED_JAR" ]; then
+	echo "Unable to find a required JAR: $REQUIRED_JAR does not exist"
 	exit
 fi
 

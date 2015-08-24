@@ -56,7 +56,7 @@ fi
 
 # BASE_DIRECTORY is the directory containing the Java libraries
 if [ -z "$GITTF_HOME" ]; then
-	BASE_DIRECTORY=`dirname "$0"`
+	BASE_DIRECTORY=`dirname "$0" | tr '\\\\' /`
 else
 	BASE_DIRECTORY="$GITTF_HOME"
 fi

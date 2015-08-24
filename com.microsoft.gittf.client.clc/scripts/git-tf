@@ -61,6 +61,13 @@ else
 	BASE_DIRECTORY="$GITTF_HOME"
 fi
 
+# Convert C:/... to /C/... to avoid confusion with the path list separator
+case "$BASE_DIRECTORY" in
+[A-Za-z]:*)
+	BASE_DIRECTORY="/${BASE_DIRECTORY%%:*}${BASE_DIRECTORY#?:}"
+	;;
+esac
+
 # Ensure that our main JAR exists
 REQUIRED_JAR="`echo "$BASE_DIRECTORY"/lib/com.microsoft.gittf.client.clc-*.jar`"
 if [ ! -f "$REQUIRED_JAR" ]; then

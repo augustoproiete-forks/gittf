@@ -768,11 +768,15 @@ public class PendDifferenceTask
             return;
         }
 
+        log.debug(MessageFormat.format("Sending DELETE changes for {0} files:", deletes.size())); //$NON-NLS-1$
+
         /* Build the delete specs */
         ItemSpec[] deleteSpecs = new ItemSpec[deletes.size()];
         for (int i = 0; i < deletes.size(); i++)
         {
             final DeleteChange delete = deletes.get(i);
+
+            log.debug(MessageFormat.format("    {0}, mode={1}", delete.getPath(), delete.getType())); //$NON-NLS-1$
 
             deleteSpecs[i] =
                 new ItemSpec(ServerPath.combine(serverPathRoot, delete.getPath()), delete.getType() == FileMode.TREE
@@ -792,6 +796,7 @@ public class PendDifferenceTask
 
         if (count < deleteSpecs.length)
         {
+            log.error(MessageFormat.format("Server added {0} DELETE changes instead of {1}", count, deleteSpecs.length)); //$NON-NLS-1$
             throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
         }
     }
@@ -836,12 +841,16 @@ public class PendDifferenceTask
             return;
         }
 
+        log.debug(MessageFormat.format("Sending EDIT changes for {0} files:", edits.size())); //$NON-NLS-1$
+
         /* Builds the edit specs */
         final List<ItemSpec> editSpecs = new ArrayList<ItemSpec>();
         final List<LockLevel> lockLevels = new ArrayList<LockLevel>();
 
         for (final EditChange edit : edits)
         {
+            log.debug(MessageFormat.format("    {0}", edit.getPath())); //$NON-NLS-1$
+
             extractToWorkingFolder(edit.getPath(), edit.getObjectID());
 
             editSpecs.add(new ItemSpec(ServerPath.combine(serverPathRoot, edit.getPath()), RecursionType.NONE));
@@ -866,6 +875,7 @@ public class PendDifferenceTask
 
         if (count != editSpecs.size())
         {
+            log.error(MessageFormat.format("Server added {0} EDIT changes instead of {1}", count, editSpecs.size())); //$NON-NLS-1$
             throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
         }
     }
@@ -919,6 +929,8 @@ public class PendDifferenceTask
             return;
         }
 
+        log.debug(MessageFormat.format("Sending PROPERTIES changes for {0} files:", propertiesCount)); //$NON-NLS-1$
+
         /* Build the adds item spec */
         for (int i = 0; i < propertiesCount; i++)
         {
@@ -932,6 +944,7 @@ public class PendDifferenceTask
 
             if (propertyChange.isExecutablePropertyChanged())
             {
+                log.debug(MessageFormat.format("    {0}, property=executable", path)); //$NON-NLS-1$
                 properties.add(propertyChange.getExecutablePropertyValue());
             }
 
@@ -948,6 +961,7 @@ public class PendDifferenceTask
 
             if (count != 1)
             {
+                log.error(MessageFormat.format("Server added {0} EDIT changes instead of {1}", count, propertiesCount)); //$NON-NLS-1$
                 throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
             }
         }
@@ -1079,6 +1093,13 @@ public class PendDifferenceTask
 
         if (renameOldPaths.size() > 0)
         {
+            log.debug(MessageFormat.format("Sending RENAME changes for {0} files:", renameOldPaths.size())); //$NON-NLS-1$
+
+            for (int i = 0; i < renameOldPaths.size(); i++)
+            {
+                log.debug(MessageFormat.format("    {0} ==> {1}", renameOldPaths.get(i), renameNewPaths.get(i))); //$NON-NLS-1$
+            }
+
             final int renamesCount =
                 workspace.pendRename(
                     renameOldPaths.toArray(new String[renameOldPaths.size()]),
@@ -1094,6 +1115,8 @@ public class PendDifferenceTask
 
             if (renamesCount < renameOldPaths.size())
             {
+                log.error(MessageFormat.format(
+                    "Server added {0} RENAME changes instead of {1}", renamesCount, renameOldPaths.size())); //$NON-NLS-1$
                 throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
             }
         }
@@ -1101,6 +1124,13 @@ public class PendDifferenceTask
         /* Pend the edited renames */
         if (editRenameOldPaths.size() > 0)
         {
+            log.debug(MessageFormat.format("Sending RENAME changes for {0} files:", editRenameOldPaths.size())); //$NON-NLS-1$
+
+            for (int i = 0; i < renameOldPaths.size(); i++)
+            {
+                log.debug(MessageFormat.format("    {0} ==> {1}", editRenameOldPaths.get(i), editRenameNewPaths.get(i))); //$NON-NLS-1$
+            }
+
             final int count =
                 workspace.pendRename(
                     editRenameOldPaths.toArray(new String[editRenameOldPaths.size()]),
@@ -1116,6 +1146,8 @@ public class PendDifferenceTask
 
             if (count < editRenameOldPaths.size())
             {
+                log.error(MessageFormat.format(
+                    "Server added {0} RENAME changes instead of {1}", count, editRenameOldPaths.size())); //$NON-NLS-1$
                 throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
             }
 
@@ -1127,6 +1159,13 @@ public class PendDifferenceTask
                 {
                     extractToWorkingFolder(rename.getNewPath(), rename.getObjectID());
                 }
+            }
+
+            log.debug(MessageFormat.format("Sending EDIT changes for {0} files:", editSpecs.size())); //$NON-NLS-1$
+
+            for (int i = 0; i < editSpecs.size(); i++)
+            {
+                log.debug(MessageFormat.format("    {0}", editSpecs.get(i).getItem())); //$NON-NLS-1$
             }
 
             final int editsCount =
@@ -1144,6 +1183,8 @@ public class PendDifferenceTask
 
             if (editsCount < editSpecs.size())
             {
+                log.error(MessageFormat.format(
+                    "Server added {0} EDIT changes instead of {1}", editsCount, editSpecs.size())); //$NON-NLS-1$
                 throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
             }
         }
@@ -1191,6 +1232,8 @@ public class PendDifferenceTask
             return;
         }
 
+        log.debug(MessageFormat.format("Sending ADD changes for {0} files:", addCount)); //$NON-NLS-1$
+
         /* Build the adds item spec */
         final String[] addPaths = new String[addCount];
         for (int i = 0; i < addCount; i++)
@@ -1200,6 +1243,7 @@ public class PendDifferenceTask
             extractToWorkingFolder(add.getPath(), add.getObjectID());
 
             addPaths[i] = ServerPath.combine(serverPathRoot, add.getPath());
+            log.debug(MessageFormat.format("    {0}", addPaths[i])); //$NON-NLS-1$
         }
 
         /* Pend the adds in the workspace */
@@ -1211,6 +1255,7 @@ public class PendDifferenceTask
 
         if (count != addCount)
         {
+            log.error(MessageFormat.format("Server added {0} ADD changes instead of {1}", count, addCount)); //$NON-NLS-1$
             throw new Exception(Messages.getString("PendDifferencesTask.PendFailed")); //$NON-NLS-1$
         }
     }

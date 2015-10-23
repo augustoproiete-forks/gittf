@@ -114,6 +114,8 @@ public class ConsoleTaskProgressMonitor
         Check.isTrue(workTotal >= INDETERMINATE, "work >= INDETERMINATE"); //$NON-NLS-1$
         Check.notNull(displayOptions, "displayOptions"); //$NON-NLS-1$
 
+        log.info(task + " started"); //$NON-NLS-1$
+
         if (this.inTask)
         {
             return;
@@ -319,6 +321,8 @@ public class ConsoleTaskProgressMonitor
      */
     private void writeProgressLine(final String newProgressLine)
     {
+        log.info(newProgressLine);
+
         /* Remove any characters at the end of the line */
         if (newProgressLine.length() < progressLine.length())
         {
@@ -403,6 +407,8 @@ public class ConsoleTaskProgressMonitor
 
     public void endTask()
     {
+        log.info(task + " ended"); //$NON-NLS-1$
+
         try
         {
             finishProgress();
